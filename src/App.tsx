@@ -268,6 +268,26 @@ export const App: React.FC = () => {
           break;
         }
 
+        case 'PLAYER_READY_TOGGLED': {
+          const targetId = event.payload.playerId;
+          setPlayers(prev => {
+            const existing = prev[targetId];
+            if (!existing) return prev;
+            const updatedPlayer = {
+              ...existing,
+              ready: Boolean(event.payload.ready)
+            };
+            const nextP = { ...prev, [targetId]: updatedPlayer };
+            if (isHostRef.current) {
+              setTimeout(() => {
+                broadcastSync({ players: nextP });
+              }, 50);
+            }
+            return nextP;
+          });
+          break;
+        }
+
         case 'QUOTE_SUBMITTED':
           setSubmittedQuotes(prev => [...prev.filter(q => q.playerId !== event.payload.playerId), event.payload.quote]);
           setPlayers(prev => {
@@ -470,13 +490,15 @@ export const App: React.FC = () => {
       setPhase('LOBBY');
     }
 
-    // 2. Broadcast join announcement with explicit room code
-    setTimeout(() => {
-      roomSync.broadcast({
-        type: 'PLAYER_JOINED',
-        payload: { id: myPlayerId, name: trimmedPlayerName, isHost: false, profile: myProfile }
-      }, code);
-    }, 150);
+    // 2. Broadcast join announcement with explicit room code (multiple staggered retries for network resilience)
+    [0, 200, 600, 1400].forEach(delay => {
+      setTimeout(() => {
+        roomSync.broadcast({
+          type: 'PLAYER_JOINED',
+          payload: { id: myPlayerId, name: trimmedPlayerName, isHost: false, profile: myProfile }
+        }, code);
+      }, delay);
+    });
   };
 
   // 3. Add AI Bot Manually
@@ -1248,6 +1270,25 @@ export const App: React.FC = () => {
     });
   };
 
+  const handleToggleReady = (isReady: boolean) => {
+    setPlayers(prev => {
+      const me = prev[myPlayerId];
+      if (!me) return prev;
+      const updatedMe = { ...me, ready: isReady };
+      const nextPlayers = { ...prev, [myPlayerId]: updatedMe };
+
+      roomSync.broadcast({
+        type: 'PLAYER_READY_TOGGLED',
+        payload: {
+          playerId: myPlayerId,
+          ready: isReady
+        }
+      });
+
+      return nextPlayers;
+    });
+  };
+
   const isSpectating = me?.name.includes('Director') || me?.name.includes('Spectator');
   const pnlDisplayPlayer = (!isSpectating && me?.lastPnL) ? me : (winnerPlayer || Object.values(players).find(p => p.isAi && p.lastPnL) || Object.values(players)[0]);
 
@@ -1286,6 +1327,7 @@ export const App: React.FC = () => {
             onStartAiOnlyMode={handleStartAiOnlySimulation}
             onOpenManualModal={() => setIsManualModalOpen(true)}
             onUpdatePlayerProfile={handleUpdateMyProfile}
+            onToggleReady={handleToggleReady}
           />
         )}
 

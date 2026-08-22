@@ -157,6 +157,11 @@ function localSyncPlugin(): Plugin {
                     ...(event.payload.profile || {})
                   }
                 };
+              } else if (event?.type === 'PLAYER_READY_TOGGLED' && event.payload?.playerId) {
+                const targetId = event.payload.playerId;
+                if (rooms[roomCode].state?.players?.[targetId]) {
+                  rooms[roomCode].state.players[targetId].ready = Boolean(event.payload.ready);
+                }
               }
 
               res.writeHead(200, { 'Content-Type': 'application/json' });

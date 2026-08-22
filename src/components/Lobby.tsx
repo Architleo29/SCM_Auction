@@ -20,7 +20,8 @@ import {
   Sliders,
   Share2,
   Building2,
-  AlertCircle
+  AlertCircle,
+  CheckCircle2
 } from 'lucide-react';
 import { RoomConfig, PlayerState, IndustryScenarioId, GameDifficulty, AIPersonality, AuctionFormat } from '../types/game';
 import { SCENARIOS } from '../data/scenarios';
@@ -40,6 +41,7 @@ interface LobbyProps {
   onStartAiOnlyMode: (format: AuctionFormat) => void;
   onOpenManualModal?: () => void;
   onUpdatePlayerProfile?: (stats: { qualityLevel: number; speedLevel: number; costEfficiency: number }) => void;
+  onToggleReady?: (isReady: boolean) => void;
 }
 
 export const Lobby: React.FC<LobbyProps> = ({
@@ -55,7 +57,8 @@ export const Lobby: React.FC<LobbyProps> = ({
   onQuickPlayVsBots,
   onStartAiOnlyMode,
   onOpenManualModal,
-  onUpdatePlayerProfile
+  onUpdatePlayerProfile,
+  onToggleReady
 }) => {
   const [hostName, setHostName] = useState('Apex Procurement Directorate (Buyer)');
   const [joinName, setJoinName] = useState('Titan Global Dynamics');
@@ -76,6 +79,7 @@ export const Lobby: React.FC<LobbyProps> = ({
 
   const maxPlayers = roomConfig?.maxPlayers || 4;
   const isLobbyFull = vendorList.length >= maxPlayers;
+  const readyVendorsCount = vendorList.filter(v => v.ready || v.isAi).length;
 
   const handleAutoFillAi = () => {
     const needed = maxPlayers - vendorList.length;
@@ -161,9 +165,14 @@ export const Lobby: React.FC<LobbyProps> = ({
                     Connected Vendor Competitors ({vendorList.length}/{maxPlayers})
                   </h3>
                 </div>
-                <span className={`text-xs font-mono px-2.5 py-1 rounded-full ${isLobbyFull ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-slate-950 text-slate-400 border border-slate-800'}`}>
-                  {isLobbyFull ? '✅ Room Full' : `${maxPlayers - vendorList.length} vendor seats available`}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[0.6875rem] font-mono px-2.5 py-0.5 rounded-full bg-emerald-950/80 text-emerald-300 border border-emerald-800">
+                    {readyVendorsCount}/{vendorList.length} Ready
+                  </span>
+                  <span className={`text-[0.6875rem] font-mono px-2.5 py-0.5 rounded-full ${isLobbyFull ? 'bg-indigo-950 text-indigo-300 border border-indigo-800' : 'bg-slate-950 text-slate-400 border border-slate-800'}`}>
+                    {isLobbyFull ? 'Room Full' : `${maxPlayers - vendorList.length} open`}
+                  </span>
+                </div>
               </div>
 
               {vendorList.length === 0 ? (
@@ -171,9 +180,9 @@ export const Lobby: React.FC<LobbyProps> = ({
                   <div className="w-12 h-12 rounded-2xl bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center mx-auto text-indigo-400">
                     <Users className="w-6 h-6" />
                   </div>
-                  <h4 className="font-bold text-slate-200 text-sm">No Vendor Competitors Joined Yet</h4>
+                  <h4 className="font-bold text-slate-200 text-sm">No Vendor Competitors Connected Yet</h4>
                   <p className="text-xs text-slate-400 max-w-md mx-auto">
-                    Share the room code <strong className="text-indigo-400 font-mono">{roomConfig.code}</strong> with players on mobile or desktop, or click <strong>Auto-Fill AI</strong> to add competitor bots.
+                    Share the room code <strong className="text-indigo-400 font-mono">{roomConfig.code}</strong> with players on mobile or other devices, or click <strong>Auto-Fill AI</strong> to populate competitors.
                   </p>
                 </div>
               ) : (
@@ -205,9 +214,13 @@ export const Lobby: React.FC<LobbyProps> = ({
                                 YOU (VENDOR)
                               </span>
                             )}
-                            {player.ready && (
-                              <span className="text-[0.625rem] bg-emerald-950 text-emerald-300 border border-emerald-800 px-1.5 py-0.5 rounded font-mono font-bold">
-                                ✅ STRATEGY APPLIED
+                            {player.ready ? (
+                              <span className="text-[0.625rem] bg-emerald-950 text-emerald-300 border border-emerald-800 px-1.5 py-0.5 rounded font-mono font-bold flex items-center gap-1">
+                                <Check className="w-3 h-3 text-emerald-400" /> READY
+                              </span>
+                            ) : (
+                              <span className="text-[0.625rem] bg-amber-950/60 text-amber-400 border border-amber-800/60 px-1.5 py-0.5 rounded font-mono">
+                                ⏳ Setting Up
                               </span>
                             )}
                             {player.isAi && (
@@ -266,7 +279,7 @@ export const Lobby: React.FC<LobbyProps> = ({
               <div className="mt-6 pt-4 border-t border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
                 <p className="text-xs text-slate-400 font-mono">
                   {vendorList.length >= 2 
-                    ? `Ready to launch tender with ${vendorList.length} competing vendors!` 
+                    ? `Ready to launch! (${readyVendorsCount}/${vendorList.length} vendors ready)` 
                     : `Add at least ${2 - vendorList.length} more vendor(s) (invite players or auto-fill AI) to start.`}
                 </p>
                 <div className="flex items-center gap-2.5">
@@ -302,24 +315,60 @@ export const Lobby: React.FC<LobbyProps> = ({
                 </div>
               </div>
             ) : (
-              <div className="mt-6 pt-4 border-t border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 text-xs">
-                <div className="flex items-center gap-2 text-slate-400">
-                  <span className="relative flex h-2.5 w-2.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                  </span>
-                  <span>Connected as Vendor • Waiting for Buyer to publish RFQ tender...</span>
+              /* Dedicated Vendor Ready & Strategy Action Panel */
+              <div className="mt-6 pt-4 border-t border-slate-800 space-y-3">
+                <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-3.5 h-3.5 rounded-full shrink-0 ${me?.ready ? 'bg-emerald-400 shadow-md shadow-emerald-400/50' : 'bg-amber-400 animate-pulse'}`} />
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-mono font-bold uppercase text-slate-400">My Readiness:</span>
+                        {me?.ready ? (
+                          <span className="text-xs font-mono font-bold text-emerald-400 flex items-center gap-1 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/60">
+                            <CheckCircle2 className="w-3.5 h-3.5" /> READY FOR TENDER
+                          </span>
+                        ) : (
+                          <span className="text-xs font-mono font-bold text-amber-400 flex items-center gap-1 bg-amber-950/60 px-2 py-0.5 rounded border border-amber-800/60">
+                            <Clock className="w-3.5 h-3.5" /> NOT READY (CONFIGURE STRATEGY)
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[0.6875rem] text-slate-400 font-mono mt-0.5">
+                        {me?.ready 
+                          ? 'Your firm is ready! The Buyer can launch the procurement round at any moment.'
+                          : 'Configure your 10 strategy points and click "I Am Ready" to signal the Buyer.'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2.5 shrink-0 self-stretch sm:self-auto">
+                    {onUpdatePlayerProfile && (
+                      <button
+                        type="button"
+                        onClick={() => setIsSetupModalOpen(true)}
+                        className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700 hover:border-indigo-500 text-indigo-300 font-semibold text-xs transition flex items-center justify-center gap-1.5 cursor-pointer shadow-md"
+                      >
+                        <Sliders className="w-3.5 h-3.5 text-indigo-400" />
+                        <span>Strategy (10 Pts)</span>
+                      </button>
+                    )}
+
+                    {onToggleReady && (
+                      <button
+                        type="button"
+                        onClick={() => onToggleReady(!me?.ready)}
+                        className={`flex-1 sm:flex-none px-5 py-2.5 rounded-xl font-bold text-xs shadow-xl flex items-center justify-center gap-1.5 transition cursor-pointer active:scale-95 ${
+                          me?.ready
+                            ? 'bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-600/80 text-emerald-300'
+                            : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30'
+                        }`}
+                      >
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span>{me?.ready ? 'Ready (Click to Edit)' : 'I Am Ready!'}</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
-                {onUpdatePlayerProfile && (
-                  <button
-                    type="button"
-                    onClick={() => setIsSetupModalOpen(true)}
-                    className="px-4 py-2 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/40 text-indigo-300 font-semibold flex items-center justify-center gap-2 transition cursor-pointer"
-                  >
-                    <Sliders className="w-4 h-4" />
-                    <span>Configure My 10-Point Strategy</span>
-                  </button>
-                )}
               </div>
             )}
           </div>
