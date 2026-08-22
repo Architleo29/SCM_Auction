@@ -35,7 +35,7 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
   }, [isWinner]);
 
   const rankedFilteredPlayers = evaluation.rankedPlayerIds
-    .filter(pId => players[pId]?.isAi || (players[pId]?.submittedQuote && !players[pId]?.name.includes('Director') && !players[pId]?.name.includes('Spectator')));
+    .filter(pId => players[pId] && !players[pId]?.isHost && (players[pId]?.isAi || (players[pId]?.submittedQuote && !players[pId]?.name.includes('Director') && !players[pId]?.name.includes('Spectator'))));
 
   return (
     <div className="max-w-4xl mx-auto p-3.5 sm:p-6 space-y-4 sm:space-y-6 animate-fade-in">

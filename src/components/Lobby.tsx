@@ -18,7 +18,9 @@ import {
   BookOpen,
   Briefcase,
   Sliders,
-  Share2
+  Share2,
+  Building2,
+  AlertCircle
 } from 'lucide-react';
 import { RoomConfig, PlayerState, IndustryScenarioId, GameDifficulty, AIPersonality, AuctionFormat } from '../types/game';
 import { SCENARIOS } from '../data/scenarios';
@@ -55,7 +57,7 @@ export const Lobby: React.FC<LobbyProps> = ({
   onOpenManualModal,
   onUpdatePlayerProfile
 }) => {
-  const [hostName, setHostName] = useState('Apex Procurement Corp');
+  const [hostName, setHostName] = useState('Apex Procurement Directorate (Buyer)');
   const [joinName, setJoinName] = useState('Titan Global Dynamics');
   const [joinCode, setJoinCode] = useState('');
   const [selectedScenario, setSelectedScenario] = useState<IndustryScenarioId>('manufacturing');
@@ -68,13 +70,15 @@ export const Lobby: React.FC<LobbyProps> = ({
 
   const playerList = Object.values(players);
   const isHost = roomConfig ? roomConfig.hostId === myPlayerId : false;
+  const hostPlayer = playerList.find(p => p.isHost) || null;
+  const vendorList = playerList.filter(p => !p.isHost);
   const me = players[myPlayerId] || null;
 
   const maxPlayers = roomConfig?.maxPlayers || 4;
-  const isLobbyFull = playerList.length >= maxPlayers;
+  const isLobbyFull = vendorList.length >= maxPlayers;
 
   const handleAutoFillAi = () => {
-    const needed = maxPlayers - playerList.length;
+    const needed = maxPlayers - vendorList.length;
     const botOrder: AIPersonality[] = ['aggressive', 'conservative', 'opportunist', 'copycat'];
     for (let i = 0; i < needed; i++) {
       onAddAiBot(botOrder[i % botOrder.length]);
@@ -111,9 +115,18 @@ export const Lobby: React.FC<LobbyProps> = ({
                 </span>
               </div>
               <h2 className="text-xl sm:text-2xl font-bold text-slate-100">{scenario.name}</h2>
-              <p className="text-xs text-slate-400 mt-1 max-w-xl">
-                {scenario.description}
-              </p>
+              
+              {/* Buyer Authority Info */}
+              <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-800/60">
+                <Building2 className="w-4 h-4 text-indigo-400" />
+                <span className="text-xs text-slate-400">Buyer / Tender Authority:</span>
+                <strong className="text-xs font-mono text-indigo-300">
+                  {hostPlayer ? hostPlayer.name : 'Procurement Host'}
+                </strong>
+                <span className="text-[0.625rem] bg-indigo-500/20 text-indigo-300 px-1.5 py-0.5 rounded font-mono font-bold">
+                  {isHost ? 'YOU (BUYER)' : 'BUYER'}
+                </span>
+              </div>
             </div>
 
             {/* Room Code Box */}
@@ -138,116 +151,123 @@ export const Lobby: React.FC<LobbyProps> = ({
         {/* Players Grid & AI Management */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
-          {/* Connected Vendors List */}
+          {/* Connected Vendors List (Excludes Host, because Host is the Buyer!) */}
           <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 shadow-xl flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
                 <div className="flex items-center gap-2">
                   <Users className="w-5 h-5 text-indigo-400" />
                   <h3 className="font-bold text-slate-100 text-sm sm:text-base">
-                    Connected Vendor Companies ({playerList.length}/{maxPlayers})
+                    Connected Vendor Competitors ({vendorList.length}/{maxPlayers})
                   </h3>
                 </div>
                 <span className={`text-xs font-mono px-2.5 py-1 rounded-full ${isLobbyFull ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-slate-950 text-slate-400 border border-slate-800'}`}>
-                  {isLobbyFull ? '✅ Room Full' : `${maxPlayers - playerList.length} seats available`}
+                  {isLobbyFull ? '✅ Room Full' : `${maxPlayers - vendorList.length} vendor seats available`}
                 </span>
               </div>
 
-              <div className="space-y-2.5">
-                {playerList.map((player) => (
-                  <div
-                    key={player.id}
-                    className={`p-3.5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition ${
-                      player.id === myPlayerId
-                        ? 'bg-indigo-950/30 border-indigo-700/60 shadow-md shadow-indigo-950/50'
-                        : player.isAi
-                        ? 'bg-slate-950/60 border-slate-800/80'
-                        : 'bg-slate-950 border-slate-800'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-semibold text-sm shrink-0 shadow-sm ${
-                        player.isAi
-                          ? 'bg-amber-950 text-amber-400 border border-amber-800/60'
-                          : 'bg-indigo-600 text-white'
-                      }`}>
-                        {player.isAi ? <Bot className="w-4 h-4" /> : player.name.charAt(0)}
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-sm text-slate-100">{player.name}</span>
-                          {player.id === myPlayerId && (
-                            <span className="text-[0.625rem] bg-indigo-500/20 text-indigo-300 px-1.5 py-0.5 rounded font-mono font-bold">
-                              YOU
-                            </span>
-                          )}
-                          {player.isHost && (
-                            <span className="text-[0.625rem] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-mono font-bold">
-                              HOST
-                            </span>
-                          )}
-                          {player.isAi && (
-                            <span className="text-[0.625rem] bg-slate-800 text-slate-300 px-1.5 py-0.5 rounded font-mono capitalize">
-                              AI: {player.aiPersonality}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-slate-400 font-mono mt-0.5 flex flex-wrap items-center gap-2">
-                          <span>Rep: {player.reputation}</span>
-                          <span>• Quality: {'⭐'.repeat(player.profile.qualityLevel)}</span>
-                          {player.profile.costEfficiency && (
-                            <span className="text-emerald-400">• Eff: {player.profile.costEfficiency}/5</span>
-                          )}
-                          {player.profile.speedLevel && (
-                            <span className="text-indigo-400">• Spd: {player.profile.speedLevel}/5</span>
-                          )}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 self-end sm:self-auto">
-                      {player.id === myPlayerId && onUpdatePlayerProfile && (
-                        <button
-                          type="button"
-                          onClick={() => setIsSetupModalOpen(true)}
-                          className="px-3 py-1.5 rounded-xl bg-indigo-600/30 hover:bg-indigo-600/50 border border-indigo-500/40 text-indigo-200 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer shadow-sm"
-                        >
-                          <Sliders className="w-3.5 h-3.5" />
-                          <span>Strategy (10 Pts)</span>
-                        </button>
-                      )}
-
-                      {isHost && player.id !== myPlayerId && (
-                        <button
-                          onClick={() => onRemovePlayer(player.id)}
-                          className="p-2 text-slate-500 hover:text-rose-400 rounded-xl hover:bg-rose-950/40 transition cursor-pointer"
-                          title="Kick Vendor"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
+              {vendorList.length === 0 ? (
+                <div className="p-8 bg-slate-950/80 border border-dashed border-slate-800 rounded-2xl text-center space-y-3">
+                  <div className="w-12 h-12 rounded-2xl bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center mx-auto text-indigo-400">
+                    <Users className="w-6 h-6" />
                   </div>
-                ))}
-              </div>
+                  <h4 className="font-bold text-slate-200 text-sm">No Vendor Competitors Joined Yet</h4>
+                  <p className="text-xs text-slate-400 max-w-md mx-auto">
+                    Share the room code <strong className="text-indigo-400 font-mono">{roomConfig.code}</strong> with players on mobile or desktop, or click <strong>Auto-Fill AI</strong> to add competitor bots.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2.5">
+                  {vendorList.map((player) => (
+                    <div
+                      key={player.id}
+                      className={`p-3.5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition ${
+                        player.id === myPlayerId
+                          ? 'bg-indigo-950/30 border-indigo-700/60 shadow-md shadow-indigo-950/50'
+                          : player.isAi
+                          ? 'bg-slate-950/60 border-slate-800/80'
+                          : 'bg-slate-950 border-slate-800'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-semibold text-sm shrink-0 shadow-sm ${
+                          player.isAi
+                            ? 'bg-amber-950 text-amber-400 border border-amber-800/60'
+                            : 'bg-indigo-600 text-white'
+                        }`}>
+                          {player.isAi ? <Bot className="w-4 h-4" /> : player.name.charAt(0)}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-sm text-slate-100">{player.name}</span>
+                            {player.id === myPlayerId && (
+                              <span className="text-[0.625rem] bg-indigo-500/20 text-indigo-300 px-1.5 py-0.5 rounded font-mono font-bold">
+                                YOU (VENDOR)
+                              </span>
+                            )}
+                            {player.isAi && (
+                              <span className="text-[0.625rem] bg-slate-800 text-slate-300 px-1.5 py-0.5 rounded font-mono capitalize">
+                                AI: {player.aiPersonality}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-slate-400 font-mono mt-0.5 flex flex-wrap items-center gap-2">
+                            <span>Rep: {player.reputation}</span>
+                            <span>• Quality: {'⭐'.repeat(player.profile.qualityLevel)}</span>
+                            {player.profile.costEfficiency && (
+                              <span className="text-emerald-400">• Eff: {player.profile.costEfficiency}/5</span>
+                            )}
+                            {player.profile.speedLevel && (
+                              <span className="text-indigo-400">• Spd: {player.profile.speedLevel}/5</span>
+                            )}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 self-end sm:self-auto">
+                        {player.id === myPlayerId && !isHost && onUpdatePlayerProfile && (
+                          <button
+                            type="button"
+                            onClick={() => setIsSetupModalOpen(true)}
+                            className="px-3 py-1.5 rounded-xl bg-indigo-600/30 hover:bg-indigo-600/50 border border-indigo-500/40 text-indigo-200 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer shadow-sm"
+                          >
+                            <Sliders className="w-3.5 h-3.5" />
+                            <span>Strategy (10 Pts)</span>
+                          </button>
+                        )}
+
+                        {isHost && (
+                          <button
+                            onClick={() => onRemovePlayer(player.id)}
+                            className="p-2 text-slate-500 hover:text-rose-400 rounded-xl hover:bg-rose-950/40 transition cursor-pointer"
+                            title="Kick Vendor"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Action Bar (Host vs Guest) */}
             {isHost ? (
               <div className="mt-6 pt-4 border-t border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
                 <p className="text-xs text-slate-400 font-mono">
-                  {playerList.length >= 2 
-                    ? 'Ready to launch! You can customize tender specs or start immediately.' 
-                    : 'Add at least 1 more competitor to start.'}
+                  {vendorList.length >= 2 
+                    ? `Ready to launch tender with ${vendorList.length} competing vendors!` 
+                    : `Add at least ${2 - vendorList.length} more vendor(s) (invite players or auto-fill AI) to start.`}
                 </p>
                 <div className="flex items-center gap-2.5">
                   {onOpenRfqBuilder && (
                     <button
                       type="button"
                       onClick={onOpenRfqBuilder}
-                      disabled={playerList.length < 2}
+                      disabled={vendorList.length < 2}
                       className={`px-4 py-3 rounded-2xl font-mono text-xs font-bold border flex items-center justify-center gap-2 transition cursor-pointer ${
-                        playerList.length >= 2
+                        vendorList.length >= 2
                           ? 'bg-indigo-600/20 hover:bg-indigo-600/30 border-indigo-500/40 text-indigo-300 hover:text-white shadow-lg shadow-indigo-950/50'
                           : 'bg-slate-950 border-slate-800 text-slate-600 cursor-not-allowed opacity-50'
                       }`}
@@ -260,9 +280,9 @@ export const Lobby: React.FC<LobbyProps> = ({
                   <button
                     type="button"
                     onClick={onStartGame}
-                    disabled={playerList.length < 2}
+                    disabled={vendorList.length < 2}
                     className={`px-6 py-3 rounded-2xl font-semibold text-xs sm:text-sm shadow-xl flex items-center justify-center gap-2 transition cursor-pointer ${
-                      playerList.length >= 2
+                      vendorList.length >= 2
                         ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30'
                         : 'bg-slate-800 text-slate-500 cursor-not-allowed opacity-50'
                     }`}
@@ -279,7 +299,7 @@ export const Lobby: React.FC<LobbyProps> = ({
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                   </span>
-                  <span>Connected • Waiting for Host to publish RFQ tender...</span>
+                  <span>Connected as Vendor • Waiting for Buyer to publish RFQ tender...</span>
                 </div>
                 {onUpdatePlayerProfile && (
                   <button
@@ -301,7 +321,7 @@ export const Lobby: React.FC<LobbyProps> = ({
               <div className="flex items-center justify-between mb-3 pb-3 border-b border-slate-800">
                 <div className="flex items-center gap-2">
                   <Bot className="w-5 h-5 text-amber-400" />
-                  <h3 className="font-bold text-slate-100 text-sm">AI Competitors</h3>
+                  <h3 className="font-bold text-slate-100 text-sm">Add AI Competitor Vendors</h3>
                 </div>
                 {isHost && !isLobbyFull && (
                   <button
@@ -316,7 +336,7 @@ export const Lobby: React.FC<LobbyProps> = ({
               </div>
 
               <p className="text-xs text-slate-400 mb-4">
-                Fill empty seats with deterministic AI bot personalities (§9.4):
+                Add deterministic AI competitor bots to bid against human vendors (§9.4):
               </p>
 
               {isHost ? (
@@ -367,7 +387,7 @@ export const Lobby: React.FC<LobbyProps> = ({
                 </div>
               ) : (
                 <div className="p-4 bg-slate-950 rounded-2xl border border-slate-800 text-xs text-slate-400 text-center">
-                  Only the host can add or remove AI competitors.
+                  Only the buyer host can configure AI competitors.
                 </div>
               )}
             </div>
@@ -396,8 +416,8 @@ export const Lobby: React.FC<LobbyProps> = ({
           </div>
         </div>
 
-        {/* Company Setup Modal */}
-        {me && onUpdatePlayerProfile && (
+        {/* Company Setup Modal (Only for guest vendors) */}
+        {me && !isHost && onUpdatePlayerProfile && (
           <CompanySetupModal
             isOpen={isSetupModalOpen}
             onClose={() => setIsSetupModalOpen(false)}
@@ -510,19 +530,22 @@ export const Lobby: React.FC<LobbyProps> = ({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         
-        {/* Host a New Room */}
+        {/* Host a New Room as Buyer */}
         <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl flex flex-col justify-between space-y-4">
           <div>
             <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-800">
               <div className="w-8 h-8 rounded-xl bg-indigo-600/20 border border-indigo-500/40 flex items-center justify-center">
                 <Play className="w-4 h-4 text-indigo-400 fill-current" />
               </div>
-              <h3 className="font-bold text-lg text-slate-100">Host a New Game</h3>
+              <div>
+                <h3 className="font-bold text-lg text-slate-100">Host as Procurement Authority (Buyer)</h3>
+                <p className="text-[0.625rem] text-slate-400 font-mono">You will issue the RFQ and evaluate vendor bids</p>
+              </div>
             </div>
 
             <div className="space-y-3.5">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Your Company Name</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">Buyer / Procurement Authority Name</label>
                 <input
                   type="text"
                   value={hostName}
@@ -577,10 +600,10 @@ export const Lobby: React.FC<LobbyProps> = ({
                 </div>
               </div>
 
-              {/* Target Number of Players Selector */}
+              {/* Target Number of Competing Vendors Selector */}
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center justify-between">
-                  <span>Number of Competitors / Vendors</span>
+                  <span>Number of Competing Vendors</span>
                   <span className="text-xs font-mono text-indigo-400 font-bold">{selectedMaxPlayers} Vendors</span>
                 </label>
                 <div className="grid grid-cols-7 gap-1.5">
@@ -608,23 +631,26 @@ export const Lobby: React.FC<LobbyProps> = ({
             className="w-full py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-xl shadow-indigo-600/30 transition flex items-center justify-center gap-2 mt-4 cursor-pointer active:scale-95"
           >
             <Sparkles className="w-4 h-4" />
-            Create {selectedMaxPlayers}-Player Room & Generate Code
+            Create {selectedMaxPlayers}-Vendor Room & Generate Code
           </button>
         </div>
 
-        {/* Join an Existing Room */}
+        {/* Join an Existing Room as a Competing Vendor */}
         <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl flex flex-col justify-between space-y-4">
           <div>
             <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-800">
               <div className="w-8 h-8 rounded-xl bg-emerald-600/20 border border-emerald-500/40 flex items-center justify-center">
                 <Users className="w-4 h-4 text-emerald-400" />
               </div>
-              <h3 className="font-bold text-lg text-slate-100">Join Existing Room</h3>
+              <div>
+                <h3 className="font-bold text-lg text-slate-100">Join as Competing Vendor</h3>
+                <p className="text-[0.625rem] text-slate-400 font-mono">You will quote and bid on contracts</p>
+              </div>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Your Company Name</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">Your Vendor Company Name</label>
                 <input
                   type="text"
                   value={joinName}
@@ -653,7 +679,7 @@ export const Lobby: React.FC<LobbyProps> = ({
             className="w-full py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 text-white font-semibold text-sm shadow-xl shadow-emerald-600/30 transition flex items-center justify-center gap-2 mt-4 cursor-pointer active:scale-95 disabled:cursor-not-allowed"
           >
             <Users className="w-4 h-4" />
-            Join Room
+            Join Room as Vendor
           </button>
         </div>
 

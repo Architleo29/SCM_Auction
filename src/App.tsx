@@ -23,6 +23,8 @@ import { generateAiQuote, shouldAiBidInEnglishAuction, shouldAiAcceptInDutchAuct
 import { roomSync, MultiplayerEvent } from './services/realtimeChannel';
 import { getSavedSupabaseConfig } from './services/supabase';
 import { sounds } from './utils/soundEffects';
+import { formatINR } from './utils/formatters';
+import { Clock, Building2, CheckCircle2, Users, Play, Sparkles, TrendingUp, Sliders, ShieldCheck } from 'lucide-react';
 
 // UI Components
 import { Navbar } from './components/Navbar';
@@ -220,10 +222,10 @@ export const App: React.FC = () => {
               }
             };
 
-            // If I am Host, check if all human players have submitted
+            // If I am Host, check if all human vendors have submitted
             if (isHostRef.current) {
-              const humanPlayers = Object.values(updated).filter(pl => !pl.isAi && !pl.name.includes('Director') && !pl.name.includes('Spectator'));
-              const allSubmitted = humanPlayers.length > 0 && humanPlayers.every(pl => pl.submittedQuote !== null);
+              const humanVendors = Object.values(updated).filter(pl => !pl.isHost && !pl.isAi);
+              const allSubmitted = humanVendors.length > 0 && humanVendors.every(pl => pl.submittedQuote !== null);
               if (allSubmitted) {
                 setTimeout(() => {
                   handleQuotingTimeout();
@@ -731,8 +733,8 @@ export const App: React.FC = () => {
     });
 
     if (isHost) {
-      const humanPlayers = Object.values(updatedPlayers).filter(pl => !pl.isAi && !pl.name.includes('Director') && !pl.name.includes('Spectator'));
-      const allSubmitted = humanPlayers.length > 0 && humanPlayers.every(pl => pl.submittedQuote !== null);
+      const humanVendors = Object.values(updatedPlayers).filter(pl => !pl.isHost && !pl.isAi);
+      const allSubmitted = humanVendors.length > 0 && humanVendors.every(pl => pl.submittedQuote !== null);
       if (allSubmitted) {
         setTimeout(() => {
           handleQuotingTimeout();
@@ -762,7 +764,8 @@ export const App: React.FC = () => {
     setPlayers(updatedPlayers);
     setSubmittedQuotes(finalQuotePool);
 
-    // 2. Initialize Live Auction State Machine
+    // 2. Initialize Live Auction State Machine (Excluding the Buyer Host!)
+    const activeVendorIds = Object.keys(updatedPlayers).filter(id => !updatedPlayers[id].isHost);
     const sortedInitialQuotes = [...finalQuotePool].sort((a, b) => a.price - b.price);
     const lowestInitialQuote = sortedInitialQuotes[0];
 
@@ -787,7 +790,7 @@ export const App: React.FC = () => {
         amount: q.price,
         isAi: updatedPlayers[q.playerId]?.isAi || false
       })),
-      activePlayerIds: Object.keys(updatedPlayers),
+      activePlayerIds: activeVendorIds,
       exits: [],
       winnerId: null,
       finalPrice: initPrice,
@@ -1227,7 +1230,59 @@ export const App: React.FC = () => {
           />
         )}
 
-        {phase === 'DOSSIER' && me && (
+        {phase === 'DOSSIER' && isHost && currentRfq && (
+          <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6 animate-fade-in">
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+                <div>
+                  <span className="text-xs font-mono text-indigo-400 font-bold uppercase tracking-wider">
+                    🏛️ Procurement Authority Dashboard • Round {roomConfig?.currentRound} of {roomConfig?.totalRounds}
+                  </span>
+                  <h2 className="text-2xl font-bold text-slate-100 mt-1">{currentRfq.title}</h2>
+                </div>
+                <span className="px-3 py-1.5 bg-indigo-950 text-indigo-300 border border-indigo-800 rounded-xl text-xs font-mono font-bold self-start sm:self-auto">
+                  Tender Published
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
+                <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800">
+                  <span className="text-slate-500 uppercase block text-[0.625rem]">Budget Ceiling</span>
+                  <strong className="text-emerald-400 text-sm">{formatINR(currentRfq.budgetCeiling)}</strong>
+                </div>
+                <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800">
+                  <span className="text-slate-500 uppercase block text-[0.625rem]">Turnaround Days</span>
+                  <strong className="text-amber-400 text-sm">{currentRfq.requiredDeliveryDays} Days</strong>
+                </div>
+                <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800">
+                  <span className="text-slate-500 uppercase block text-[0.625rem]">Auction Format</span>
+                  <strong className="text-indigo-400 text-sm capitalize">{currentRfq.auctionFormat}</strong>
+                </div>
+                <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800">
+                  <span className="text-slate-500 uppercase block text-[0.625rem]">Competing Vendors</span>
+                  <strong className="text-slate-100 text-sm">{Object.values(players).filter(p => !p.isHost).length} Firms</strong>
+                </div>
+              </div>
+
+              <div className="p-4 bg-slate-950 rounded-2xl border border-slate-800 text-xs text-slate-300 space-y-2">
+                <span className="font-bold text-slate-200 uppercase font-mono block">Commercial Tender Scope:</span>
+                <p className="leading-relaxed">{currentRfq.description}</p>
+              </div>
+
+              <div className="flex justify-end pt-2">
+                <button
+                  type="button"
+                  onClick={handleProceedToQuote}
+                  className="px-8 py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-xl shadow-indigo-600/30 transition flex items-center gap-2 cursor-pointer active:scale-95"
+                >
+                  📢 Open Vendor Quoting Window
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {phase === 'DOSSIER' && !isHost && me && (
           <CompanyDossier
             profile={me.profile}
             playerName={me.name}
@@ -1238,7 +1293,37 @@ export const App: React.FC = () => {
           />
         )}
 
-        {phase === 'RFQ' && currentRfq && me && (
+        {phase === 'RFQ' && isHost && currentRfq && (
+          <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6 animate-fade-in">
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl space-y-6">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+                <div>
+                  <span className="text-xs font-mono text-indigo-400 font-bold uppercase tracking-wider">
+                    🏛️ Procurement Authority Review • Round {roomConfig?.currentRound}
+                  </span>
+                  <h2 className="text-2xl font-bold text-slate-100 mt-1">{currentRfq.title}</h2>
+                </div>
+              </div>
+
+              <div className="p-4 bg-slate-950 rounded-2xl border border-slate-800 text-xs text-slate-300 space-y-2">
+                <span className="font-bold text-slate-200 uppercase font-mono block">Tender Details:</span>
+                <p>{currentRfq.description}</p>
+              </div>
+
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={handleProceedToQuote}
+                  className="px-8 py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-xl shadow-indigo-600/30 transition flex items-center gap-2 cursor-pointer active:scale-95"
+                >
+                  📢 Open Vendor Quoting Window
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {phase === 'RFQ' && !isHost && currentRfq && me && (
           <RfqBoard
             rfq={currentRfq}
             player={me}
@@ -1247,7 +1332,7 @@ export const App: React.FC = () => {
           />
         )}
 
-        {phase === 'INTEL' && currentRfq && me && (
+        {phase === 'INTEL' && !isHost && currentRfq && me && (
           <IntelMarket
             player={me}
             allPlayers={players}
@@ -1265,7 +1350,62 @@ export const App: React.FC = () => {
           />
         )}
 
-        {phase === 'QUOTING' && currentRfq && me && (
+        {phase === 'QUOTING' && isHost && currentRfq && (
+          <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6 animate-fade-in">
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+                <div>
+                  <span className="text-xs font-mono text-indigo-400 font-bold uppercase tracking-wider">
+                    🏛️ Procurement Authority Live Monitor • Round {roomConfig?.currentRound}
+                  </span>
+                  <h2 className="text-2xl font-bold text-slate-100 mt-1">Awaiting Vendor Commercial Quotes</h2>
+                </div>
+                <div className="flex items-center gap-2 bg-slate-950 px-4 py-2 rounded-2xl border border-slate-800 shrink-0">
+                  <Clock className="w-4 h-4 text-amber-400" />
+                  <span className="text-xs font-mono text-slate-400">Quoting Window:</span>
+                  <span className="text-xl font-mono font-bold text-amber-400">{quotingTimerSeconds}s</span>
+                </div>
+              </div>
+
+              {/* Competing Vendors Status Grid */}
+              <div className="space-y-3">
+                <span className="text-xs font-mono uppercase text-slate-400 font-semibold block">
+                  Competing Supplier Status ({Object.values(players).filter(p => !p.isHost).length} Vendors)
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {Object.values(players).filter(p => !p.isHost).map(v => (
+                    <div key={v.id} className="p-4 bg-slate-950 rounded-2xl border border-slate-800 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs ${v.isAi ? 'bg-amber-950 text-amber-400 border border-amber-800' : 'bg-indigo-600 text-white'}`}>
+                          {v.isAi ? '🤖' : v.name.charAt(0)}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-xs text-slate-100">{v.name}</p>
+                          <p className="text-[0.625rem] text-slate-500 font-mono">Rep: {v.reputation} • Q: {'⭐'.repeat(v.profile.qualityLevel)}</p>
+                        </div>
+                      </div>
+                      <span className={`px-2.5 py-1 rounded-full text-[0.625rem] font-mono font-bold ${v.submittedQuote ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' : 'bg-slate-900 text-amber-400 border border-slate-800 animate-pulse'}`}>
+                        {v.submittedQuote ? '✅ Submitted' : '⏳ Drafting...'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-2 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={handleQuotingTimeout}
+                  className="px-6 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-xl shadow-indigo-600/30 transition flex items-center gap-2 cursor-pointer active:scale-95"
+                >
+                  ⚡ Close Quoting & Launch Live Auction Arena
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {phase === 'QUOTING' && !isHost && currentRfq && me && (
           <QuoteBuilder
             rfq={currentRfq}
             player={me}

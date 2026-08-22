@@ -35,7 +35,7 @@ export const PnLBreakdown: React.FC<PnLBreakdownProps> = ({
   onProceedToLeaderboard
 }) => {
   const playerList = (allPlayers ? Object.values(allPlayers) : [player])
-    .filter(p => p.isAi || (!p.name.includes('Director') && !p.name.includes('Spectator')));
+    .filter(p => !p.isHost && (p.isAi || (!p.name.includes('Director') && !p.name.includes('Spectator'))));
 
   useEffect(() => {
     if (pnl.realizedProfit > 0) {

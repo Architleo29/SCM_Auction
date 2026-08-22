@@ -43,7 +43,7 @@ export const AuctionArena: React.FC<AuctionArenaProps> = ({
   const profile = player.profile;
   const costBreakdown = calculateCostBreakdown(profile, rfq);
   const flc = costBreakdown.fullyLoadedCost;
-  const isSpectator = player.name.includes('Spectator') || player.name.includes('Director');
+  const isSpectator = player.isHost || player.name.includes('Spectator') || player.name.includes('Director');
 
   const step1 = Math.max(1000, Math.round(rfq.budgetCeiling * 0.01));
   const step2 = Math.max(2500, Math.round(rfq.budgetCeiling * 0.025));

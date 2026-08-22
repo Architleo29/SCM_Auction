@@ -35,9 +35,9 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
 }) => {
   const isGameOver = isGameOverProp !== undefined ? isGameOverProp : (roomConfig.currentRound >= roomConfig.totalRounds);
   
-  // Sort players by score descending (exclude Spectator/Director)
+  // Sort players by score descending (exclude Host Buyer and Spectators)
   const sortedPlayers = Object.values(players)
-    .filter(p => p.isAi || (!p.name.includes('Director') && !p.name.includes('Spectator')))
+    .filter(p => !p.isHost && (p.isAi || (!p.name.includes('Director') && !p.name.includes('Spectator'))))
     .sort((a, b) => b.score - a.score);
 
   const isHost = roomConfig.hostId === myPlayerId;
