@@ -1,0 +1,1225 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  GamePhase, 
+  RoomConfig, 
+  PlayerState, 
+  RFQ, 
+  Quote, 
+  AuctionState, 
+  DynamicEventCard, 
+  BuyerEvaluationResult, 
+  PnLResult, 
+  IndustryScenarioId, 
+  GameDifficulty, 
+  AIPersonality,
+  AuctionFormat
+} from './types/game';
+import { SCENARIOS } from './data/scenarios';
+import { drawRandomEvent } from './data/dynamicEvents';
+import { generateCompanyProfile } from './utils/profileGenerator';
+import { evaluateQuotes } from './engine/buyerScoring';
+import { settleContractPnL, calculateTotalScore } from './engine/pnlEngine';
+import { generateAiQuote, shouldAiBidInEnglishAuction, shouldAiAcceptInDutchAuction, shouldAiHoldInJapaneseAuction } from './engine/aiBots';
+import { roomSync, MultiplayerEvent } from './services/realtimeChannel';
+import { getSavedSupabaseConfig } from './services/supabase';
+import { sounds } from './utils/soundEffects';
+
+// UI Components
+import { Navbar } from './components/Navbar';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { SupabaseModal } from './components/SupabaseModal';
+import { Lobby } from './components/Lobby';
+import { CompanyDossier } from './components/CompanyDossier';
+import { RfqBoard } from './components/RfqBoard';
+import { IntelMarket } from './components/IntelMarket';
+import { QuoteBuilder } from './components/QuoteBuilder';
+import { AuctionArena } from './components/AuctionArena';
+import { EvaluationModal } from './components/EvaluationModal';
+import { EventModal } from './components/EventModal';
+import { PnLBreakdown } from './components/PnLBreakdown';
+import { Leaderboard } from './components/Leaderboard';
+import { CompanyDashboard } from './components/CompanyDashboard';
+import { RfqBuilder } from './components/RfqBuilder';
+import { UserManualModal } from './components/UserManualModal';
+
+export const App: React.FC = () => {
+  // Session State
+  const [roomConfig, setRoomConfig] = useState<RoomConfig | null>(null);
+  const [phase, setPhase] = useState<GamePhase>('LOBBY');
+  const [players, setPlayers] = useState<Record<string, PlayerState>>({});
+  const [myPlayerId, setMyPlayerId] = useState<string>(`player_${Math.random().toString(36).substring(2, 7)}`);
+  
+  // Game Round State
+  const [currentRfq, setCurrentRfq] = useState<RFQ | null>(null);
+  const [submittedQuotes, setSubmittedQuotes] = useState<Quote[]>([]);
+  const [activeAuction, setActiveAuction] = useState<AuctionState>({
+    format: 'english',
+    status: 'IDLE',
+    currentPrice: 0,
+    budgetCeiling: 0,
+    timeRemaining: 30,
+    currentLeaderId: null,
+    currentLeaderName: null,
+    bids: [],
+    activePlayerIds: [],
+    exits: [],
+    winnerId: null,
+    finalPrice: 0,
+    dutchTickCount: 0
+  });
+
+  const [evaluationResult, setEvaluationResult] = useState<BuyerEvaluationResult | null>(null);
+  const [activeEvent, setActiveEvent] = useState<DynamicEventCard | null>(null);
+  const [quotingTimerSeconds, setQuotingTimerSeconds] = useState<number>(45);
+
+  // Modals
+  const [isSupabaseModalOpen, setIsSupabaseModalOpen] = useState(false);
+  const [isDashboardModalOpen, setIsDashboardModalOpen] = useState(false);
+  const [isManualModalOpen, setIsManualModalOpen] = useState(false);
+  const [isSupabaseLive, setIsSupabaseLive] = useState(false);
+
+  // References to prevent stale closure in interval loops
+  const playersRef = useRef<Record<string, PlayerState>>(players);
+  const quotesRef = useRef<Quote[]>(submittedQuotes);
+  const rfqRef = useRef<RFQ | null>(currentRfq);
+  const activeAuctionRef = useRef<AuctionState>(activeAuction);
+  const auctionTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const quotingTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    playersRef.current = players;
+  }, [players]);
+
+  useEffect(() => {
+    quotesRef.current = submittedQuotes;
+  }, [submittedQuotes]);
+
+  useEffect(() => {
+    rfqRef.current = currentRfq;
+  }, [currentRfq]);
+
+  useEffect(() => {
+    activeAuctionRef.current = activeAuction;
+  }, [activeAuction]);
+
+  const me = players[myPlayerId] || null;
+  const isHost = roomConfig ? roomConfig.hostId === myPlayerId : false;
+
+  // Check Supabase connection status on mount
+  useEffect(() => {
+    const cfg = getSavedSupabaseConfig();
+    setIsSupabaseLive(!!(cfg.url && cfg.anonKey && cfg.url !== 'https://your-project-id.supabase.co'));
+  }, []);
+
+  // Subscribe to room synchronization messages
+  useEffect(() => {
+    if (!roomConfig) return;
+
+    const handleMultiplayerEvent = (event: MultiplayerEvent) => {
+      switch (event.type) {
+        case 'ROOM_STATE_SYNC':
+          if (event.payload.roomConfig) setRoomConfig(event.payload.roomConfig);
+          if (event.payload.phase) setPhase(event.payload.phase);
+          if (event.payload.players) setPlayers(event.payload.players);
+          if (event.payload.currentRfq) setCurrentRfq(event.payload.currentRfq);
+          if (event.payload.activeAuction) setActiveAuction(event.payload.activeAuction);
+          if (event.payload.evaluationResult) setEvaluationResult(event.payload.evaluationResult);
+          if (event.payload.activeEvent) setActiveEvent(event.payload.activeEvent);
+          break;
+
+        case 'PLAYER_JOINED':
+          setPlayers(prev => ({
+            ...prev,
+            [event.payload.id]: {
+              id: event.payload.id,
+              name: event.payload.name,
+              isHost: event.payload.isHost,
+              isAi: false,
+              profile: event.payload.profile,
+              score: 0,
+              bankedProfit: 0,
+              contractsWon: 0,
+              reputation: event.payload.profile.reputationScore,
+              intelPoints: 2,
+              disciplineWalkaways: 0,
+              ready: false,
+              submittedQuote: null,
+              history: []
+            }
+          }));
+          break;
+
+        case 'QUOTE_SUBMITTED':
+          setSubmittedQuotes(prev => [...prev.filter(q => q.playerId !== event.payload.playerId), event.payload.quote]);
+          setPlayers(prev => {
+            const p = prev[event.payload.playerId];
+            if (!p) return prev;
+            return {
+              ...prev,
+              [event.payload.playerId]: {
+                ...p,
+                submittedQuote: event.payload.quote
+              }
+            };
+          });
+          break;
+
+        case 'AUCTION_BID':
+          setActiveAuction(prev => ({
+            ...prev,
+            currentPrice: event.payload.amount,
+            currentLeaderId: event.payload.playerId,
+            currentLeaderName: event.payload.playerName,
+            timeRemaining: prev.timeRemaining < 15 ? prev.timeRemaining + 15 : prev.timeRemaining,
+            bids: [
+              {
+                timestamp: Date.now(),
+                playerId: event.payload.playerId,
+                playerName: event.payload.playerName,
+                amount: event.payload.amount,
+                isAi: event.payload.isAi
+              },
+              ...prev.bids
+            ]
+          }));
+          break;
+
+        case 'AUCTION_BUZZ':
+          handleAuctionResolved(event.payload.playerId, event.payload.price);
+          break;
+      }
+    };
+
+    roomSync.subscribe(roomConfig.code, handleMultiplayerEvent);
+
+    return () => {
+      roomSync.unsubscribe();
+    };
+  }, [roomConfig?.code]);
+
+  // Host State Broadcast Helper
+  const broadcastSync = (updates: any) => {
+    roomSync.broadcast({
+      type: 'ROOM_STATE_SYNC',
+      payload: updates
+    });
+  };
+
+  // 1. Create Custom Room
+  const handleCreateRoom = (
+    scenarioId: IndustryScenarioId, 
+    totalRounds: number, 
+    difficulty: GameDifficulty,
+    hostName: string,
+    maxPlayers: number = 4,
+    auctionFormat: AuctionFormat = 'english'
+  ) => {
+    const code = `AUCT-${Math.floor(10 + Math.random() * 90)}`;
+    const myProfile = generateCompanyProfile(hostName, 0);
+
+    const config: RoomConfig = {
+      code,
+      hostId: myPlayerId,
+      scenarioId,
+      totalRounds,
+      currentRound: 1,
+      difficulty,
+      auctionFormatSequence: [auctionFormat, 'dutch', 'japanese', 'english', 'dutch', 'japanese'],
+      maxPlayers,
+      createdAt: Date.now()
+    };
+
+    const initialPlayer: PlayerState = {
+      id: myPlayerId,
+      name: hostName,
+      isHost: true,
+      isAi: false,
+      profile: myProfile,
+      score: 0,
+      bankedProfit: 0,
+      contractsWon: 0,
+      reputation: myProfile.reputationScore,
+      intelPoints: 2,
+      disciplineWalkaways: 0,
+      ready: false,
+      submittedQuote: null,
+      history: []
+    };
+
+    setRoomConfig(config);
+    setPlayers({ [myPlayerId]: initialPlayer });
+    setPhase('LOBBY');
+  };
+
+  // 2. Join Existing Room
+  const handleJoinRoom = (code: string, playerName: string) => {
+    const myProfile = generateCompanyProfile(playerName, Math.floor(Math.random() * 8));
+    const newPlayer: PlayerState = {
+      id: myPlayerId,
+      name: playerName,
+      isHost: false,
+      isAi: false,
+      profile: myProfile,
+      score: 0,
+      bankedProfit: 0,
+      contractsWon: 0,
+      reputation: myProfile.reputationScore,
+      intelPoints: 2,
+      disciplineWalkaways: 0,
+      ready: false,
+      submittedQuote: null,
+      history: []
+    };
+
+    setRoomConfig({
+      code,
+      hostId: '',
+      scenarioId: 'manufacturing',
+      totalRounds: 6,
+      currentRound: 1,
+      difficulty: 'standard',
+      auctionFormatSequence: ['english', 'dutch', 'japanese'],
+      maxPlayers: 4,
+      createdAt: Date.now()
+    });
+
+    setPlayers(prev => ({ ...prev, [myPlayerId]: newPlayer }));
+    setPhase('LOBBY');
+
+    roomSync.broadcast({
+      type: 'PLAYER_JOINED',
+      payload: { id: myPlayerId, name: playerName, isHost: false, profile: myProfile }
+    });
+  };
+
+  // 3. Add AI Bot Manually
+  const handleAddAiBot = (personality: AIPersonality) => {
+    const botId = `bot_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const botNames = {
+      aggressive: 'Vulcan Heavy Ind. (Aggressive)',
+      conservative: 'Apex SafeBuild (Conservative)',
+      opportunist: 'Matrix Dynamic Bids (Opportunist)',
+      copycat: 'Echo Mirror Systems (Copycat)'
+    };
+
+    const profile = generateCompanyProfile(botNames[personality], Object.keys(players).length);
+    const botState: PlayerState = {
+      id: botId,
+      name: botNames[personality],
+      isHost: false,
+      isAi: true,
+      aiPersonality: personality,
+      profile,
+      score: 0,
+      bankedProfit: 0,
+      contractsWon: 0,
+      reputation: profile.reputationScore,
+      intelPoints: 2,
+      disciplineWalkaways: 0,
+      ready: true,
+      submittedQuote: null,
+      history: []
+    };
+
+    const updated = { ...players, [botId]: botState };
+    setPlayers(updated);
+    broadcastSync({ players: updated });
+  };
+
+  // 3b. 1-Click AI-Only Battle Royale (Opens RFQ Builder first)
+  const handleStartAiOnlySimulation = (format: AuctionFormat = 'english') => {
+    const code = `AI-SIM-${Math.floor(10 + Math.random() * 90)}`;
+    const config: RoomConfig = {
+      code,
+      hostId: myPlayerId,
+      scenarioId: 'manufacturing',
+      totalRounds: 3,
+      currentRound: 1,
+      difficulty: 'standard',
+      auctionFormatSequence: [format, 'dutch', 'japanese'],
+      maxPlayers: 4,
+      createdAt: Date.now()
+    };
+
+    // User is the Game Director Spectator
+    const spectatorPlayer: PlayerState = {
+      id: myPlayerId,
+      name: 'Game Director (Spectator)',
+      isHost: true,
+      isAi: false,
+      profile: generateCompanyProfile('Game Director', 0),
+      score: 0,
+      bankedProfit: 0,
+      contractsWon: 0,
+      reputation: 100,
+      intelPoints: 5,
+      disciplineWalkaways: 0,
+      ready: true,
+      submittedQuote: null,
+      history: []
+    };
+
+    const botPersonalities: AIPersonality[] = ['aggressive', 'conservative', 'opportunist', 'copycat'];
+    const botNames = {
+      aggressive: 'Vulcan Heavy Ind. (Aggressive AI)',
+      conservative: 'Apex SafeBuild (Conservative AI)',
+      opportunist: 'Matrix Dynamic Bids (Opportunist AI)',
+      copycat: 'Echo Mirror Systems (Copycat AI)'
+    };
+
+    const initialPlayers: Record<string, PlayerState> = {
+      [myPlayerId]: spectatorPlayer
+    };
+
+    botPersonalities.forEach((personality, idx) => {
+      const bId = `bot_${idx}_${Date.now()}`;
+      initialPlayers[bId] = {
+        id: bId,
+        name: botNames[personality],
+        isHost: false,
+        isAi: true,
+        aiPersonality: personality,
+        profile: generateCompanyProfile(botNames[personality], idx + 1),
+        score: 0,
+        bankedProfit: 0,
+        contractsWon: 0,
+        reputation: 65,
+        intelPoints: 2,
+        disciplineWalkaways: 0,
+        ready: true,
+        submittedQuote: null,
+        history: []
+      };
+    });
+
+    setRoomConfig(config);
+    setPlayers(initialPlayers);
+    setPhase('RFQ_BUILDER');
+  };
+
+  // 3c. 1-Click Quick Play (You vs 3 Bots - Opens RFQ Builder first)
+  const handleQuickPlayVsBots = (format: AuctionFormat = 'english') => {
+    const code = `SOLO-${Math.floor(10 + Math.random() * 90)}`;
+    const myProfile = generateCompanyProfile('Apex Procurement (You)', 0);
+
+    const config: RoomConfig = {
+      code,
+      hostId: myPlayerId,
+      scenarioId: 'manufacturing',
+      totalRounds: 3,
+      currentRound: 1,
+      difficulty: 'standard',
+      auctionFormatSequence: [format, 'dutch', 'japanese'],
+      maxPlayers: 4,
+      createdAt: Date.now()
+    };
+
+    const initialPlayers: Record<string, PlayerState> = {
+      [myPlayerId]: {
+        id: myPlayerId,
+        name: 'Apex Procurement (You)',
+        isHost: true,
+        isAi: false,
+        profile: myProfile,
+        score: 0,
+        bankedProfit: 0,
+        contractsWon: 0,
+        reputation: myProfile.reputationScore,
+        intelPoints: 2,
+        disciplineWalkaways: 0,
+        ready: false,
+        submittedQuote: null,
+        history: []
+      }
+    };
+
+    // Add 3 AI Bots
+    const bots: { p: AIPersonality; name: string }[] = [
+      { p: 'aggressive', name: 'Vulcan Heavy Ind. (Aggressive)' },
+      { p: 'conservative', name: 'SafeBuild Dynamics (Conservative)' },
+      { p: 'opportunist', name: 'Matrix Bidding Corp (Opportunist)' }
+    ];
+
+    bots.forEach((b, idx) => {
+      const bId = `bot_${idx}_${Date.now()}`;
+      initialPlayers[bId] = {
+        id: bId,
+        name: b.name,
+        isHost: false,
+        isAi: true,
+        aiPersonality: b.p,
+        profile: generateCompanyProfile(b.name, idx + 1),
+        score: 0,
+        bankedProfit: 0,
+        contractsWon: 0,
+        reputation: 60,
+        intelPoints: 2,
+        disciplineWalkaways: 0,
+        ready: true,
+        submittedQuote: null,
+        history: []
+      };
+    });
+
+    setRoomConfig(config);
+    setPlayers(initialPlayers);
+    setPhase('RFQ_BUILDER');
+  };
+
+  // 3d. Publish Custom RFQ & Begin Quoting / Bidding
+  const handlePublishCustomRfq = (rfq: RFQ) => {
+    setCurrentRfq(rfq);
+
+    const isSpectating = me?.name.includes('Director') || me?.name.includes('Spectator');
+
+    if (isSpectating) {
+      // AI-Only Mode: Auto-generate quotes for all 4 AI bots and enter Live Auction
+      const currentPlayers = { ...playersRef.current };
+      const quotes: Quote[] = [];
+
+      Object.values(currentPlayers).forEach(p => {
+        if (p.isAi) {
+          const q = generateAiQuote(p, rfq, currentPlayers);
+          quotes.push(q);
+          currentPlayers[p.id].submittedQuote = q;
+        } else {
+          currentPlayers[p.id].submittedQuote = null;
+        }
+      });
+
+      setPlayers(currentPlayers);
+      setSubmittedQuotes(quotes);
+
+      // Launch into Live Auction Arena
+      const initPrice = rfq.auctionFormat === 'dutch'
+        ? Math.round(rfq.budgetCeiling * 1.25)
+        : Math.round(rfq.budgetCeiling * 0.98);
+
+      const initialAuction: AuctionState = {
+        format: rfq.auctionFormat,
+        status: 'BIDDING',
+        currentPrice: initPrice,
+        budgetCeiling: rfq.budgetCeiling,
+        timeRemaining: rfq.auctionFormat === 'dutch' ? 30 : 25,
+        currentLeaderId: quotes[0]?.playerId || null,
+        currentLeaderName: quotes[0]?.playerName || null,
+        bids: [
+          {
+            timestamp: Date.now(),
+            playerId: quotes[0]?.playerId || 'bot_0',
+            playerName: quotes[0]?.playerName || 'Opening Bid',
+            amount: initPrice,
+            isAi: true
+          }
+        ],
+        activePlayerIds: Object.keys(currentPlayers).filter(id => id !== myPlayerId),
+        exits: [],
+        winnerId: null,
+        finalPrice: initPrice,
+        dutchTickCount: 0
+      };
+
+      setActiveAuction(initialAuction);
+      setPhase('AUCTION');
+      startAuctionLoop(initialAuction);
+    } else {
+      // Solo / Multiplayer: Player moves to Quoting
+      setSubmittedQuotes([]);
+      setPhase('DOSSIER');
+    }
+  };
+
+  // 4. Remove Player / Bot
+  const handleRemovePlayer = (playerId: string) => {
+    const updated = { ...players };
+    delete updated[playerId];
+    setPlayers(updated);
+    broadcastSync({ players: updated });
+  };
+
+  // 5. Start Game / Round Initialization
+  const handleStartGame = () => {
+    if (!roomConfig) return;
+    const scenario = SCENARIOS[roomConfig.scenarioId];
+    const format = roomConfig.auctionFormatSequence[(roomConfig.currentRound - 1) % roomConfig.auctionFormatSequence.length];
+
+    const rfq: RFQ = {
+      ...scenario.sampleRfqs[0],
+      id: `rfq_${Date.now()}`,
+      roundNumber: roomConfig.currentRound,
+      auctionFormat: format
+    };
+
+    setCurrentRfq(rfq);
+    setSubmittedQuotes([]);
+    setPhase('DOSSIER');
+
+    broadcastSync({
+      phase: 'DOSSIER',
+      currentRfq: rfq,
+      roomConfig
+    });
+  };
+
+  // 6. Move from Dossier -> RFQ -> Quoting
+  const handleProceedToRfq = () => setPhase('RFQ');
+  const handleProceedToQuote = () => {
+    setPhase('QUOTING');
+    setQuotingTimerSeconds(45);
+
+    if (quotingTimerRef.current) clearInterval(quotingTimerRef.current);
+    quotingTimerRef.current = setInterval(() => {
+      setQuotingTimerSeconds(prev => {
+        if (prev <= 1) {
+          clearInterval(quotingTimerRef.current!);
+          handleQuotingTimeout();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  // Quoting Submission Handler
+  const handleSubmitQuote = (quote: Quote) => {
+    const updatedQuotes = [...submittedQuotes.filter(q => q.playerId !== quote.playerId), quote];
+    setSubmittedQuotes(updatedQuotes);
+
+    setPlayers(prev => ({
+      ...prev,
+      [quote.playerId]: {
+        ...prev[quote.playerId],
+        submittedQuote: quote
+      }
+    }));
+
+    roomSync.broadcast({
+      type: 'QUOTE_SUBMITTED',
+      payload: { playerId: quote.playerId, quote }
+    });
+
+    if (isHost) {
+      setTimeout(() => {
+        handleQuotingTimeout();
+      }, 2500);
+    }
+  };
+
+  // When Quoting Completes -> Trigger AI Bot Quotes & Launch Live Auction
+  const handleQuotingTimeout = () => {
+    if (quotingTimerRef.current) clearInterval(quotingTimerRef.current);
+    const rfq = rfqRef.current;
+    if (!rfq) return;
+
+    // 1. Generate Quotes for any AI Bots
+    const finalQuotePool = [...quotesRef.current];
+    const updatedPlayers = { ...playersRef.current };
+
+    Object.values(updatedPlayers).forEach(p => {
+      if (p.isAi && !p.submittedQuote) {
+        const botQuote = generateAiQuote(p, rfq, updatedPlayers);
+        finalQuotePool.push(botQuote);
+        updatedPlayers[p.id] = { ...p, submittedQuote: botQuote };
+      }
+    });
+
+    setPlayers(updatedPlayers);
+    setSubmittedQuotes(finalQuotePool);
+
+    // 2. Initialize Live Auction State Machine
+    const sortedInitialQuotes = [...finalQuotePool].sort((a, b) => a.price - b.price);
+    const lowestInitialQuote = sortedInitialQuotes[0];
+
+    const initPrice = rfq.auctionFormat === 'dutch' 
+      ? Math.round(rfq.budgetCeiling * 0.65) // Starts low and ticks UP
+      : rfq.auctionFormat === 'japanese'
+      ? Math.round(rfq.budgetCeiling * 1.25) // Starts high and ticks DOWN
+      : (lowestInitialQuote ? lowestInitialQuote.price : Math.round(rfq.budgetCeiling * 0.98));
+
+    const initialAuction: AuctionState = {
+      format: rfq.auctionFormat,
+      status: 'BIDDING',
+      currentPrice: initPrice,
+      budgetCeiling: rfq.budgetCeiling,
+      timeRemaining: rfq.auctionFormat === 'dutch' ? 30 : 35,
+      currentLeaderId: lowestInitialQuote?.playerId || null,
+      currentLeaderName: lowestInitialQuote?.playerName || null,
+      bids: sortedInitialQuotes.map(q => ({
+        timestamp: q.submittedAt,
+        playerId: q.playerId,
+        playerName: q.playerName,
+        amount: q.price,
+        isAi: updatedPlayers[q.playerId]?.isAi || false
+      })),
+      activePlayerIds: Object.keys(updatedPlayers),
+      exits: [],
+      winnerId: null,
+      finalPrice: initPrice,
+      dutchTickCount: 0
+    };
+
+    setActiveAuction(initialAuction);
+    setPhase('AUCTION');
+
+    broadcastSync({
+      phase: 'AUCTION',
+      activeAuction: initialAuction,
+      players: updatedPlayers
+    });
+
+    startAuctionLoop(initialAuction);
+  };
+
+  // 7. Live Auction Loop (English / Dutch / Japanese)
+  const startAuctionLoop = (initialState: AuctionState) => {
+    if (auctionTimerRef.current) clearInterval(auctionTimerRef.current);
+
+    auctionTimerRef.current = setInterval(() => {
+      const activeRfq = rfqRef.current;
+      const currentActivePlayers = playersRef.current;
+      const state = { ...activeAuctionRef.current };
+
+      if (!activeRfq) return;
+
+      if (state.timeRemaining <= 1) {
+        clearInterval(auctionTimerRef.current!);
+        const winningId = state.currentLeaderId || state.activePlayerIds[0] || Object.keys(currentActivePlayers)[0];
+        handleAuctionResolved(winningId, state.currentPrice);
+        return;
+      }
+
+      state.timeRemaining -= 1;
+      sounds.tick();
+
+      // 1. REVERSE DUTCH AUCTION (Price rises every 2 seconds, AI evaluates buzz)
+      if (state.format === 'dutch' && state.timeRemaining % 2 === 0) {
+        state.currentPrice = Math.min(
+          Math.round(activeRfq.budgetCeiling * 1.50),
+          Math.round(state.currentPrice * 1.035)
+        );
+
+        for (const p of Object.values(currentActivePlayers)) {
+          if (p.isAi && shouldAiAcceptInDutchAuction(p, state.currentPrice, activeRfq)) {
+            clearInterval(auctionTimerRef.current!);
+            handleAuctionResolved(p.id, state.currentPrice);
+            return;
+          }
+        }
+      }
+
+      // 2. JAPANESE CLOCK AUCTION (Drops price every 2 seconds, bots exit below floor)
+      if (state.format === 'japanese' && state.timeRemaining % 2 === 0) {
+        state.currentPrice = Math.max(
+          Math.round(activeRfq.budgetCeiling * 0.55),
+          Math.round(state.currentPrice * 0.975)
+        );
+
+        // Check each active AI bot to see if they hold or exit
+        const remainingActive: string[] = [];
+        for (const pId of state.activePlayerIds) {
+          const p = currentActivePlayers[pId];
+          if (p && p.isAi) {
+            const shouldHold = shouldAiHoldInJapaneseAuction(p, state.currentPrice, activeRfq);
+            if (shouldHold) {
+              remainingActive.push(pId);
+            } else {
+              // Bot Exits permanently
+              state.exits = [
+                { timestamp: Date.now(), playerId: p.id, playerName: p.name, exitPrice: state.currentPrice },
+                ...state.exits
+              ];
+              state.bids = [
+                { timestamp: Date.now(), playerId: p.id, playerName: `🔴 ${p.name} Exited`, amount: state.currentPrice, isAi: true },
+                ...state.bids
+              ];
+            }
+          } else if (p) {
+            remainingActive.push(pId);
+          }
+        }
+
+        state.activePlayerIds = remainingActive;
+
+        // If only 1 player remains in Japanese auction, they win!
+        if (remainingActive.length === 1) {
+          clearInterval(auctionTimerRef.current!);
+          const winnerId = remainingActive[0];
+          const secondPrice = state.exits[0]?.exitPrice || state.currentPrice;
+          handleAuctionResolved(winnerId, secondPrice);
+          return;
+        }
+      }
+
+      // 3. REVERSE ENGLISH AUCTION (Active dynamic counter-bidding every 1-2s)
+      if (state.format === 'english') {
+        const eligibleAiBots = Object.values(currentActivePlayers).filter(
+          p => p.isAi && p.id !== state.currentLeaderId
+        );
+
+        if (eligibleAiBots.length > 0) {
+          // Shuffle to randomize bidding order
+          const candidate = eligibleAiBots[Math.floor(Math.random() * eligibleAiBots.length)];
+          const aiBid = shouldAiBidInEnglishAuction(candidate, state.currentPrice, activeRfq);
+
+          if (aiBid.shouldBid && aiBid.nextBidAmount < state.currentPrice) {
+            state.currentPrice = aiBid.nextBidAmount;
+            state.currentLeaderId = candidate.id;
+            state.currentLeaderName = candidate.name;
+            state.timeRemaining = state.timeRemaining < 15 ? state.timeRemaining + 8 : state.timeRemaining;
+            state.bids = [
+              {
+                timestamp: Date.now(),
+                playerId: candidate.id,
+                playerName: candidate.name,
+                amount: aiBid.nextBidAmount,
+                isAi: true
+              },
+              ...state.bids
+            ];
+            if (currentActivePlayers[candidate.id]?.submittedQuote) {
+              currentActivePlayers[candidate.id].submittedQuote = {
+                ...currentActivePlayers[candidate.id].submittedQuote!,
+                price: aiBid.nextBidAmount
+              };
+            }
+            sounds.bid();
+          }
+        }
+      }
+
+      setActiveAuction(state);
+    }, 1000);
+  };
+
+  // 8. Auction Resolution -> Buyer Evaluation
+  const handleAuctionResolved = (winnerId: string, finalPrice: number) => {
+    if (auctionTimerRef.current) clearInterval(auctionTimerRef.current);
+    const activeRfq = rfqRef.current;
+    if (!activeRfq) return;
+
+    const currentQuotes = quotesRef.current;
+    const currentActivePlayers = playersRef.current;
+
+    const evaluatedQuotes = currentQuotes.map(q => {
+      if (q.playerId === winnerId) {
+        return { ...q, price: finalPrice };
+      }
+      const playerCurrentQuote = currentActivePlayers[q.playerId]?.submittedQuote;
+      if (playerCurrentQuote) {
+        return { ...q, price: playerCurrentQuote.price };
+      }
+      return q;
+    });
+
+    const evalResult = evaluateQuotes(activeRfq, evaluatedQuotes, currentActivePlayers);
+    setEvaluationResult(evalResult);
+    setSubmittedQuotes(evaluatedQuotes);
+    quotesRef.current = evaluatedQuotes;
+    setPhase('EVALUATION');
+
+    broadcastSync({
+      phase: 'EVALUATION',
+      evaluationResult: evalResult
+    });
+  };
+
+  // User Actions during Auction
+  const handlePlaceEnglishBid = (amount: number) => {
+    if (!me) return;
+    const bidEvent = {
+      type: 'AUCTION_BID' as const,
+      payload: {
+        playerId: me.id,
+        playerName: me.name,
+        amount,
+        isAi: false
+      }
+    };
+    roomSync.broadcast(bidEvent);
+    setActiveAuction(prev => ({
+      ...prev,
+      currentPrice: amount,
+      currentLeaderId: me.id,
+      currentLeaderName: me.name,
+      timeRemaining: prev.timeRemaining < 15 ? prev.timeRemaining + 15 : prev.timeRemaining,
+      bids: [{ timestamp: Date.now(), playerId: me.id, playerName: me.name, amount, isAi: false }, ...prev.bids]
+    }));
+  };
+
+  const handleBuzzDutch = () => {
+    if (!me) return;
+    roomSync.broadcast({
+      type: 'AUCTION_BUZZ',
+      payload: { playerId: me.id, playerName: me.name, price: activeAuction.currentPrice }
+    });
+    handleAuctionResolved(me.id, activeAuction.currentPrice);
+  };
+
+  const handleExitJapanese = () => {
+    if (!me) return;
+    setActiveAuction(prev => ({
+      ...prev,
+      activePlayerIds: prev.activePlayerIds.filter(id => id !== me.id),
+      exits: [{ timestamp: Date.now(), playerId: me.id, playerName: me.name, exitPrice: prev.currentPrice }, ...prev.exits]
+    }));
+  };
+
+  // 9. Draw Dynamic Event Card
+  const handleProceedToEvent = () => {
+    setActiveEvent(null);
+    // directly call PnL calculation inline to ensure state sync
+    const activeRfq = rfqRef.current;
+    if (!activeRfq || !evaluationResult) return;
+    
+    const winningPrice = evaluationResult.winningPrice;
+    const currentQuotes = submittedQuotes;
+    const rawQuote = currentQuotes.find(q => q.playerId === evaluationResult.winnerId) || null;
+    const winningQuote = (rawQuote && winningPrice > 0) ? { ...rawQuote, price: winningPrice } : rawQuote;
+
+    const updatedPlayers = { ...playersRef.current };
+    Object.values(updatedPlayers).forEach(p => {
+      const isWinner = p.id === evaluationResult.winnerId;
+      const pnl = settleContractPnL(p, activeRfq, winningQuote, isWinner, null);
+      const newBankedProfit = p.bankedProfit + pnl.realizedProfit;
+      const newContractsWon = p.contractsWon + (isWinner ? 1 : 0);
+      const newScore = calculateTotalScore(newBankedProfit, newContractsWon, pnl.newReputation, pnl.riskAdjustedProfit);
+      updatedPlayers[p.id] = {
+        ...p,
+        bankedProfit: newBankedProfit,
+        contractsWon: newContractsWon,
+        reputation: pnl.newReputation,
+        score: newScore,
+        lastPnL: pnl,
+        history: [...p.history, pnl]
+      };
+    });
+    setPlayers(updatedPlayers);
+    setPhase('PNL');
+    broadcastSync({ phase: 'PNL', players: updatedPlayers });
+  };
+
+  // 10. Settle Contract P&L
+  const handleProceedToPnL = () => {
+    const activeRfq = rfqRef.current;
+    if (!activeRfq || !evaluationResult) return;
+
+    const winningQuote = submittedQuotes.find(q => q.playerId === evaluationResult.winnerId) || null;
+    const updatedPlayers = { ...playersRef.current };
+
+    Object.values(updatedPlayers).forEach(p => {
+      const isWinner = p.id === evaluationResult.winnerId;
+      const pnl = settleContractPnL(p, activeRfq, winningQuote, isWinner, activeEvent);
+      
+      const newBankedProfit = p.bankedProfit + pnl.realizedProfit;
+      const newContractsWon = p.contractsWon + (isWinner ? 1 : 0);
+      const newScore = calculateTotalScore(newBankedProfit, newContractsWon, pnl.newReputation, pnl.riskAdjustedProfit);
+
+      updatedPlayers[p.id] = {
+        ...p,
+        bankedProfit: newBankedProfit,
+        contractsWon: newContractsWon,
+        reputation: pnl.newReputation,
+        score: newScore,
+        lastPnL: pnl,
+        history: [...p.history, pnl]
+      };
+    });
+
+    setPlayers(updatedPlayers);
+    setPhase('PNL');
+
+    broadcastSync({
+      phase: 'PNL',
+      players: updatedPlayers
+    });
+  };
+
+  // 11. Advance Round / Game Over
+  const handleProceedToLeaderboard = () => {
+    setPhase('LEADERBOARD');
+  };
+
+  const handleNextRound = () => {
+    if (!roomConfig) return;
+    const nextRound = roomConfig.currentRound + 1;
+    const isGameOver = nextRound > roomConfig.totalRounds;
+
+    if (isGameOver) {
+      setPhase('GAMEOVER');
+      broadcastSync({ phase: 'GAMEOVER' });
+    } else {
+      const updatedConfig = { ...roomConfig, currentRound: nextRound };
+      setRoomConfig(updatedConfig);
+
+      // Reset all per-round player states cleanly
+      const cleanPlayers: Record<string, PlayerState> = {};
+      Object.entries(players).forEach(([id, p]) => {
+        cleanPlayers[id] = {
+          ...p,
+          ready: p.isAi,
+          submittedQuote: null,
+          lastPnL: undefined
+        };
+      });
+
+      quotesRef.current = [];
+      playersRef.current = cleanPlayers;
+      setPlayers(cleanPlayers);
+      setSubmittedQuotes([]);
+      setActiveAuction({
+        format: 'english',
+        status: 'IDLE',
+        currentPrice: 0,
+        budgetCeiling: 0,
+        timeRemaining: 30,
+        currentLeaderId: null,
+        currentLeaderName: null,
+        bids: [],
+        activePlayerIds: [],
+        exits: [],
+        winnerId: null,
+        finalPrice: 0,
+        dutchTickCount: 0
+      });
+      setActiveEvent(null);
+      setEvaluationResult(null);
+
+      // Open RFQ Builder for Round N!
+      setPhase('RFQ_BUILDER');
+
+      broadcastSync({
+        phase: 'RFQ_BUILDER',
+        roomConfig: updatedConfig,
+        players: cleanPlayers
+      });
+    }
+  };
+
+  const handleReturnToMainScreen = () => {
+    if (phase !== 'LOBBY') {
+      const confirmLeave = window.confirm('Return to main screen? Your current game progress will be reset.');
+      if (!confirmLeave) return;
+    }
+    
+    // Clear any timers/intervals if running
+    if (auctionTimerRef.current) {
+      clearInterval(auctionTimerRef.current);
+    }
+    if (quotingTimerRef.current) {
+      clearInterval(quotingTimerRef.current);
+    }
+    
+    setPhase('LOBBY');
+    setRoomConfig(null);
+    setPlayers({});
+    setMyPlayerId('');
+    setCurrentRfq(null);
+    setEvaluationResult(null);
+    setActiveEvent(null);
+  };
+
+  // Selected player for PnL breakdown view
+  const winnerPlayer = evaluationResult?.winnerId ? players[evaluationResult.winnerId] : null;
+  const handleUpdateMyProfile = (stats: { qualityLevel: number; speedLevel: number; costEfficiency: number }) => {
+    setPlayers(prev => {
+      const me = prev[myPlayerId];
+      if (!me) return prev;
+      const updatedProfile = {
+        ...me.profile,
+        qualityLevel: stats.qualityLevel,
+        speedLevel: stats.speedLevel,
+        costEfficiency: stats.costEfficiency
+      };
+      const updatedMe = {
+        ...me,
+        profile: updatedProfile
+      };
+      const nextPlayers = { ...prev, [myPlayerId]: updatedMe };
+      broadcastSync({ players: nextPlayers });
+      return nextPlayers;
+    });
+  };
+
+  const isSpectating = me?.name.includes('Director') || me?.name.includes('Spectator');
+  const pnlDisplayPlayer = (!isSpectating && me?.lastPnL) ? me : (winnerPlayer || Object.values(players).find(p => p.isAi && p.lastPnL) || Object.values(players)[0]);
+
+  return (
+    <ErrorBoundary>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 flex flex-col font-sans selection:bg-indigo-600 selection:text-white transition-colors duration-150">
+      
+      {/* Top Navbar */}
+      <Navbar
+        roomCode={roomConfig?.code || null}
+        currentPhase={phase}
+        currentRound={roomConfig?.currentRound || 1}
+        totalRounds={roomConfig?.totalRounds || 6}
+        player={me}
+        isSupabaseConnected={isSupabaseLive}
+        onOpenSupabaseModal={() => setIsSupabaseModalOpen(true)}
+        onOpenDashboardModal={() => setIsDashboardModalOpen(true)}
+        onOpenManualModal={() => setIsManualModalOpen(true)}
+        onReturnToMainScreen={handleReturnToMainScreen}
+      />
+
+      {/* Main Screen Router */}
+      <main className="flex-1 flex flex-col justify-center py-6 px-3">
+        {phase === 'LOBBY' && (
+          <Lobby
+            roomConfig={roomConfig}
+            players={players}
+            myPlayerId={myPlayerId}
+            onCreateRoom={handleCreateRoom}
+            onJoinRoom={handleJoinRoom}
+            onAddAiBot={handleAddAiBot}
+            onRemovePlayer={handleRemovePlayer}
+            onStartGame={handleStartGame}
+            onQuickPlayVsBots={handleQuickPlayVsBots}
+            onStartAiOnlyMode={handleStartAiOnlySimulation}
+            onOpenManualModal={() => setIsManualModalOpen(true)}
+            onUpdatePlayerProfile={handleUpdateMyProfile}
+          />
+        )}
+
+        {phase === 'RFQ_BUILDER' && (
+          <RfqBuilder
+            key={`rfq_builder_round_${roomConfig?.currentRound || 1}`}
+            initialScenarioId={roomConfig?.scenarioId || 'manufacturing'}
+            selectedAuctionFormat={roomConfig?.auctionFormatSequence[((roomConfig.currentRound || 1) - 1) % roomConfig.auctionFormatSequence.length] || 'english'}
+            roundNumber={roomConfig?.currentRound || 1}
+            onPublishRfq={handlePublishCustomRfq}
+            onBackToMainScreen={handleReturnToMainScreen}
+          />
+        )}
+
+        {phase === 'DOSSIER' && me && (
+          <CompanyDossier
+            profile={me.profile}
+            playerName={me.name}
+            roundNumber={roomConfig?.currentRound || 1}
+            totalRounds={roomConfig?.totalRounds || 6}
+            onProceed={handleProceedToRfq}
+            onUpdateProfile={handleUpdateMyProfile}
+          />
+        )}
+
+        {phase === 'RFQ' && currentRfq && me && (
+          <RfqBoard
+            rfq={currentRfq}
+            player={me}
+            onOpenIntelMarket={() => setPhase('INTEL')}
+            onProceedToQuote={handleProceedToQuote}
+          />
+        )}
+
+        {phase === 'INTEL' && currentRfq && me && (
+          <IntelMarket
+            player={me}
+            allPlayers={players}
+            rfq={currentRfq}
+            onSpendIntelPoint={(type) => {
+              setPlayers(prev => ({
+                ...prev,
+                [myPlayerId]: {
+                  ...prev[myPlayerId],
+                  intelPoints: Math.max(0, prev[myPlayerId].intelPoints - 1)
+                }
+              }));
+            }}
+            onBack={() => setPhase('RFQ')}
+          />
+        )}
+
+        {phase === 'QUOTING' && currentRfq && me && (
+          <QuoteBuilder
+            rfq={currentRfq}
+            player={me}
+            onSubmitQuote={handleSubmitQuote}
+            timeRemainingSeconds={quotingTimerSeconds}
+          />
+        )}
+
+        {phase === 'AUCTION' && currentRfq && (
+          <AuctionArena
+            rfq={currentRfq}
+            player={me || Object.values(players)[0]}
+            allPlayers={players}
+            auctionState={activeAuction}
+            onPlaceEnglishBid={handlePlaceEnglishBid}
+            onBuzzDutchAccept={handleBuzzDutch}
+            onExitJapaneseAuction={handleExitJapanese}
+            onSkipToEnd={() => handleAuctionResolved(activeAuction.currentLeaderId || Object.keys(players)[0], activeAuction.currentPrice)}
+          />
+        )}
+
+        {phase === 'EVALUATION' && evaluationResult && currentRfq && (
+          <EvaluationModal
+            evaluation={evaluationResult}
+            players={players}
+            rfq={currentRfq}
+            myPlayerId={myPlayerId}
+            onProceedToEvent={handleProceedToEvent}
+          />
+        )}
+
+        {phase === 'EVENT' && activeEvent && (
+          <EventModal
+            event={activeEvent}
+            winnerPlayer={evaluationResult?.winnerId ? players[evaluationResult.winnerId] : null}
+            onProceedToPnL={handleProceedToPnL}
+          />
+        )}
+
+        {phase === 'PNL' && currentRfq && pnlDisplayPlayer && pnlDisplayPlayer.lastPnL && (
+          <PnLBreakdown
+            pnl={pnlDisplayPlayer.lastPnL}
+            player={pnlDisplayPlayer}
+            allPlayers={players}
+            rfq={currentRfq}
+            onProceedToLeaderboard={handleProceedToLeaderboard}
+          />
+        )}
+
+        {(phase === 'LEADERBOARD' || phase === 'GAMEOVER') && roomConfig && (
+          <Leaderboard
+            players={players}
+            roomConfig={roomConfig}
+            myPlayerId={myPlayerId}
+            isGameOver={phase === 'GAMEOVER'}
+            onNextRound={handleNextRound}
+            onPlayAgain={() => {
+              setPhase('LOBBY');
+              setRoomConfig(null);
+            }}
+          />
+        )}
+      </main>
+
+      {/* Supabase Settings Modal */}
+      <SupabaseModal
+        isOpen={isSupabaseModalOpen}
+        onClose={() => setIsSupabaseModalOpen(false)}
+        onConfigSaved={() => {
+          const cfg = getSavedSupabaseConfig();
+          setIsSupabaseLive(!!(cfg.url && cfg.anonKey && cfg.url !== 'https://your-project-id.supabase.co'));
+        }}
+      />
+
+      {/* Persistent Career Stats Modal */}
+      <CompanyDashboard
+        isOpen={isDashboardModalOpen}
+        onClose={() => setIsDashboardModalOpen(false)}
+        player={me}
+      />
+
+      {/* Interactive Game Manual Modal */}
+      <UserManualModal
+        isOpen={isManualModalOpen}
+        onClose={() => setIsManualModalOpen(false)}
+      />
+
+    </div>
+    </ErrorBoundary>
+  );
+};
+
+export default App;

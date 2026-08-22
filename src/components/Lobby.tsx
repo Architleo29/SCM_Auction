@@ -1,0 +1,634 @@
+import React, { useState } from 'react';
+import { 
+  Users, 
+  Plus, 
+  Play, 
+  Copy, 
+  Check, 
+  Bot, 
+  Trash2, 
+  ShieldAlert, 
+  Sparkles, 
+  Layers, 
+  Clock, 
+  HelpCircle,
+  TrendingUp,
+  Cpu,
+  Gavel,
+  BookOpen,
+  Briefcase,
+  Sliders
+} from 'lucide-react';
+import { RoomConfig, PlayerState, IndustryScenarioId, GameDifficulty, AIPersonality, AuctionFormat } from '../types/game';
+import { SCENARIOS } from '../data/scenarios';
+import { CompanySetupModal } from './CompanySetupModal';
+
+interface LobbyProps {
+  roomConfig: RoomConfig | null;
+  players: Record<string, PlayerState>;
+  myPlayerId: string;
+  onCreateRoom: (scenarioId: IndustryScenarioId, totalRounds: number, difficulty: GameDifficulty, hostName: string, maxPlayers: number, auctionFormat?: AuctionFormat) => void;
+  onJoinRoom: (roomCode: string, playerName: string) => void;
+  onAddAiBot: (personality: AIPersonality) => void;
+  onRemovePlayer: (playerId: string) => void;
+  onStartGame: () => void;
+  onQuickPlayVsBots: (format: AuctionFormat) => void;
+  onStartAiOnlyMode: (format: AuctionFormat) => void;
+  onOpenManualModal?: () => void;
+  onUpdatePlayerProfile?: (stats: { qualityLevel: number; speedLevel: number; costEfficiency: number }) => void;
+}
+
+export const Lobby: React.FC<LobbyProps> = ({
+  roomConfig,
+  players,
+  myPlayerId,
+  onCreateRoom,
+  onJoinRoom,
+  onAddAiBot,
+  onRemovePlayer,
+  onStartGame,
+  onQuickPlayVsBots,
+  onStartAiOnlyMode,
+  onOpenManualModal,
+  onUpdatePlayerProfile
+}) => {
+  const [hostName, setHostName] = useState('Apex Procurement Corp');
+  const [joinName, setJoinName] = useState('Titan Global Dynamics');
+  const [joinCode, setJoinCode] = useState('');
+  const [selectedScenario, setSelectedScenario] = useState<IndustryScenarioId>('manufacturing');
+  const [selectedRounds, setSelectedRounds] = useState<number>(3);
+  const [selectedDifficulty, setSelectedDifficulty] = useState<GameDifficulty>('standard');
+  const [selectedMaxPlayers, setSelectedMaxPlayers] = useState<number>(4);
+  const [chosenAuctionFormat, setChosenAuctionFormat] = useState<AuctionFormat>('english');
+  const [copied, setCopied] = useState(false);
+  const [isSetupModalOpen, setIsSetupModalOpen] = useState(false);
+
+  const playerList = Object.values(players);
+  const isHost = roomConfig ? roomConfig.hostId === myPlayerId : false;
+  const me = players[myPlayerId] || null;
+
+  const maxPlayers = roomConfig?.maxPlayers || 4;
+  const isLobbyFull = playerList.length >= maxPlayers;
+
+  const handleAutoFillAi = () => {
+    const needed = maxPlayers - playerList.length;
+    const botOrder: AIPersonality[] = ['aggressive', 'conservative', 'opportunist', 'copycat'];
+    for (let i = 0; i < needed; i++) {
+      onAddAiBot(botOrder[i % botOrder.length]);
+    }
+  };
+
+  const handleCopyCode = () => {
+    if (roomConfig) {
+      navigator.clipboard.writeText(roomConfig.code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  // If already inside a room lobby
+  if (roomConfig) {
+    const scenario = SCENARIOS[roomConfig.scenarioId];
+
+    return (
+      <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-6">
+        
+        {/* Room Header Card */}
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+          <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none" />
+          
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider bg-indigo-950 text-indigo-400 border border-indigo-800/60">
+                  {scenario.category}
+                </span>
+                <span className="text-xs text-slate-400 font-mono">
+                  {roomConfig.totalRounds} Fiscal Quarters • {maxPlayers} Players • {roomConfig.difficulty.toUpperCase()}
+                </span>
+              </div>
+              <h2 className="text-2xl font-bold text-slate-100">{scenario.name}</h2>
+              <p className="text-xs text-slate-400 mt-1 max-w-xl">
+                {scenario.description}
+              </p>
+            </div>
+
+            {/* Room Code Box */}
+            <div className="flex items-center gap-3 bg-slate-950 border border-slate-800 rounded-xl p-3 shrink-0">
+              <div>
+                <p className="text-[0.625rem] text-slate-500 font-mono uppercase tracking-wider">Room Code</p>
+                <p className="text-2xl font-mono font-bold text-indigo-400 tracking-wider">
+                  {roomConfig.code}
+                </p>
+              </div>
+              <button
+                onClick={handleCopyCode}
+                className="p-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer"
+                title="Copy Room Code"
+              >
+                {copied ? <Check className="w-5 h-5 text-emerald-400" /> : <Copy className="w-5 h-5" />}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Players Grid & AI Management */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          {/* Connected Vendors List */}
+          <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Users className="w-5 h-5 text-indigo-400" />
+                <h3 className="font-bold text-slate-100">
+                  Connected Vendor Companies ({playerList.length}/{maxPlayers})
+                </h3>
+              </div>
+              <span className={`text-xs font-mono px-2 py-0.5 rounded ${isLobbyFull ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'text-slate-400'}`}>
+                {isLobbyFull ? '✅ Room Full' : `${maxPlayers - playerList.length} seats available`}
+              </span>
+            </div>
+
+            <div className="space-y-2.5">
+              {playerList.map((player) => (
+                <div
+                  key={player.id}
+                  className={`p-3.5 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition ${
+                    player.id === myPlayerId
+                      ? 'bg-indigo-950/30 border-indigo-700/60 shadow-md shadow-indigo-950/50'
+                      : player.isAi
+                      ? 'bg-slate-950/60 border-slate-800/80'
+                      : 'bg-slate-950 border-slate-800'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center font-semibold text-sm shrink-0 ${
+                      player.isAi
+                        ? 'bg-amber-950 text-amber-400 border border-amber-800/60'
+                        : 'bg-indigo-600 text-white'
+                    }`}>
+                      {player.isAi ? <Bot className="w-4 h-4" /> : player.name.charAt(0)}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-sm text-slate-100">{player.name}</span>
+                        {player.id === myPlayerId && (
+                          <span className="text-[0.625rem] bg-indigo-500/20 text-indigo-300 px-1.5 py-0.5 rounded font-mono font-bold">
+                            YOU
+                          </span>
+                        )}
+                        {player.isHost && (
+                          <span className="text-[0.625rem] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-mono font-bold">
+                            HOST
+                          </span>
+                        )}
+                        {player.isAi && (
+                          <span className="text-[0.625rem] bg-slate-800 text-slate-300 px-1.5 py-0.5 rounded font-mono capitalize">
+                            AI: {player.aiPersonality}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-400 font-mono mt-0.5 flex flex-wrap items-center gap-2">
+                        <span>Rep: {player.reputation}</span>
+                        <span>• Quality: {'⭐'.repeat(player.profile.qualityLevel)}</span>
+                        {player.profile.costEfficiency && (
+                          <span className="text-emerald-400">• Eff: {player.profile.costEfficiency}/5</span>
+                        )}
+                        {player.profile.speedLevel && (
+                          <span className="text-indigo-400">• Spd: {player.profile.speedLevel}/5</span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 self-end sm:self-auto">
+                    {player.id === myPlayerId && onUpdatePlayerProfile && (
+                      <button
+                        type="button"
+                        onClick={() => setIsSetupModalOpen(true)}
+                        className="px-3 py-1.5 rounded-lg bg-indigo-600/30 hover:bg-indigo-600/50 border border-indigo-500/40 text-indigo-200 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer shadow-sm"
+                      >
+                        <Sliders className="w-3.5 h-3.5" />
+                        <span>Company Setup (10 Pts)</span>
+                      </button>
+                    )}
+
+                    {isHost && player.id !== myPlayerId && (
+                      <button
+                        onClick={() => onRemovePlayer(player.id)}
+                        className="p-1.5 text-slate-500 hover:text-rose-400 rounded-lg hover:bg-rose-950/40 transition"
+                        title="Kick Vendor"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Host Action Bar */}
+            {isHost ? (
+              <div className="mt-6 pt-4 border-t border-slate-800 flex items-center justify-between">
+                <p className="text-xs text-slate-400">
+                  {playerList.length >= 2 
+                    ? 'All set! Start when you are ready.' 
+                    : 'Add at least 1 more human or AI competitor to launch.'}
+                </p>
+                <button
+                  onClick={onStartGame}
+                  disabled={playerList.length < 2}
+                  className={`px-6 py-3 rounded-xl font-semibold text-sm shadow-xl flex items-center gap-2 transition ${
+                    playerList.length >= 2
+                      ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30 cursor-pointer'
+                      : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                  }`}
+                >
+                  <Play className="w-4 h-4 fill-current" />
+                  Start Fiscal Year
+                </button>
+              </div>
+            ) : (
+              <div className="mt-6 pt-4 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+                <span>Waiting for Host to launch fiscal quarter...</span>
+                <span className="animate-pulse text-indigo-400 font-mono">Syncing Realtime</span>
+              </div>
+            )}
+          </div>
+
+          {/* AI Competitor Roster Panel (Host Only) */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Bot className="w-5 h-5 text-amber-400" />
+                  <h3 className="font-bold text-slate-100">AI Competitors</h3>
+                </div>
+                {isHost && !isLobbyFull && (
+                  <button
+                    onClick={handleAutoFillAi}
+                    className="text-xs bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 border border-amber-500/30 px-2.5 py-1 rounded-lg font-mono transition flex items-center gap-1 cursor-pointer"
+                    title="Auto-fill empty slots with randomized AI bots"
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    Auto-Fill
+                  </button>
+                )}
+              </div>
+
+              <p className="text-xs text-slate-400 mb-4">
+                Fill empty seats with deterministic mathematical AI bots (§9.4):
+              </p>
+
+              {isHost ? (
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => onAddAiBot('aggressive')}
+                    disabled={isLobbyFull}
+                    className="p-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-amber-500/50 text-left transition disabled:opacity-50 disabled:cursor-not-allowed group cursor-pointer"
+                  >
+                    <p className="font-semibold text-xs text-amber-300 group-hover:text-amber-200">
+                      ⚡ Aggressive
+                    </p>
+                    <p className="text-[0.625rem] text-slate-500 mt-0.5">Under-cuts aggressively</p>
+                  </button>
+
+                  <button
+                    onClick={() => onAddAiBot('conservative')}
+                    disabled={isLobbyFull}
+                    className="p-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-emerald-500/50 text-left transition disabled:opacity-50 disabled:cursor-not-allowed group cursor-pointer"
+                  >
+                    <p className="font-semibold text-xs text-emerald-300 group-hover:text-emerald-200">
+                      🛡️ Conservative
+                    </p>
+                    <p className="text-[0.625rem] text-slate-500 mt-0.5">Strict walkaways</p>
+                  </button>
+
+                  <button
+                    onClick={() => onAddAiBot('opportunist')}
+                    disabled={isLobbyFull}
+                    className="p-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-cyan-500/50 text-left transition disabled:opacity-50 disabled:cursor-not-allowed group cursor-pointer"
+                  >
+                    <p className="font-semibold text-xs text-cyan-300 group-hover:text-cyan-200">
+                      🎯 Opportunist
+                    </p>
+                    <p className="text-[0.625rem] text-slate-500 mt-0.5">Targeted margin sniping</p>
+                  </button>
+
+                  <button
+                    onClick={() => onAddAiBot('copycat')}
+                    disabled={isLobbyFull}
+                    className="p-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-purple-500/50 text-left transition disabled:opacity-50 disabled:cursor-not-allowed group cursor-pointer"
+                  >
+                    <p className="font-semibold text-xs text-purple-300 group-hover:text-purple-200">
+                      🪞 Copycat
+                    </p>
+                    <p className="text-[0.625rem] text-slate-500 mt-0.5">Mirrors lowest bid</p>
+                  </button>
+                </div>
+              ) : (
+                <div className="p-4 bg-slate-950 rounded-xl border border-slate-800 text-xs text-slate-400 text-center">
+                  Only the host can add or remove AI competitors.
+                </div>
+              )}
+            </div>
+
+            {/* Scenario Rule Summary Card */}
+            <div className="bg-slate-950 p-4 rounded-xl border border-slate-800/80 space-y-2">
+              <div className="flex items-center gap-1.5 text-xs text-indigo-400 font-mono font-bold uppercase">
+                <ShieldAlert className="w-4 h-4" />
+                Scenario Risk Parameters
+              </div>
+              <div className="text-xs font-mono space-y-1 text-slate-300">
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Dominant Risk:</span>
+                  <span className="text-amber-400 capitalize">{scenario.dominantRisk}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">QCBS Quality Wt:</span>
+                  <span>{((scenario.sampleRfqs[0]?.weights.quality || 0.20) * 100).toFixed(0)}%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">QCBS Price Wt:</span>
+                  <span>{((scenario.sampleRfqs[0]?.weights.price || scenario.typicalPriceWeight || 0.35) * 100).toFixed(0)}%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Company Setup Modal */}
+        {me && onUpdatePlayerProfile && (
+          <CompanySetupModal
+            isOpen={isSetupModalOpen}
+            onClose={() => setIsSetupModalOpen(false)}
+            profile={me.profile}
+            onSave={onUpdatePlayerProfile}
+          />
+        )}
+      </div>
+    );
+  }
+
+  // Not in a room: Show Host or Join Panels
+  return (
+    <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-8">
+      
+      {/* Hero Title */}
+      <div className="text-center space-y-4 max-w-2xl mx-auto pt-4">
+        <h2 className="text-3xl sm:text-4xl font-bold text-slate-100 tracking-tight">
+          Procurement & Bidding Simulator
+        </h2>
+        <p className="text-sm text-slate-400">
+          Compete in high-stakes reverse auctions against rival vendors and procurement scoring engines. Build quotes, price risk, survive market shocks, and bank profits.
+        </p>
+
+        {/* 1. Choose Auction Type Upfront */}
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 max-w-xl mx-auto space-y-2.5">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-mono font-bold uppercase text-indigo-400 flex items-center gap-1.5">
+              <Gavel className="w-3.5 h-3.5" />
+              1. Choose Auction Type
+            </span>
+            <span className="text-xs text-slate-400 font-mono">
+              {chosenAuctionFormat === 'english' && 'Descending Counter-Bids'}
+              {chosenAuctionFormat === 'dutch' && 'Descending Clock (First to Buzz)'}
+              {chosenAuctionFormat === 'japanese' && 'Hold Button (2nd-Price Payout)'}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2.5">
+            {/* 🔨 Reverse English (§1.4: Orange Accent) */}
+            <button
+              type="button"
+              onClick={() => setChosenAuctionFormat('english')}
+              className={`p-3 rounded-xl border border-t-4 border-t-orange-500 text-xs font-mono font-bold transition card-hover-lift ${
+                chosenAuctionFormat === 'english'
+                  ? 'bg-orange-500/20 border-orange-500 text-orange-300 shadow-lg shadow-orange-500/20'
+                  : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <span className="text-base block mb-0.5">🔨</span>
+              <span className="text-slate-100 font-bold block">English</span>
+              <span className="text-[0.625rem] font-normal text-orange-400/90 block">Real-Time Bids</span>
+            </button>
+
+            {/* ⏳ Reverse Dutch (§1.4: Teal Accent) */}
+            <button
+              type="button"
+              onClick={() => setChosenAuctionFormat('dutch')}
+              className={`p-3 rounded-xl border border-t-4 border-t-teal-400 text-xs font-mono font-bold transition card-hover-lift ${
+                chosenAuctionFormat === 'dutch'
+                  ? 'bg-teal-500/20 border-teal-400 text-teal-300 shadow-lg shadow-teal-500/20'
+                  : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <span className="text-base block mb-0.5">⏳</span>
+              <span className="text-slate-100 font-bold block">Dutch</span>
+              <span className="text-[0.625rem] font-normal text-teal-400/90 block">First to Buzz</span>
+            </button>
+
+            {/* 🇯🇵 Japanese Clock (§1.4: Violet Accent) */}
+            <button
+              type="button"
+              onClick={() => setChosenAuctionFormat('japanese')}
+              className={`p-3 rounded-xl border border-t-4 border-t-violet-400 text-xs font-mono font-bold transition card-hover-lift ${
+                chosenAuctionFormat === 'japanese'
+                  ? 'bg-violet-500/20 border-violet-400 text-violet-300 shadow-lg shadow-violet-500/20'
+                  : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <span className="text-base block mb-0.5">🇯🇵</span>
+              <span className="text-slate-100 font-bold block">Japanese</span>
+              <span className="text-[0.625rem] font-normal text-violet-400/90 block">Hold to Stay</span>
+            </button>
+          </div>
+        </div>
+
+        {/* 2. Choose Mode */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+          <button
+            onClick={() => onStartAiOnlyMode(chosenAuctionFormat)}
+            className="w-full sm:w-auto px-6 py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-xl shadow-indigo-600/30 transition transform hover:-translate-y-0.5 flex items-center justify-center gap-2 cursor-pointer"
+          >
+            <Cpu className="w-4 h-4" />
+            🤖 Build RFQ & Watch 4 AI Bots Battle
+          </button>
+
+          <button
+            onClick={() => onQuickPlayVsBots(chosenAuctionFormat)}
+            className="w-full sm:w-auto px-6 py-4 rounded-2xl bg-slate-900 border border-slate-700 hover:border-indigo-500 text-slate-200 font-semibold text-sm shadow-xl transition transform hover:-translate-y-0.5 flex items-center justify-center gap-2 cursor-pointer"
+          >
+            <Sparkles className="w-4 h-4 text-indigo-400" />
+            🎮 Play Solo vs 3 AI Bots
+          </button>
+        </div>
+        <span className="text-xs text-slate-500 font-mono block">
+          Choose auction type above ➔ Build RFQ (with Auto-Select) ➔ Enter Live Bidding!
+        </span>
+      </div>
+
+      <div className="relative flex items-center justify-center my-2">
+        <div className="border-t border-slate-800 w-full" />
+        <span className="bg-slate-100 dark:bg-[#090D16] px-4 text-xs font-mono text-slate-500 uppercase tracking-widest absolute">
+          or custom multiplayer room
+        </span>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        {/* Host a New Room */}
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col justify-between space-y-4">
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-8 h-8 rounded-lg bg-indigo-600/20 border border-indigo-500/40 flex items-center justify-center">
+                <Play className="w-4 h-4 text-indigo-400 fill-current" />
+              </div>
+              <h3 className="font-bold text-lg text-slate-100">Host a New Game</h3>
+            </div>
+
+            <div className="space-y-3.5">
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">Your Company Name</label>
+                <input
+                  type="text"
+                  value={hostName}
+                  onChange={(e) => setHostName(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">Industry Scenario</label>
+                <select
+                  value={selectedScenario}
+                  onChange={(e) => setSelectedScenario(e.target.value as IndustryScenarioId)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
+                >
+                  {Object.values(SCENARIOS).map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} ({s.category})
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-slate-500 mt-1 font-mono">
+                  {SCENARIOS[selectedScenario].dominantRisk}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Fiscal Rounds</label>
+                  <select
+                    value={selectedRounds}
+                    onChange={(e) => setSelectedRounds(Number(e.target.value))}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
+                  >
+                    <option value={3}>3 Rounds (Quick)</option>
+                    <option value={6}>6 Rounds (Standard)</option>
+                    <option value={12}>12 Rounds (Campaign)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Difficulty</label>
+                  <select
+                    value={selectedDifficulty}
+                    onChange={(e) => setSelectedDifficulty(e.target.value as GameDifficulty)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
+                  >
+                    <option value="beginner">Beginner</option>
+                    <option value="standard">Standard</option>
+                    <option value="expert">Expert</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Target Number of Players Selector */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center justify-between">
+                  <span>Number of Competitors / Vendors</span>
+                  <span className="text-xs font-mono text-indigo-400 font-bold">{selectedMaxPlayers} Vendors</span>
+                </label>
+                <div className="grid grid-cols-7 gap-1.5">
+                  {[2, 3, 4, 5, 6, 7, 8].map(count => (
+                    <button
+                      key={count}
+                      type="button"
+                      onClick={() => setSelectedMaxPlayers(count)}
+                      className={`py-2 rounded-xl text-xs font-mono font-bold border transition ${
+                        selectedMaxPlayers === count
+                          ? 'bg-indigo-600 border-indigo-400 text-white shadow-md shadow-indigo-600/30'
+                          : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      {count}P
+                    </button>
+                  ))}
+                </div>
+                <span className="text-[0.625rem] text-slate-500 font-mono mt-1 block">
+                  You can invite friends or 1-click auto-fill empty slots with AI bots!
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={() => onCreateRoom(selectedScenario, selectedRounds, selectedDifficulty, hostName, selectedMaxPlayers, chosenAuctionFormat)}
+            className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-lg shadow-indigo-600/30 transition flex items-center justify-center gap-2 mt-4 cursor-pointer"
+          >
+            <Sparkles className="w-4 h-4" />
+            Create {selectedMaxPlayers}-Player Room & Generate Code
+          </button>
+        </div>
+
+        {/* Join an Existing Room */}
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col justify-between space-y-4">
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-8 h-8 rounded-lg bg-emerald-600/20 border border-emerald-500/40 flex items-center justify-center">
+                <Users className="w-4 h-4 text-emerald-400" />
+              </div>
+              <h3 className="font-bold text-lg text-slate-100">Join Existing Room</h3>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">Your Company Name</label>
+                <input
+                  type="text"
+                  value={joinName}
+                  onChange={(e) => setJoinName(e.target.value)}
+                  placeholder="e.g. Acme Global Logistics"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">Enter Room Code</label>
+                <input
+                  type="text"
+                  value={joinCode}
+                  onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                  placeholder="e.g. SCM-84"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm font-mono tracking-wider uppercase text-emerald-400 focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={() => onJoinRoom(joinCode, joinName)}
+            disabled={!joinCode.trim() || !joinName.trim()}
+            className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 text-white font-semibold text-sm shadow-lg shadow-emerald-600/30 transition flex items-center justify-center gap-2 mt-4 cursor-pointer"
+          >
+            <Users className="w-4 h-4" />
+            Join Room
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+  );
+};

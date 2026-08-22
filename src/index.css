@@ -1,0 +1,400 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html.dark body {
+    background-color: #0F172A;
+    color: #F8FAFC;
+  }
+  html.light body, html:not(.dark) body {
+    background-color: #F8FAFC;
+    color: #0F172A;
+  }
+  body {
+    @apply font-sans antialiased transition-colors duration-150;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+  
+  /* Focus Visibility (§6.4) */
+  :focus-visible {
+    @apply outline-none ring-2 ring-indigo-500 ring-offset-2 ring-offset-slate-900;
+  }
+  html.light :focus-visible, html:not(.dark) :focus-visible {
+    @apply ring-indigo-600 ring-offset-white;
+  }
+
+  /* Cross-browser input number spin button resets */
+  input::-webkit-outer-spin-button,
+  input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type=number] {
+    -moz-appearance: textfield;
+  }
+
+  /* Cross-browser touch responsiveness & iOS input zoom prevention */
+  button, input, select, a {
+    touch-action: manipulation;
+  }
+
+  @media screen and (max-width: 768px) {
+    input, select, textarea {
+      font-size: 16px !important; /* Prevents auto-zoom on iOS Safari */
+    }
+  }
+}
+
+/* ==========================================================================
+   MOBILE SAFE-AREA & TOUCH UTILITIES (iOS & Android)
+   ========================================================================== */
+
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0);
+}
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+.pl-safe {
+  padding-left: env(safe-area-inset-left, 0);
+}
+.pr-safe {
+  padding-right: env(safe-area-inset-right, 0);
+}
+
+.touch-scroll {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ==========================================================================
+   CROSS-BROWSER SCROLLBARS (Chrome, Edge, Firefox, Safari)
+   ========================================================================== */
+
+/* Firefox Standard Scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #CBD5E1 transparent;
+}
+html.dark * {
+  scrollbar-color: #475569 transparent;
+}
+
+/* Chrome, Edge, Safari WebKit Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 3px;
+}
+html.dark ::-webkit-scrollbar-thumb {
+  background: #475569;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: #64748B;
+}
+
+/* ==========================================================================
+   LIGHT THEME: BRIGHT, CRISP, HIGH-CONTRAST EXECUTIVE PALETTE
+   ========================================================================== */
+
+html.light, html:not(.dark) {
+  color-scheme: light;
+}
+
+html.light .min-h-screen,
+html.light main,
+html:not(.dark) .min-h-screen,
+html:not(.dark) main {
+  background-color: #F8FAFC !important;
+  color: #0F172A !important;
+}
+
+/* All Primary Cards, Panels, Modals -> Pure White with Crisp Border */
+html.light .bg-slate-900,
+html:not(.dark) .bg-slate-900,
+html.light .bg-\[\#090D16\],
+html:not(.dark) .bg-\[\#090D16\] {
+  background-color: #FFFFFF !important;
+  border-color: #E2E8F0 !important;
+  color: #0F172A !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.06) !important;
+}
+
+/* Secondary Wells & Inset Metric Boxes -> Soft Clean Tint */
+html.light .bg-slate-950,
+html.light .bg-slate-950\/40,
+html.light .bg-slate-950\/60,
+html.light .bg-slate-950\/80,
+html.light .bg-slate-950\/90,
+html:not(.dark) .bg-slate-950,
+html:not(.dark) .bg-slate-950\/40,
+html:not(.dark) .bg-slate-950\/60,
+html:not(.dark) .bg-slate-950\/80 {
+  background-color: #F1F5F9 !important;
+  border-color: #E2E8F0 !important;
+  color: #1E293B !important;
+}
+
+/* Buttons, Chips, Sub-Panels */
+html.light .bg-slate-800,
+html:not(.dark) .bg-slate-800 {
+  background-color: #F1F5F9 !important;
+  border-color: #CBD5E1 !important;
+  color: #1E293B !important;
+}
+
+html.light .hover\:bg-slate-700:hover,
+html.light .hover\:bg-slate-800:hover,
+html:not(.dark) .hover\:bg-slate-700:hover,
+html:not(.dark) .hover\:bg-slate-800:hover {
+  background-color: #E2E8F0 !important;
+  color: #0F172A !important;
+}
+
+/* Sticky Header Navigation */
+html.light header,
+html:not(.dark) header {
+  background-color: rgba(255, 255, 255, 0.98) !important;
+  border-color: #E2E8F0 !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05) !important;
+}
+
+/* High-Contrast Typography */
+html.light .text-slate-100,
+html.light .text-slate-200,
+html:not(.dark) .text-slate-100,
+html:not(.dark) .text-slate-200 {
+  color: #0F172A !important;
+}
+
+html.light .text-slate-300,
+html:not(.dark) .text-slate-300 {
+  color: #1E293B !important;
+}
+
+html.light .text-slate-400,
+html:not(.dark) .text-slate-400 {
+  color: #475569 !important;
+}
+
+html.light .text-slate-500,
+html:not(.dark) .text-slate-500 {
+  color: #64748B !important;
+}
+
+/* Borders & Dividers */
+html.light .border-slate-800,
+html.light .border-slate-700,
+html.light .divide-slate-800\/60 > *,
+html:not(.dark) .border-slate-800,
+html:not(.dark) .border-slate-700 {
+  border-color: #E2E8F0 !important;
+}
+
+/* Form Controls & Inputs */
+html.light input[type="text"],
+html.light input[type="number"],
+html.light input[type="password"],
+html.light select,
+html.light textarea,
+html:not(.dark) input[type="text"],
+html:not(.dark) input[type="number"],
+html:not(.dark) input[type="password"],
+html:not(.dark) select {
+  background-color: #FFFFFF !important;
+  border-color: #CBD5E1 !important;
+  color: #0F172A !important;
+}
+
+html.light input:focus,
+html.light select:focus,
+html:not(.dark) input:focus {
+  border-color: #4F46E5 !important;
+  background-color: #FFFFFF !important;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15) !important;
+}
+
+/* High-Contrast Accent Tokens on White */
+html.light .text-indigo-400,
+html:not(.dark) .text-indigo-400 {
+  color: #4338CA !important;
+}
+
+html.light .text-emerald-400,
+html:not(.dark) .text-emerald-400 {
+  color: #047857 !important;
+}
+
+html.light .text-amber-400,
+html:not(.dark) .text-amber-400 {
+  color: #B45309 !important;
+}
+
+html.light .text-rose-400,
+html:not(.dark) .text-rose-400 {
+  color: #BE123C !important;
+}
+
+html.light .text-purple-400,
+html:not(.dark) .text-purple-400 {
+  color: #7E22CE !important;
+}
+
+html.light .text-cyan-400,
+html:not(.dark) .text-cyan-400 {
+  color: #0E7490 !important;
+}
+
+html.light .text-sky-400,
+html:not(.dark) .text-sky-400 {
+  color: #0369A1 !important;
+}
+
+/* Pastel High-Contrast Badges */
+html.light .bg-indigo-950,
+html.light .bg-indigo-950\/30,
+html.light .bg-indigo-950\/40,
+html:not(.dark) .bg-indigo-950 {
+  background-color: #EEF2FF !important;
+  border-color: #C7D2FE !important;
+  color: #3730A3 !important;
+}
+
+html.light .bg-emerald-950,
+html.light .bg-emerald-950\/40,
+html.light .bg-emerald-950\/60,
+html:not(.dark) .bg-emerald-950 {
+  background-color: #ECFDF5 !important;
+  border-color: #A7F3D0 !important;
+  color: #065F46 !important;
+}
+
+html.light .bg-amber-950,
+html.light .bg-amber-950\/40,
+html.light .bg-amber-950\/80,
+html:not(.dark) .bg-amber-950 {
+  background-color: #FFFBEB !important;
+  border-color: #FDE68A !important;
+  color: #92400E !important;
+}
+
+html.light .bg-rose-950,
+html.light .bg-rose-950\/40,
+html.light .bg-rose-950\/60,
+html:not(.dark) .bg-rose-950 {
+  background-color: #FFF1F2 !important;
+  border-color: #FECDD3 !important;
+  color: #9F1239 !important;
+}
+
+html.light .bg-purple-950,
+html.light .bg-purple-950\/50,
+html:not(.dark) .bg-purple-950 {
+  background-color: #FAF5FF !important;
+  border-color: #E9D5FF !important;
+  color: #6B21A8 !important;
+}
+
+html.light .bg-sky-950,
+html.light .bg-sky-950\/50,
+html:not(.dark) .bg-sky-950 {
+  background-color: #F0F9FF !important;
+  border-color: #BAE6FD !important;
+  color: #0369A1 !important;
+}
+
+html.light .bg-orange-950,
+html.light .bg-orange-950\/50,
+html:not(.dark) .bg-orange-950 {
+  background-color: #FFF7ED !important;
+  border-color: #FED7AA !important;
+  color: #C2410C !important;
+}
+
+html.light .bg-yellow-950,
+html.light .bg-yellow-950\/50,
+html:not(.dark) .bg-yellow-950 {
+  background-color: #FEFCE8 !important;
+  border-color: #FEF08A !important;
+  color: #A16207 !important;
+}
+
+/* Modals & Backdrop Blur */
+html.dark .modal-backdrop {
+  background-color: rgba(15, 23, 42, 0.75) !important;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+html.light .modal-backdrop, html:not(.dark) .modal-backdrop {
+  background-color: rgba(15, 23, 42, 0.35) !important;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+html.light .elevation-2,
+html.light .shadow-2xl,
+html:not(.dark) .elevation-2,
+html:not(.dark) .shadow-2xl {
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Card Hover Lift */
+.card-hover-lift {
+  transition: transform 150ms ease-out, box-shadow 150ms ease-out;
+}
+.card-hover-lift:hover {
+  transform: translateY(-2px);
+}
+html.dark .card-hover-lift:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5) !important;
+}
+html.light .card-hover-lift:hover, html:not(.dark) .card-hover-lift:hover {
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08) !important;
+}
+
+/* 3D Flip Card Animation with Vendor Prefixes */
+.perspective-1000 {
+  perspective: 1000px;
+  -webkit-perspective: 1000px;
+}
+
+.transform-style-3d {
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.rotate-y-180 {
+  transform: rotateY(180deg);
+  -webkit-transform: rotateY(180deg);
+}
+
+/* Reduced Motion Compliance (§6.5) */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
