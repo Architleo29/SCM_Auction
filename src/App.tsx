@@ -146,7 +146,20 @@ export const App: React.FC = () => {
         case 'ROOM_STATE_SYNC':
           if (event.payload.roomConfig) setRoomConfig(event.payload.roomConfig);
           if (event.payload.phase) setPhase(event.payload.phase);
-          if (event.payload.players) setPlayers(event.payload.players);
+          if (event.payload.players) {
+            setPlayers(prev => {
+              const incoming = event.payload.players;
+              const localMe = prev[myPlayerId];
+              // If local player exists and incoming sync doesn't have it yet, keep localMe
+              if (localMe && !incoming[myPlayerId]) {
+                return {
+                  ...incoming,
+                  [myPlayerId]: localMe
+                };
+              }
+              return incoming;
+            });
+          }
           if (event.payload.currentRfq) setCurrentRfq(event.payload.currentRfq);
           if (event.payload.activeAuction) setActiveAuction(event.payload.activeAuction);
           if (event.payload.evaluationResult) setEvaluationResult(event.payload.evaluationResult);
@@ -155,16 +168,21 @@ export const App: React.FC = () => {
 
         case 'PLAYER_JOINED': {
           const joinedId = event.payload.id;
+          if (!joinedId) break;
+
+          const joinedProfile = event.payload.profile || generateCompanyProfile(event.payload.name, Math.floor(Math.random() * 8));
+          joinedProfile.name = event.payload.name;
+
           const newPlayer: PlayerState = {
             id: joinedId,
             name: event.payload.name,
             isHost: event.payload.isHost,
             isAi: false,
-            profile: event.payload.profile,
+            profile: joinedProfile,
             score: 0,
             bankedProfit: 0,
             contractsWon: 0,
-            reputation: event.payload.profile.reputationScore,
+            reputation: joinedProfile.reputationScore || 50,
             intelPoints: 2,
             disciplineWalkaways: 0,
             ready: false,
@@ -321,10 +339,13 @@ export const App: React.FC = () => {
     const code = roomCodeInput.toUpperCase().trim();
     if (!code) return;
 
-    const myProfile = generateCompanyProfile(playerName, Math.floor(Math.random() * 8));
+    const trimmedPlayerName = playerName.trim() || 'Vendor Company';
+    const myProfile = generateCompanyProfile(trimmedPlayerName, Math.floor(Math.random() * 8));
+    myProfile.name = trimmedPlayerName;
+
     const newPlayer: PlayerState = {
       id: myPlayerId,
-      name: playerName,
+      name: trimmedPlayerName,
       isHost: false,
       isAi: false,
       profile: myProfile,
@@ -338,6 +359,12 @@ export const App: React.FC = () => {
       submittedQuote: null,
       history: []
     };
+
+    // Store in state immediately
+    setPlayers(prev => ({
+      ...prev,
+      [myPlayerId]: newPlayer
+    }));
 
     // 1. Fetch current server snapshot for this room
     try {
@@ -364,7 +391,6 @@ export const App: React.FC = () => {
           createdAt: Date.now()
         };
         setRoomConfig(fallbackConfig);
-        setPlayers({ [myPlayerId]: newPlayer });
         setPhase('LOBBY');
       }
     } catch (e) {
@@ -380,7 +406,6 @@ export const App: React.FC = () => {
         createdAt: Date.now()
       };
       setRoomConfig(fallbackConfig);
-      setPlayers({ [myPlayerId]: newPlayer });
       setPhase('LOBBY');
     }
 
@@ -388,7 +413,7 @@ export const App: React.FC = () => {
     setTimeout(() => {
       roomSync.broadcast({
         type: 'PLAYER_JOINED',
-        payload: { id: myPlayerId, name: playerName, isHost: false, profile: myProfile }
+        payload: { id: myPlayerId, name: trimmedPlayerName, isHost: false, profile: myProfile }
       }, code);
     }, 150);
   };
