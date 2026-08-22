@@ -47,7 +47,18 @@ export const App: React.FC = () => {
   const [roomConfig, setRoomConfig] = useState<RoomConfig | null>(null);
   const [phase, setPhase] = useState<GamePhase>('LOBBY');
   const [players, setPlayers] = useState<Record<string, PlayerState>>({});
-  const [myPlayerId, setMyPlayerId] = useState<string>(`player_${Math.random().toString(36).substring(2, 7)}`);
+  const [myPlayerId] = useState<string>(() => {
+    try {
+      let id = sessionStorage.getItem('scm_player_id');
+      if (!id) {
+        id = `player_${Math.random().toString(36).substring(2, 7)}`;
+        sessionStorage.setItem('scm_player_id', id);
+      }
+      return id;
+    } catch (e) {
+      return `player_${Math.random().toString(36).substring(2, 7)}`;
+    }
+  });
   
   // Game Round State
   const [currentRfq, setCurrentRfq] = useState<RFQ | null>(null);
@@ -291,11 +302,25 @@ export const App: React.FC = () => {
     setRoomConfig(config);
     setPlayers({ [myPlayerId]: initialPlayer });
     setPhase('LOBBY');
+
+    // Immediately broadcast initial room state so joiners find the room populated
+    setTimeout(() => {
+      roomSync.broadcast({
+        type: 'ROOM_STATE_SYNC',
+        payload: {
+          roomConfig: config,
+          phase: 'LOBBY',
+          players: { [myPlayerId]: initialPlayer }
+        }
+      }, code);
+    }, 100);
   };
 
   // 2. Join Existing Room
-  const handleJoinRoom = (roomCodeInput: string, playerName: string) => {
+  const handleJoinRoom = async (roomCodeInput: string, playerName: string) => {
     const code = roomCodeInput.toUpperCase().trim();
+    if (!code) return;
+
     const myProfile = generateCompanyProfile(playerName, Math.floor(Math.random() * 8));
     const newPlayer: PlayerState = {
       id: myPlayerId,
@@ -314,42 +339,57 @@ export const App: React.FC = () => {
       history: []
     };
 
-    const initialConfig: RoomConfig = {
-      code,
-      hostId: '',
-      scenarioId: 'manufacturing',
-      totalRounds: 6,
-      currentRound: 1,
-      difficulty: 'standard',
-      auctionFormatSequence: ['english', 'dutch', 'japanese'],
-      maxPlayers: 4,
-      createdAt: Date.now()
-    };
+    // 1. Fetch current server snapshot for this room
+    try {
+      const res = await fetch(`/api/sync/state?room=${encodeURIComponent(code)}`);
+      const data = await res.json();
+      if (data && data.state && data.state.roomConfig) {
+        setRoomConfig(data.state.roomConfig);
+        setPhase(data.state.phase || 'LOBBY');
+        if (data.state.currentRfq) setCurrentRfq(data.state.currentRfq);
+        if (data.state.activeAuction) setActiveAuction(data.state.activeAuction);
+        
+        const existingPlayers = data.state.players || {};
+        setPlayers({ ...existingPlayers, [myPlayerId]: newPlayer });
+      } else {
+        const fallbackConfig: RoomConfig = {
+          code,
+          hostId: '',
+          scenarioId: 'manufacturing',
+          totalRounds: 3,
+          currentRound: 1,
+          difficulty: 'standard',
+          auctionFormatSequence: ['english', 'dutch', 'japanese'],
+          maxPlayers: 4,
+          createdAt: Date.now()
+        };
+        setRoomConfig(fallbackConfig);
+        setPlayers({ [myPlayerId]: newPlayer });
+        setPhase('LOBBY');
+      }
+    } catch (e) {
+      const fallbackConfig: RoomConfig = {
+        code,
+        hostId: '',
+        scenarioId: 'manufacturing',
+        totalRounds: 3,
+        currentRound: 1,
+        difficulty: 'standard',
+        auctionFormatSequence: ['english', 'dutch', 'japanese'],
+        maxPlayers: 4,
+        createdAt: Date.now()
+      };
+      setRoomConfig(fallbackConfig);
+      setPlayers({ [myPlayerId]: newPlayer });
+      setPhase('LOBBY');
+    }
 
-    setRoomConfig(initialConfig);
-    setPlayers(prev => ({ ...prev, [myPlayerId]: newPlayer }));
-    setPhase('LOBBY');
-
-    // Fetch snapshot from local sync API
-    fetch(`/api/sync/state?room=${encodeURIComponent(code)}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.state) {
-          if (data.state.roomConfig) setRoomConfig(data.state.roomConfig);
-          if (data.state.phase) setPhase(data.state.phase);
-          if (data.state.players) setPlayers(prev => ({ ...data.state.players, [myPlayerId]: newPlayer }));
-          if (data.state.currentRfq) setCurrentRfq(data.state.currentRfq);
-          if (data.state.activeAuction) setActiveAuction(data.state.activeAuction);
-        }
-      })
-      .catch(() => {});
-
-    // Broadcast join announcement
+    // 2. Broadcast join announcement with explicit room code
     setTimeout(() => {
       roomSync.broadcast({
         type: 'PLAYER_JOINED',
         payload: { id: myPlayerId, name: playerName, isHost: false, profile: myProfile }
-      });
+      }, code);
     }, 150);
   };
 
@@ -1083,7 +1123,6 @@ export const App: React.FC = () => {
     setPhase('LOBBY');
     setRoomConfig(null);
     setPlayers({});
-    setMyPlayerId('');
     setCurrentRfq(null);
     setEvaluationResult(null);
     setActiveEvent(null);

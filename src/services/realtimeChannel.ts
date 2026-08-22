@@ -24,13 +24,20 @@ class RoomSyncManager {
   private processedEventIds: Set<number> = new Set();
 
   public subscribe(roomCode: string, onEvent: EventHandler) {
-    this.roomCode = roomCode.toUpperCase();
+    const formattedCode = roomCode.toUpperCase().trim();
+    this.roomCode = formattedCode;
     this.eventHandlers.add(onEvent);
+    this.processedEventIds.clear();
 
     // 1. LAN Realtime Server-Sent Events (SSE) - Works across all Wi-Fi / Local Network devices (PC + Mobile)
     try {
       if (typeof window !== 'undefined' && 'EventSource' in window) {
-        this.eventSource = new EventSource(`/api/sync/events?room=${encodeURIComponent(this.roomCode)}`);
+        if (this.eventSource) {
+          this.eventSource.close();
+          this.eventSource = null;
+        }
+
+        this.eventSource = new EventSource(`/api/sync/events?room=${encodeURIComponent(formattedCode)}`);
         
         this.eventSource.onmessage = (event) => {
           try {
@@ -41,7 +48,6 @@ class RoomSyncManager {
             }
             if (parsed && parsed.id) {
               this.processedEventIds.add(parsed.id);
-              // limit set size
               if (this.processedEventIds.size > 200) {
                 const first = this.processedEventIds.values().next().value;
                 if (first !== undefined) this.processedEventIds.delete(first);
@@ -51,7 +57,7 @@ class RoomSyncManager {
               this.notifyHandlers(parsed.event as MultiplayerEvent);
             }
           } catch (e) {
-            console.warn('LAN SSE parse error:', e);
+            console.warn('LAN SSE parse notice:', e);
           }
         };
 
@@ -67,10 +73,15 @@ class RoomSyncManager {
     const client = getSupabaseClient();
     if (client) {
       try {
-        this.supabaseChannel = client.channel(`room:${this.roomCode}`, {
+        if (this.supabaseChannel) {
+          this.supabaseChannel.unsubscribe();
+          this.supabaseChannel = null;
+        }
+
+        this.supabaseChannel = client.channel(`room:${formattedCode}`, {
           config: {
             broadcast: { self: false },
-            presence: { key: this.roomCode }
+            presence: { key: formattedCode }
           }
         });
 
@@ -93,7 +104,11 @@ class RoomSyncManager {
     // 3. Same-Browser Local Fallback (Tabs on same browser)
     try {
       if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
-        this.localBroadcastChannel = new BroadcastChannel(`scm_room_${this.roomCode}`);
+        if (this.localBroadcastChannel) {
+          this.localBroadcastChannel.close();
+          this.localBroadcastChannel = null;
+        }
+        this.localBroadcastChannel = new BroadcastChannel(`scm_room_${formattedCode}`);
         this.localBroadcastChannel.onmessage = (event) => {
           if (event.data) {
             this.notifyHandlers(event.data as MultiplayerEvent);
@@ -105,8 +120,9 @@ class RoomSyncManager {
     }
   }
 
-  public broadcast(event: MultiplayerEvent) {
-    if (!this.roomCode) return;
+  public broadcast(event: MultiplayerEvent, explicitRoomCode?: string) {
+    const targetRoom = (explicitRoomCode || this.roomCode).toUpperCase().trim();
+    if (!targetRoom) return;
 
     // 1. Send via LAN Local Sync API (Instantly reaches all mobile & desktop clients on network)
     try {
@@ -114,7 +130,7 @@ class RoomSyncManager {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          roomCode: this.roomCode,
+          roomCode: targetRoom,
           event
         })
       }).catch(err => {

@@ -29,7 +29,7 @@ function localSyncPlugin(): Plugin {
 
         // 1. SSE Event Stream: GET /api/sync/events?room=AUCT-XX&since=0
         if (url.pathname === '/api/sync/events' && req.method === 'GET') {
-          const roomCode = (url.searchParams.get('room') || 'default').toUpperCase();
+          const roomCode = (url.searchParams.get('room') || 'default').toUpperCase().trim();
           const since = parseInt(url.searchParams.get('since') || '0', 10);
 
           res.writeHead(200, {
@@ -63,7 +63,7 @@ function localSyncPlugin(): Plugin {
             } else {
               res.write(': ping\n\n');
             }
-          }, 200);
+          }, 150);
 
           req.on('close', () => {
             clearInterval(interval);
@@ -78,7 +78,7 @@ function localSyncPlugin(): Plugin {
           req.on('end', () => {
             try {
               const data = JSON.parse(body || '{}');
-              const roomCode = (data.roomCode || 'default').toUpperCase();
+              const roomCode = (data.roomCode || 'default').toUpperCase().trim();
               const event = data.event;
 
               if (!rooms[roomCode]) {
@@ -89,16 +89,40 @@ function localSyncPlugin(): Plugin {
               const record = { id: eventCounter, event };
               rooms[roomCode].events.push(record);
 
-              // Maintain rolling window of 150 events
-              if (rooms[roomCode].events.length > 150) {
-                rooms[roomCode].events.splice(0, rooms[roomCode].events.length - 150);
+              // Maintain rolling window of 200 events
+              if (rooms[roomCode].events.length > 200) {
+                rooms[roomCode].events.splice(0, rooms[roomCode].events.length - 200);
               }
 
-              // Update room state if it's a state sync
+              // Update room state in memory
               if (event?.type === 'ROOM_STATE_SYNC') {
                 rooms[roomCode].state = {
                   ...(rooms[roomCode].state || {}),
                   ...event.payload
+                };
+              } else if (event?.type === 'PLAYER_JOINED' && event.payload?.id) {
+                const currentPlayers = rooms[roomCode].state?.players || {};
+                rooms[roomCode].state = {
+                  ...(rooms[roomCode].state || {}),
+                  players: {
+                    ...currentPlayers,
+                    [event.payload.id]: {
+                      id: event.payload.id,
+                      name: event.payload.name,
+                      isHost: event.payload.isHost,
+                      isAi: false,
+                      profile: event.payload.profile,
+                      score: 0,
+                      bankedProfit: 0,
+                      contractsWon: 0,
+                      reputation: event.payload.profile?.reputationScore || 50,
+                      intelPoints: 2,
+                      disciplineWalkaways: 0,
+                      ready: false,
+                      submittedQuote: null,
+                      history: []
+                    }
+                  }
                 };
               }
 
@@ -114,7 +138,7 @@ function localSyncPlugin(): Plugin {
 
         // 3. Room State Snapshot: GET /api/sync/state?room=AUCT-XX
         if (url.pathname === '/api/sync/state' && req.method === 'GET') {
-          const roomCode = (url.searchParams.get('room') || 'default').toUpperCase();
+          const roomCode = (url.searchParams.get('room') || 'default').toUpperCase().trim();
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({
             roomCode,
