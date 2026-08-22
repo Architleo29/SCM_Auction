@@ -53,6 +53,20 @@ export const AuctionArena: React.FC<AuctionArenaProps> = ({
   const [customBid, setCustomBid] = useState<number>(auctionState.currentPrice - step1);
   const [isHoldingJapanese, setIsHoldingJapanese] = useState<boolean>(true);
 
+  // Local smooth ticking auction countdown clock (Guarantees ticking on guest devices)
+  const [localTimeRemaining, setLocalTimeRemaining] = useState<number>(auctionState.timeRemaining);
+
+  useEffect(() => {
+    setLocalTimeRemaining(auctionState.timeRemaining);
+  }, [auctionState.timeRemaining]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setLocalTimeRemaining(prev => Math.max(0, prev - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
   // Sync custom bid whenever currentPrice decreases
   useEffect(() => {
     setCustomBid(auctionState.currentPrice - step1);
@@ -149,19 +163,19 @@ export const AuctionArena: React.FC<AuctionArenaProps> = ({
 
         {/* Real-time Clock / Soft-close Timer */}
         <div className={`px-4 sm:px-5 py-3 rounded-2xl border flex items-center justify-between sm:justify-start gap-4 shrink-0 font-mono transition-colors duration-200 ${
-          auctionState.timeRemaining <= 5
+          localTimeRemaining <= 5
             ? 'bg-rose-950/70 text-rose-300 border-rose-500'
-            : auctionState.timeRemaining <= 10
+            : localTimeRemaining <= 10
             ? 'bg-amber-950/50 text-amber-300 border-amber-500 animate-pulse'
             : 'bg-slate-950 text-slate-200 border-slate-800'
         }`}>
           <div className="flex items-center gap-3">
-            <Clock className={`w-6 h-6 ${auctionState.timeRemaining <= 5 ? 'text-rose-400' : auctionState.timeRemaining <= 10 ? 'text-amber-400' : 'text-slate-400'}`} />
+            <Clock className={`w-6 h-6 ${localTimeRemaining <= 5 ? 'text-rose-400' : localTimeRemaining <= 10 ? 'text-amber-400' : 'text-slate-400'}`} />
             <div>
               <p className="text-[0.625rem] text-slate-500 uppercase">
                 {rfq.auctionFormat === 'english' ? 'Soft-Close Clock' : 'Auction Clock'}
               </p>
-              <p className="text-2xl font-bold">{auctionState.timeRemaining}s</p>
+              <p className="text-2xl font-bold">{localTimeRemaining}s</p>
             </div>
           </div>
           <span className="text-[0.625rem] sm:hidden font-bold uppercase text-slate-500">Live</span>

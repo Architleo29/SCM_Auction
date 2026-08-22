@@ -45,6 +45,29 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
   const [riskContingencyRate, setRiskContingencyRate] = useState<number>(profile.riskContingencyNeed);
   const [hasSubmitted, setHasSubmitted] = useState<boolean>(false);
 
+  // Local smooth ticking countdown timer (Guarantees countdown on mobile and guests)
+  const [localTimeRemaining, setLocalTimeRemaining] = useState<number>(timeRemainingSeconds || 45);
+
+  useEffect(() => {
+    if (timeRemainingSeconds !== undefined) {
+      setLocalTimeRemaining(timeRemainingSeconds);
+    }
+  }, [timeRemainingSeconds]);
+
+  useEffect(() => {
+    if (hasSubmitted) return;
+    const timer = setInterval(() => {
+      setLocalTimeRemaining(prev => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [hasSubmitted]);
+
   // Live Recalculation with user overrides
   const breakdown = useMemo(() => {
     return calculateCostBreakdown(profile, rfq, price, riskContingencyRate);
@@ -136,14 +159,14 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
 
         {/* Synchronized Countdown Timer */}
         <div className={`px-4 py-2.5 rounded-2xl border flex items-center gap-3 shrink-0 font-mono ${
-          timeRemainingSeconds <= 15
+          localTimeRemaining <= 15
             ? 'bg-rose-950/60 text-rose-300 border-rose-800 animate-pulse'
             : 'bg-slate-950 text-slate-200 border-slate-800'
         }`}>
           <Clock className="w-5 h-5 text-amber-400" />
           <div>
             <p className="text-[0.625rem] text-slate-500 uppercase">Quoting Deadline</p>
-            <p className="text-xl font-bold">{timeRemainingSeconds}s Remaining</p>
+            <p className="text-xl font-bold">{localTimeRemaining}s Remaining</p>
           </div>
         </div>
       </div>
