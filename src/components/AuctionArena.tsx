@@ -188,6 +188,27 @@ export const AuctionArena: React.FC<AuctionArenaProps> = ({
         {/* Left Arena: Format-Specific Action Floor */}
         <div className="lg:col-span-8 space-y-4 sm:space-y-6">
           
+          {/* Round 1 Live Auction Hint Banner */}
+          {rfq.roundNumber === 1 && !isSpectator && (
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-orange-950/70 via-slate-900 to-indigo-950/70 border border-orange-500/40 shadow-lg space-y-1.5 animate-fade-in text-xs">
+              <div className="flex items-center gap-2 text-orange-300 font-bold text-sm">
+                <Zap className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>💡 Round 1 Live Bidding Hint: {rfq.auctionFormat === 'english' ? 'Reverse English Strategy' : rfq.auctionFormat === 'dutch' ? 'Reverse Dutch Clock Strategy' : 'Japanese Clock Strategy'}</span>
+              </div>
+              <p className="text-slate-300 leading-relaxed">
+                {rfq.auctionFormat === 'english' && (
+                  <>In Reverse English, bids descend as vendors undercut each other. Watch your <strong>Your Margin</strong> indicator below! If your margin falls below 5%, <strong>stop bidding and walk away</strong> to protect your firm against the Winner's Curse.</>
+                )}
+                {rfq.auctionFormat === 'dutch' && (
+                  <>In Reverse Dutch, the price ticks <strong>UP</strong> every 2 seconds. The first vendor to click <strong>Buzz In</strong> wins immediately at that price! Wait for a profitable margin, but buzz before a rival firm steals the deal.</>
+                )}
+                {rfq.auctionFormat === 'japanese' && (
+                  <>In Japanese Clock, the price steps <strong>DOWN</strong>. Keep holding the button to remain in the tender. Once the price drops below your cost floor (FLC), release the button to exit safely.</>
+                )}
+              </p>
+            </div>
+          )}
+
           {/* Main Price Display Card */}
           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 shadow-xl text-center relative overflow-hidden space-y-3">
             <span className="text-xs sm:text-xs uppercase font-mono font-semibold tracking-wider text-slate-400 block">

@@ -72,6 +72,30 @@ export const RfqBoard: React.FC<RfqBoardProps> = ({
         </div>
       </div>
 
+      {/* Round 1 Strategy Coach Banner */}
+      {rfq.roundNumber === 1 && (
+        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-emerald-950/70 via-slate-900 to-indigo-950/70 border border-emerald-500/40 shadow-lg space-y-2.5 animate-fade-in">
+          <div className="flex items-center gap-2 text-emerald-300 font-bold text-sm">
+            <Sparkles className="w-5 h-5 text-amber-400 shrink-0" />
+            <span>💡 Round 1 RFQ Hint: Decoding the Buyer's Scoring Formula (QCBS)</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-slate-300 pt-1">
+            <div className="bg-slate-950/70 p-2.5 rounded-xl border border-slate-800">
+              <strong className="text-emerald-400 block mb-1">1. Budget Ceiling</strong>
+              Your price must be under {formatINR(rfq.budgetCeiling)}. Any quote above this ceiling is disqualified automatically.
+            </div>
+            <div className="bg-slate-950/70 p-2.5 rounded-xl border border-slate-800">
+              <strong className="text-indigo-400 block mb-1">2. Multi-Criteria Weights</strong>
+              Price is only {Math.round(rfq.weights.price * 100)}% of the score! Quality ({Math.round(rfq.weights.quality * 100)}%) and Timeline ({Math.round(rfq.weights.timeline * 100)}%) matter just as much.
+            </div>
+            <div className="bg-slate-950/70 p-2.5 rounded-xl border border-slate-800">
+              <strong className="text-amber-400 block mb-1">3. Avoid The Winner's Curse</strong>
+              Don't bid below your cost floor. Winning an unprofitable deal drains your cash and hurts your leaderboard rank!
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Scope & Baseline Specs */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         

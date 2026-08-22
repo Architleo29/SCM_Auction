@@ -71,6 +71,21 @@ export const CompanyDossier: React.FC<CompanyDossierProps> = ({
         </div>
       </div>
 
+      {/* Round 1 Onboarding Briefing Banner */}
+      {roundNumber === 1 && (
+        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-indigo-950/80 via-purple-950/60 to-slate-900 border border-indigo-500/40 shadow-lg space-y-2.5 animate-fade-in">
+          <div className="flex items-center gap-2 text-indigo-300 font-bold text-sm">
+            <Lightbulb className="w-5 h-5 text-amber-400 shrink-0" />
+            <span>💡 Round 1 Procurement Pro-Tip: How Your Company Economics Work</span>
+          </div>
+          <p className="text-xs text-slate-300 leading-relaxed">
+            Welcome to the Tender Arena! Below are your firm's <strong>Confidential Economic Multipliers</strong>. 
+            Your <strong>Labor Index</strong> and <strong>Material Multipliers</strong> determine your baseline cost for building products. 
+            Higher <strong>Quality & Reputation</strong> gives you higher technical evaluation points (QCBS), meaning you can often win contracts even if a competitor bids a slightly lower price!
+          </p>
+        </div>
+      )}
+
       {/* 14 Economics Metrics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         

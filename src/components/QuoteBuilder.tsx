@@ -171,6 +171,30 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
         </div>
       </div>
 
+      {/* Round 1 Strategy Coach Banner */}
+      {rfq.roundNumber === 1 && (
+        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-purple-950/70 via-slate-900 to-indigo-950/70 border border-purple-500/40 shadow-lg space-y-2.5 animate-fade-in">
+          <div className="flex items-center gap-2 text-purple-300 font-bold text-sm">
+            <Calculator className="w-5 h-5 text-purple-400 shrink-0" />
+            <span>💡 Round 1 Quoting Coach: Setting Your Commercial Strategy</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-slate-300 pt-1">
+            <div className="bg-slate-950/70 p-2.5 rounded-xl border border-slate-800">
+              <strong className="text-purple-300 block mb-1">1. Fully Loaded Cost (FLC)</strong>
+              Your FLC is <span className="font-mono font-bold text-emerald-400">{formatINR(breakdown.fullyLoadedCost)}</span>. Quoting below this guarantees a financial loss if you win.
+            </div>
+            <div className="bg-slate-950/70 p-2.5 rounded-xl border border-slate-800">
+              <strong className="text-indigo-300 block mb-1">2. Target Bid Price</strong>
+              The suggested price of <span className="font-mono font-bold text-cyan-400">{formatINR(initialBaseline.targetBidPrice)}</span> gives you a healthy ~15% gross profit margin.
+            </div>
+            <div className="bg-slate-950/70 p-2.5 rounded-xl border border-slate-800">
+              <strong className="text-amber-300 block mb-1">3. Non-Price Terms</strong>
+              Selecting <strong>Net 30</strong> payment terms and <strong>Standard SLA</strong> keeps compliance high without adding excessive cost.
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
         
         {/* Left Form: Quote Configuration Inputs */}
