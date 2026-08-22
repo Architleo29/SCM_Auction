@@ -83,8 +83,14 @@ export const App: React.FC = () => {
   const quotesRef = useRef<Quote[]>(submittedQuotes);
   const rfqRef = useRef<RFQ | null>(currentRfq);
   const activeAuctionRef = useRef<AuctionState>(activeAuction);
+  const roomConfigRef = useRef<RoomConfig | null>(roomConfig);
+  const phaseRef = useRef<GamePhase>(phase);
+  const isHostRef = useRef<boolean>(false);
   const auctionTimerRef = useRef<NodeJS.Timeout | null>(null);
   const quotingTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const me = players[myPlayerId] || null;
+  const isHost = roomConfig ? roomConfig.hostId === myPlayerId : false;
 
   useEffect(() => {
     playersRef.current = players;
@@ -102,8 +108,17 @@ export const App: React.FC = () => {
     activeAuctionRef.current = activeAuction;
   }, [activeAuction]);
 
-  const me = players[myPlayerId] || null;
-  const isHost = roomConfig ? roomConfig.hostId === myPlayerId : false;
+  useEffect(() => {
+    roomConfigRef.current = roomConfig;
+  }, [roomConfig]);
+
+  useEffect(() => {
+    phaseRef.current = phase;
+  }, [phase]);
+
+  useEffect(() => {
+    isHostRef.current = isHost;
+  }, [isHost]);
 
   // Check Supabase connection status on mount
   useEffect(() => {
@@ -127,40 +142,67 @@ export const App: React.FC = () => {
           if (event.payload.activeEvent) setActiveEvent(event.payload.activeEvent);
           break;
 
-        case 'PLAYER_JOINED':
-          setPlayers(prev => ({
-            ...prev,
-            [event.payload.id]: {
-              id: event.payload.id,
-              name: event.payload.name,
-              isHost: event.payload.isHost,
-              isAi: false,
-              profile: event.payload.profile,
-              score: 0,
-              bankedProfit: 0,
-              contractsWon: 0,
-              reputation: event.payload.profile.reputationScore,
-              intelPoints: 2,
-              disciplineWalkaways: 0,
-              ready: false,
-              submittedQuote: null,
-              history: []
+        case 'PLAYER_JOINED': {
+          const joinedId = event.payload.id;
+          const newPlayer: PlayerState = {
+            id: joinedId,
+            name: event.payload.name,
+            isHost: event.payload.isHost,
+            isAi: false,
+            profile: event.payload.profile,
+            score: 0,
+            bankedProfit: 0,
+            contractsWon: 0,
+            reputation: event.payload.profile.reputationScore,
+            intelPoints: 2,
+            disciplineWalkaways: 0,
+            ready: false,
+            submittedQuote: null,
+            history: []
+          };
+
+          setPlayers(prev => {
+            const updated = { ...prev, [joinedId]: newPlayer };
+            if (isHostRef.current) {
+              setTimeout(() => {
+                broadcastSync({
+                  roomConfig: roomConfigRef.current,
+                  phase: phaseRef.current,
+                  players: updated,
+                  currentRfq: rfqRef.current
+                });
+              }, 60);
             }
-          }));
+            return updated;
+          });
           break;
+        }
 
         case 'QUOTE_SUBMITTED':
           setSubmittedQuotes(prev => [...prev.filter(q => q.playerId !== event.payload.playerId), event.payload.quote]);
           setPlayers(prev => {
             const p = prev[event.payload.playerId];
             if (!p) return prev;
-            return {
+            const updated = {
               ...prev,
               [event.payload.playerId]: {
                 ...p,
                 submittedQuote: event.payload.quote
               }
             };
+
+            // If I am Host, check if all human players have submitted
+            if (isHostRef.current) {
+              const humanPlayers = Object.values(updated).filter(pl => !pl.isAi && !pl.name.includes('Director') && !pl.name.includes('Spectator'));
+              const allSubmitted = humanPlayers.length > 0 && humanPlayers.every(pl => pl.submittedQuote !== null);
+              if (allSubmitted) {
+                setTimeout(() => {
+                  handleQuotingTimeout();
+                }, 1200);
+              }
+            }
+
+            return updated;
           });
           break;
 
@@ -252,7 +294,8 @@ export const App: React.FC = () => {
   };
 
   // 2. Join Existing Room
-  const handleJoinRoom = (code: string, playerName: string) => {
+  const handleJoinRoom = (roomCodeInput: string, playerName: string) => {
+    const code = roomCodeInput.toUpperCase().trim();
     const myProfile = generateCompanyProfile(playerName, Math.floor(Math.random() * 8));
     const newPlayer: PlayerState = {
       id: myPlayerId,
@@ -271,7 +314,7 @@ export const App: React.FC = () => {
       history: []
     };
 
-    setRoomConfig({
+    const initialConfig: RoomConfig = {
       code,
       hostId: '',
       scenarioId: 'manufacturing',
@@ -281,15 +324,33 @@ export const App: React.FC = () => {
       auctionFormatSequence: ['english', 'dutch', 'japanese'],
       maxPlayers: 4,
       createdAt: Date.now()
-    });
+    };
 
+    setRoomConfig(initialConfig);
     setPlayers(prev => ({ ...prev, [myPlayerId]: newPlayer }));
     setPhase('LOBBY');
 
-    roomSync.broadcast({
-      type: 'PLAYER_JOINED',
-      payload: { id: myPlayerId, name: playerName, isHost: false, profile: myProfile }
-    });
+    // Fetch snapshot from local sync API
+    fetch(`/api/sync/state?room=${encodeURIComponent(code)}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.state) {
+          if (data.state.roomConfig) setRoomConfig(data.state.roomConfig);
+          if (data.state.phase) setPhase(data.state.phase);
+          if (data.state.players) setPlayers(prev => ({ ...data.state.players, [myPlayerId]: newPlayer }));
+          if (data.state.currentRfq) setCurrentRfq(data.state.currentRfq);
+          if (data.state.activeAuction) setActiveAuction(data.state.activeAuction);
+        }
+      })
+      .catch(() => {});
+
+    // Broadcast join announcement
+    setTimeout(() => {
+      roomSync.broadcast({
+        type: 'PLAYER_JOINED',
+        payload: { id: myPlayerId, name: playerName, isHost: false, profile: myProfile }
+      });
+    }, 150);
   };
 
   // 3. Add AI Bot Manually
@@ -585,13 +646,14 @@ export const App: React.FC = () => {
     const updatedQuotes = [...submittedQuotes.filter(q => q.playerId !== quote.playerId), quote];
     setSubmittedQuotes(updatedQuotes);
 
-    setPlayers(prev => ({
-      ...prev,
+    const updatedPlayers = {
+      ...players,
       [quote.playerId]: {
-        ...prev[quote.playerId],
+        ...players[quote.playerId],
         submittedQuote: quote
       }
-    }));
+    };
+    setPlayers(updatedPlayers);
 
     roomSync.broadcast({
       type: 'QUOTE_SUBMITTED',
@@ -599,9 +661,13 @@ export const App: React.FC = () => {
     });
 
     if (isHost) {
-      setTimeout(() => {
-        handleQuotingTimeout();
-      }, 2500);
+      const humanPlayers = Object.values(updatedPlayers).filter(pl => !pl.isAi && !pl.name.includes('Director') && !pl.name.includes('Spectator'));
+      const allSubmitted = humanPlayers.length > 0 && humanPlayers.every(pl => pl.submittedQuote !== null);
+      if (allSubmitted) {
+        setTimeout(() => {
+          handleQuotingTimeout();
+        }, 1200);
+      }
     }
   };
 
