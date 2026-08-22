@@ -180,24 +180,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               <Volume2 className="w-4 h-4 text-emerald-400" />
             )}
           </button>
-
-          {/* Cloud Multiplayer Status Button */}
-          <button
-            type="button"
-            onClick={onOpenSupabaseModal}
-            className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-xl border transition cursor-pointer shadow-sm ${
-              isSupabaseConnected
-                ? 'bg-emerald-950/60 text-emerald-300 border-emerald-700/80 hover:bg-emerald-900/60'
-                : 'bg-indigo-950/40 hover:bg-indigo-900/50 text-indigo-300 border-indigo-700/60'
-            }`}
-            title="Configure Cloud Multiplayer (Supabase Realtime)"
-          >
-            <Database className={`w-3.5 h-3.5 ${isSupabaseConnected ? 'text-emerald-400 animate-pulse' : 'text-indigo-400'}`} />
-            <span className="font-mono">
-              {isSupabaseConnected ? 'Cloud Live' : 'Connect Cloud'}
-            </span>
-          </button>
-
         </div>
 
       </div>
