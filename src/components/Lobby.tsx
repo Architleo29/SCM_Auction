@@ -42,6 +42,8 @@ interface LobbyProps {
   onOpenManualModal?: () => void;
   onUpdatePlayerProfile?: (stats: { qualityLevel: number; speedLevel: number; costEfficiency: number }) => void;
   onToggleReady?: (isReady: boolean) => void;
+  isSupabaseConnected?: boolean;
+  onOpenSupabaseModal?: () => void;
 }
 
 export const Lobby: React.FC<LobbyProps> = ({
@@ -58,7 +60,9 @@ export const Lobby: React.FC<LobbyProps> = ({
   onStartAiOnlyMode,
   onOpenManualModal,
   onUpdatePlayerProfile,
-  onToggleReady
+  onToggleReady,
+  isSupabaseConnected = false,
+  onOpenSupabaseModal
 }) => {
   const [hostName, setHostName] = useState('Apex Procurement Directorate (Buyer)');
   const [joinName, setJoinName] = useState('Titan Global Dynamics');
@@ -133,21 +137,39 @@ export const Lobby: React.FC<LobbyProps> = ({
               </div>
             </div>
 
-            {/* Room Code Box */}
-            <div className="flex items-center gap-3 bg-slate-950 border border-slate-800 rounded-2xl p-3.5 shrink-0 shadow-lg">
-              <div>
-                <p className="text-[0.625rem] text-slate-500 font-mono uppercase tracking-wider font-bold">Room Code</p>
-                <p className="text-2xl font-mono font-bold text-indigo-400 tracking-wider">
-                  {roomConfig.code}
-                </p>
+            {/* Room Code & Cloud Status Box */}
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+              {onOpenSupabaseModal && (
+                <button
+                  type="button"
+                  onClick={onOpenSupabaseModal}
+                  className={`flex items-center gap-1.5 px-3 py-2.5 rounded-2xl border text-xs font-semibold font-mono transition cursor-pointer shadow-md ${
+                    isSupabaseConnected
+                      ? 'bg-emerald-950/80 text-emerald-300 border-emerald-700/80 hover:bg-emerald-900/80'
+                      : 'bg-indigo-950/60 hover:bg-indigo-900/60 text-indigo-300 border-indigo-700/60 animate-pulse'
+                  }`}
+                  title="Configure Cloud Multiplayer (Supabase Realtime)"
+                >
+                  <span className="text-sm">{isSupabaseConnected ? '🟢' : '⚡'}</span>
+                  <span>{isSupabaseConnected ? 'Cloud Active' : 'Connect Cloud'}</span>
+                </button>
+              )}
+
+              <div className="flex items-center gap-3 bg-slate-950 border border-slate-800 rounded-2xl p-3.5 shrink-0 shadow-lg">
+                <div>
+                  <p className="text-[0.625rem] text-slate-500 font-mono uppercase tracking-wider font-bold">Room Code</p>
+                  <p className="text-2xl font-mono font-bold text-indigo-400 tracking-wider">
+                    {roomConfig.code}
+                  </p>
+                </div>
+                <button
+                  onClick={handleCopyCode}
+                  className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer"
+                  title="Copy Room Code"
+                >
+                  {copied ? <Check className="w-5 h-5 text-emerald-400" /> : <Copy className="w-5 h-5" />}
+                </button>
               </div>
-              <button
-                onClick={handleCopyCode}
-                className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer"
-                title="Copy Room Code"
-              >
-                {copied ? <Check className="w-5 h-5 text-emerald-400" /> : <Copy className="w-5 h-5" />}
-              </button>
             </div>
           </div>
         </div>

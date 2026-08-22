@@ -192,22 +192,22 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
           </button>
 
-          {/* Supabase Status Button (Hidden as per user request to keep backend locked) */}
-          {/*
+          {/* Cloud Multiplayer Status Button */}
           <button
+            type="button"
             onClick={onOpenSupabaseModal}
-            className={`flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-xl border transition cursor-pointer ${
+            className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-xl border transition cursor-pointer shadow-sm ${
               isSupabaseConnected
-                ? 'bg-emerald-950/40 text-emerald-300 border-emerald-800/60 hover:bg-emerald-900/40'
-                : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+                ? 'bg-emerald-950/60 text-emerald-300 border-emerald-700/80 hover:bg-emerald-900/60'
+                : 'bg-indigo-950/40 hover:bg-indigo-900/50 text-indigo-300 border-indigo-700/60'
             }`}
+            title="Configure Cloud Multiplayer (Supabase Realtime)"
           >
-            <Database className={`w-3.5 h-3.5 ${isSupabaseConnected ? 'text-emerald-400 animate-pulse' : 'text-slate-400'}`} />
-            <span className="hidden xl:inline">
-              {isSupabaseConnected ? 'Supabase Live' : 'Supabase'}
+            <Database className={`w-3.5 h-3.5 ${isSupabaseConnected ? 'text-emerald-400 animate-pulse' : 'text-indigo-400'}`} />
+            <span className="font-mono">
+              {isSupabaseConnected ? 'Cloud Live' : 'Connect Cloud'}
             </span>
           </button>
-          */}
 
         </div>
 

@@ -1345,6 +1345,8 @@ export const App: React.FC = () => {
             onOpenManualModal={() => setIsManualModalOpen(true)}
             onUpdatePlayerProfile={handleUpdateMyProfile}
             onToggleReady={handleToggleReady}
+            isSupabaseConnected={isSupabaseLive}
+            onOpenSupabaseModal={() => setIsSupabaseModalOpen(true)}
           />
         )}
 
