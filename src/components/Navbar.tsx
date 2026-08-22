@@ -166,18 +166,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span className="hidden sm:inline">Manual</span>
           </button>
 
-          {/* Light / Dark Mode Toggle Button */}
-          <button
-            onClick={toggleTheme}
-            className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer"
-            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-          >
-            {theme === 'dark' ? (
-              <Sun className="w-4 h-4 text-amber-400 animate-spin-slow" />
-            ) : (
-              <Moon className="w-4 h-4 text-indigo-500" />
-            )}
-          </button>
+
 
           {/* Sound FX Audio Toggle */}
           <button
