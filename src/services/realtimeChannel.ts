@@ -20,6 +20,8 @@ class RoomSyncManager {
   private supabaseChannel: RealtimeChannel | null = null;
   private localBroadcastChannel: BroadcastChannel | null = null;
   private eventSource: EventSource | null = null;
+  private pollingInterval: any = null;
+  private lastPollId: number = 0;
   private eventHandlers: Set<EventHandler> = new Set();
   public isConnectedToSupabase: boolean = false;
   private processedEventIds: Set<number> = new Set();
@@ -29,6 +31,7 @@ class RoomSyncManager {
     this.roomCode = formattedCode;
     this.eventHandlers.add(onEvent);
     this.processedEventIds.clear();
+    this.lastPollId = 0;
 
     // 1. LAN Realtime Server-Sent Events (SSE) - Works across all Wi-Fi / Local Network devices (PC + Mobile)
     try {
@@ -49,7 +52,8 @@ class RoomSyncManager {
             }
             if (parsed && parsed.id) {
               this.processedEventIds.add(parsed.id);
-              if (this.processedEventIds.size > 200) {
+              this.lastPollId = Math.max(this.lastPollId, parsed.id);
+              if (this.processedEventIds.size > 300) {
                 const first = this.processedEventIds.values().next().value;
                 if (first !== undefined) this.processedEventIds.delete(first);
               }
@@ -70,7 +74,36 @@ class RoomSyncManager {
       console.warn('EventSource initialization notice:', e);
     }
 
-    // 2. Supabase Realtime Channel (Cloud fallback)
+    // 2. High-Frequency Polling Fallback (Guarantees immediate receipt on mobile / unstable browsers)
+    if (this.pollingInterval) {
+      clearInterval(this.pollingInterval);
+    }
+    this.pollingInterval = setInterval(async () => {
+      try {
+        if (!this.roomCode) return;
+        const res = await fetch(`/api/sync/poll?room=${encodeURIComponent(this.roomCode)}&since=${this.lastPollId}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data && Array.isArray(data.events)) {
+          data.events.forEach((rec: { id: number; event: MultiplayerEvent }) => {
+            if (rec && rec.id && !this.processedEventIds.has(rec.id)) {
+              this.processedEventIds.add(rec.id);
+              this.lastPollId = Math.max(this.lastPollId, rec.id);
+              if (rec.event) {
+                this.notifyHandlers(rec.event);
+              }
+            }
+          });
+        }
+        if (data && data.lastId !== undefined) {
+          this.lastPollId = Math.max(this.lastPollId, data.lastId);
+        }
+      } catch (err) {
+        // silent catch
+      }
+    }, 450);
+
+    // 3. Supabase Realtime Channel (Cloud fallback)
     const client = getSupabaseClient();
     if (client) {
       try {
@@ -102,7 +135,7 @@ class RoomSyncManager {
       }
     }
 
-    // 3. Same-Browser Local Fallback (Tabs on same browser)
+    // 4. Same-Browser Local Fallback (Tabs on same browser)
     try {
       if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
         if (this.localBroadcastChannel) {
@@ -121,23 +154,23 @@ class RoomSyncManager {
     }
   }
 
-  public broadcast(event: MultiplayerEvent, explicitRoomCode?: string) {
+  public async broadcast(event: MultiplayerEvent, explicitRoomCode?: string) {
     const targetRoom = (explicitRoomCode || this.roomCode).toUpperCase().trim();
     if (!targetRoom) return;
 
     // 1. Send via LAN Local Sync API (Instantly reaches all mobile & desktop clients on network)
     try {
-      fetch('/api/sync/broadcast', {
+      await fetch('/api/sync/broadcast', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           roomCode: targetRoom,
           event
         })
-      }).catch(err => {
-        console.warn('LAN sync broadcast notice:', err);
       });
-    } catch (e) {}
+    } catch (err) {
+      console.warn('LAN sync broadcast notice:', err);
+    }
 
     // 2. Send via Supabase if connected
     if (this.supabaseChannel && this.isConnectedToSupabase) {
@@ -145,7 +178,7 @@ class RoomSyncManager {
         type: 'broadcast',
         event: 'game_event',
         payload: event
-      });
+      }).catch(err => console.warn('Supabase broadcast error:', err));
     }
 
     // 3. Send via Local BroadcastChannel
@@ -159,6 +192,11 @@ class RoomSyncManager {
       this.eventHandlers.delete(onEvent);
     } else {
       this.eventHandlers.clear();
+    }
+
+    if (this.pollingInterval) {
+      clearInterval(this.pollingInterval);
+      this.pollingInterval = null;
     }
 
     if (this.eventSource) {

@@ -34,8 +34,9 @@ function localSyncPlugin(): Plugin {
 
           res.writeHead(200, {
             'Content-Type': 'text/event-stream',
-            'Cache-Control': 'no-cache',
-            'Connection': 'keep-alive'
+            'Cache-Control': 'no-cache, no-transform',
+            'Connection': 'keep-alive',
+            'X-Accel-Buffering': 'no'
           });
 
           if (!rooms[roomCode]) {
@@ -89,9 +90,9 @@ function localSyncPlugin(): Plugin {
               const record = { id: eventCounter, event };
               rooms[roomCode].events.push(record);
 
-              // Maintain rolling window of 200 events
-              if (rooms[roomCode].events.length > 200) {
-                rooms[roomCode].events.splice(0, rooms[roomCode].events.length - 200);
+              // Maintain rolling window of 300 events
+              if (rooms[roomCode].events.length > 300) {
+                rooms[roomCode].events.splice(0, rooms[roomCode].events.length - 300);
               }
 
               // Update room state in memory
@@ -126,14 +127,36 @@ function localSyncPlugin(): Plugin {
                 };
               } else if (event?.type === 'PLAYER_PROFILE_UPDATED' && event.payload?.playerId) {
                 const targetId = event.payload.playerId;
-                if (rooms[roomCode].state?.players?.[targetId]) {
-                  rooms[roomCode].state.players[targetId].profile = {
-                    ...rooms[roomCode].state.players[targetId].profile,
+                if (!rooms[roomCode].state) {
+                  rooms[roomCode].state = { players: {} };
+                }
+                if (!rooms[roomCode].state.players) {
+                  rooms[roomCode].state.players = {};
+                }
+                const existing = rooms[roomCode].state.players[targetId] || {
+                  id: targetId,
+                  name: event.payload.profile?.name || 'Vendor Company',
+                  isHost: false,
+                  isAi: false,
+                  score: 0,
+                  bankedProfit: 0,
+                  contractsWon: 0,
+                  reputation: 50,
+                  intelPoints: 2,
+                  disciplineWalkaways: 0,
+                  submittedQuote: null,
+                  history: []
+                };
+
+                rooms[roomCode].state.players[targetId] = {
+                  ...existing,
+                  ready: true,
+                  profile: {
+                    ...(existing.profile || {}),
                     ...event.payload.stats,
                     ...(event.payload.profile || {})
-                  };
-                  rooms[roomCode].state.players[targetId].ready = true;
-                }
+                  }
+                };
               }
 
               res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -154,6 +177,30 @@ function localSyncPlugin(): Plugin {
             roomCode,
             state: rooms[roomCode]?.state || null,
             eventsCount: rooms[roomCode]?.events.length || 0
+          }));
+          return;
+        }
+
+        // 4. Polling Fallback: GET /api/sync/poll?room=AUCT-XX&since=123
+        if (url.pathname === '/api/sync/poll' && req.method === 'GET') {
+          const roomCode = (url.searchParams.get('room') || 'default').toUpperCase().trim();
+          const since = parseInt(url.searchParams.get('since') || '0', 10);
+
+          if (!rooms[roomCode]) {
+            rooms[roomCode] = { state: null, events: [] };
+          }
+
+          const newEvents = rooms[roomCode].events.filter(e => e.id > since);
+          const lastId = rooms[roomCode].events.length > 0 
+            ? rooms[roomCode].events[rooms[roomCode].events.length - 1].id 
+            : since;
+
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            roomCode,
+            events: newEvents,
+            lastId,
+            state: rooms[roomCode].state
           }));
           return;
         }

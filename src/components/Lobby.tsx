@@ -205,21 +205,30 @@ export const Lobby: React.FC<LobbyProps> = ({
                                 YOU (VENDOR)
                               </span>
                             )}
+                            {player.ready && (
+                              <span className="text-[0.625rem] bg-emerald-950 text-emerald-300 border border-emerald-800 px-1.5 py-0.5 rounded font-mono font-bold">
+                                ✅ STRATEGY APPLIED
+                              </span>
+                            )}
                             {player.isAi && (
                               <span className="text-[0.625rem] bg-slate-800 text-slate-300 px-1.5 py-0.5 rounded font-mono capitalize">
                                 AI: {player.aiPersonality}
                               </span>
                             )}
                           </div>
-                          <p className="text-xs text-slate-400 font-mono mt-0.5 flex flex-wrap items-center gap-2">
-                            <span>Rep: {player.reputation}</span>
-                            <span>• Quality: {'⭐'.repeat(player.profile.qualityLevel)}</span>
-                            {player.profile.costEfficiency && (
-                              <span className="text-emerald-400">• Eff: {player.profile.costEfficiency}/5</span>
-                            )}
-                            {player.profile.speedLevel && (
-                              <span className="text-indigo-400">• Spd: {player.profile.speedLevel}/5</span>
-                            )}
+                          <p className="text-xs font-mono mt-1 flex flex-wrap items-center gap-1.5">
+                            <span className="bg-slate-900 px-2 py-0.5 rounded text-amber-300 font-semibold border border-slate-800 text-[0.6875rem]">
+                              ⭐ Quality: {player.profile?.qualityLevel || 3}/5
+                            </span>
+                            <span className="bg-slate-900 px-2 py-0.5 rounded text-indigo-300 font-semibold border border-slate-800 text-[0.6875rem]">
+                              ⚡ Speed: {player.profile?.speedLevel || 3}/5
+                            </span>
+                            <span className="bg-slate-900 px-2 py-0.5 rounded text-emerald-300 font-semibold border border-slate-800 text-[0.6875rem]">
+                              📉 Eff: {player.profile?.costEfficiency || 4}/5
+                            </span>
+                            <span className="text-[0.6875rem] text-slate-500">
+                              (Rep: {player.reputation})
+                            </span>
                           </p>
                         </div>
                       </div>

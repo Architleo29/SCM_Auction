@@ -152,14 +152,19 @@ export const App: React.FC = () => {
             setPlayers(prev => {
               const incoming = event.payload.players;
               const localMe = prev[myPlayerId];
-              // If local player exists and incoming sync doesn't have it yet, keep localMe
-              if (localMe && !incoming[myPlayerId]) {
-                return {
-                  ...incoming,
-                  [myPlayerId]: localMe
+              const merged = { ...incoming };
+              if (localMe) {
+                merged[myPlayerId] = {
+                  ...(incoming[myPlayerId] || {}),
+                  ...localMe,
+                  ready: localMe.ready || incoming[myPlayerId]?.ready || false,
+                  profile: {
+                    ...(incoming[myPlayerId]?.profile || {}),
+                    ...(localMe.profile || {})
+                  }
                 };
               }
-              return incoming;
+              return merged;
             });
           }
           if (event.payload.currentRfq) setCurrentRfq(event.payload.currentRfq);
