@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   FileText, 
   DollarSign, 
@@ -136,6 +136,7 @@ export const RfqBuilder: React.FC<RfqBuilderProps> = ({
   const [paymentDelayDays, setPaymentDelayDays] = useState(30);
   const [requiredCompliance, setRequiredCompliance] = useState<string[]>(['ISO-9001']);
   const [preferredSla, setPreferredSla] = useState<SLATier>('standard');
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Weights (Percentages strictly auto-balanced to 100%)
   const [weights, setWeights] = useState<WeightsState>({
@@ -157,23 +158,36 @@ export const RfqBuilder: React.FC<RfqBuilderProps> = ({
     ? Math.round(((budgetCeiling - estBaselineFlc) / budgetCeiling) * 100) 
     : 0;
 
-  // Auto-Fill / Preset Loader
-  const handleAutoSelect = (targetScenario?: IndustryScenarioId) => {
+  // Auto-Fill / Preset Loader with dynamic variation
+  const handleAutoSelect = (targetScenario?: IndustryScenarioId, randomize: boolean = false) => {
     sounds.bid();
     const sId = targetScenario || scenarioId;
     const scenario = SCENARIOS[sId];
     const sample = scenario.sampleRfqs[0];
 
+    // Multipliers for randomized variation
+    const scale = randomize ? (0.85 + Math.random() * 0.40) : 1.0;
+    const newBudget = Math.round((sample.budgetCeiling * scale) / 10000) * 10000;
+    const newLaborHours = Math.round(sample.baseLaborHours * scale);
+    const newLaborRate = sample.laborRate;
+    const newMaterialsQty = Math.round(sample.baseMaterialsQty * scale);
+    const newMaterialCost = sample.unitMaterialCost;
+    const newLogisticsUnits = Math.round(sample.baseLogisticsUnits * scale);
+    const newLogisticsUnitCost = sample.logisticsUnitCost;
+    const newDeliveryDays = randomize 
+      ? Math.max(15, Math.round(sample.requiredDeliveryDays + (Math.floor(Math.random() * 5) - 2) * 5)) 
+      : sample.requiredDeliveryDays;
+
     setTitle(sample.title);
     setDescription(sample.description);
-    setBudgetCeiling(sample.budgetCeiling);
-    setBaseLaborHours(sample.baseLaborHours);
-    setLaborRate(sample.laborRate);
-    setBaseMaterialsQty(sample.baseMaterialsQty);
-    setUnitMaterialCost(sample.unitMaterialCost);
-    setBaseLogisticsUnits(sample.baseLogisticsUnits);
-    setLogisticsUnitCost(sample.logisticsUnitCost);
-    setRequiredDeliveryDays(sample.requiredDeliveryDays);
+    setBudgetCeiling(newBudget);
+    setBaseLaborHours(newLaborHours);
+    setLaborRate(newLaborRate);
+    setBaseMaterialsQty(newMaterialsQty);
+    setUnitMaterialCost(newMaterialCost);
+    setBaseLogisticsUnits(newLogisticsUnits);
+    setLogisticsUnitCost(newLogisticsUnitCost);
+    setRequiredDeliveryDays(newDeliveryDays);
     setPaymentDelayDays(sample.paymentDelayDays);
     setRequiredCompliance([...sample.requiredCompliance]);
 
@@ -192,10 +206,15 @@ export const RfqBuilder: React.FC<RfqBuilderProps> = ({
       reputation: r,
       risk: k
     });
+
+    if (randomize) {
+      setToastMessage(`✨ Auto-Generated realistic specs for ${scenario.name} (Budget: ${formatINR(newBudget)}, ${newDeliveryDays} Days)!`);
+      setTimeout(() => setToastMessage(null), 3500);
+    }
   };
 
   useEffect(() => {
-    handleAutoSelect(scenarioId);
+    handleAutoSelect(scenarioId, false);
   }, [scenarioId]);
 
   const handleWeightChange = (key: WeightKey, value: number) => {
@@ -282,7 +301,7 @@ export const RfqBuilder: React.FC<RfqBuilderProps> = ({
             <button
               type="button"
               onClick={onBackToMainScreen}
-              className="px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-400 hover:text-slate-200 text-xs font-mono font-semibold transition flex items-center gap-1.5 cursor-pointer shadow-md"
+              className="px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-400 hover:text-slate-200 text-xs font-mono font-semibold transition flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95"
             >
               <ArrowLeft className="w-4 h-4" />
               <span>Back</span>
@@ -291,14 +310,23 @@ export const RfqBuilder: React.FC<RfqBuilderProps> = ({
 
           <button
             type="button"
-            onClick={() => handleAutoSelect()}
-            className="px-4 py-2.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/40 text-indigo-300 hover:text-white font-mono text-xs font-bold transition flex items-center gap-2 cursor-pointer shadow-lg shadow-indigo-950/50"
+            onClick={() => handleAutoSelect(scenarioId, true)}
+            className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs font-bold transition flex items-center gap-2 cursor-pointer shadow-lg shadow-indigo-600/30 active:scale-95"
+            title="Generates and auto-fills realistic industry specifications"
           >
-            <Sparkles className="w-4 h-4 text-indigo-400" />
-            <span>Auto-Fill Defaults</span>
+            <Sparkles className="w-4 h-4" />
+            <span>✨ Auto-Select Realistic Specs</span>
           </button>
         </div>
       </div>
+
+      {/* Dynamic Toast Feedback Banner */}
+      {toastMessage && (
+        <div className="p-3.5 rounded-2xl bg-emerald-950/80 border border-emerald-800/80 text-emerald-300 text-xs font-mono flex items-center gap-2 shadow-lg animate-fade-in">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
 
       <form onSubmit={handlePublish} className="space-y-6">
         
@@ -315,7 +343,7 @@ export const RfqBuilder: React.FC<RfqBuilderProps> = ({
               onChange={(e) => {
                 const newScenario = e.target.value as IndustryScenarioId;
                 setScenarioId(newScenario);
-                handleAutoSelect(newScenario);
+                handleAutoSelect(newScenario, false);
               }}
               className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 cursor-pointer"
             >
@@ -356,7 +384,7 @@ export const RfqBuilder: React.FC<RfqBuilderProps> = ({
 
         {/* Commercial Terms & Dynamic Budget Slider */}
         <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl space-y-5">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
             <div className="flex items-center gap-2 text-xs font-mono font-semibold uppercase text-indigo-400">
               <FileText className="w-4 h-4" />
               Commercial Scope & Budget Ceiling
