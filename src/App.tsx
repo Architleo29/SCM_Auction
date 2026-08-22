@@ -342,12 +342,12 @@ export const App: React.FC = () => {
       }
     };
 
-    roomSync.subscribe(roomConfig.code, handleMultiplayerEvent);
+    roomSync.subscribe(roomConfig.code, handleMultiplayerEvent, isHost);
 
     return () => {
       roomSync.unsubscribe();
     };
-  }, [roomConfig?.code]);
+  }, [roomConfig?.code, isHost]);
 
   // Host State Broadcast Helper
   const broadcastSync = (updates: any) => {
@@ -776,10 +776,23 @@ export const App: React.FC = () => {
   };
 
   // 6. Move from Dossier -> RFQ -> Quoting
-  const handleProceedToRfq = () => setPhase('RFQ');
+  const handleProceedToRfq = () => {
+    setPhase('RFQ');
+    broadcastSync({
+      phase: 'RFQ',
+      currentRfq: rfqRef.current
+    });
+  };
+
   const handleProceedToQuote = () => {
     setPhase('QUOTING');
     setQuotingTimerSeconds(45);
+
+    broadcastSync({
+      phase: 'QUOTING',
+      currentRfq: rfqRef.current,
+      roomConfig: roomConfigRef.current
+    });
 
     if (quotingTimerRef.current) clearInterval(quotingTimerRef.current);
     quotingTimerRef.current = setInterval(() => {
@@ -1157,6 +1170,10 @@ export const App: React.FC = () => {
   // 11. Advance Round / Game Over
   const handleProceedToLeaderboard = () => {
     setPhase('LEADERBOARD');
+    broadcastSync({
+      phase: 'LEADERBOARD',
+      players: playersRef.current
+    });
   };
 
   const handleNextRound = () => {

@@ -1,5 +1,6 @@
 import { getSupabaseClient } from './supabase';
 import { RealtimeChannel } from '@supabase/supabase-js';
+import { Peer, DataConnection } from 'peerjs';
 
 export type MultiplayerEvent = 
   | { type: 'PLAYER_JOINED'; payload: { id: string; name: string; isHost: boolean; profile: any } }
@@ -18,140 +19,110 @@ type EventHandler = (event: MultiplayerEvent) => void;
 
 class RoomSyncManager {
   private roomCode: string = '';
+  private isHost: boolean = false;
+  private peer: Peer | null = null;
+  private hostConnection: DataConnection | null = null;
+  private guestConnections: Map<string, DataConnection> = new Map();
   private supabaseChannel: RealtimeChannel | null = null;
   private localBroadcastChannel: BroadcastChannel | null = null;
-  private cloudEventSource: EventSource | null = null;
-  private localEventSource: EventSource | null = null;
-  private pollingInterval: any = null;
-  private lastPollTimestamp: number = 0;
   private eventHandlers: Set<EventHandler> = new Set();
   public isConnectedToSupabase: boolean = false;
-  public isCloudConnected: boolean = false;
-  private processedEventIds: Set<string> = new Set();
+  public isPeerConnected: boolean = false;
+  private pendingOutgoing: MultiplayerEvent[] = [];
 
-  private getTopic(roomCode: string): string {
+  private getHostPeerId(roomCode: string): string {
     const clean = roomCode.toUpperCase().replace(/[^A-Z0-9]/g, '');
-    return `scm_auct_${clean || 'MAIN'}`;
+    return `scm-auction-host-${clean || 'MAIN'}`;
   }
 
-  public subscribe(roomCode: string, onEvent: EventHandler) {
+  public subscribe(roomCode: string, onEvent: EventHandler, isHost: boolean = false) {
     const formattedCode = roomCode.toUpperCase().trim();
     this.roomCode = formattedCode;
+    this.isHost = isHost;
     this.eventHandlers.add(onEvent);
-    this.processedEventIds.clear();
-    this.lastPollTimestamp = Math.floor(Date.now() / 1000) - 10;
 
-    const topic = this.getTopic(formattedCode);
+    const hostPeerId = this.getHostPeerId(formattedCode);
 
-    // 1. Universal Cloud Real-Time PubSub via HTTPS/SSE (Works globally on Vercel, Mobile, Desktop with 0 config)
+    // 1. WebRTC Direct P2P Transport (PeerJS) - 0ms latency, works on Vercel, Mobile Safari, Android, Desktop
     try {
-      if (typeof window !== 'undefined' && 'EventSource' in window) {
-        if (this.cloudEventSource) {
-          this.cloudEventSource.close();
-          this.cloudEventSource = null;
+      if (typeof window !== 'undefined') {
+        this.cleanupPeer();
+
+        if (isHost) {
+          // Host claims the room peer ID
+          this.peer = new Peer(hostPeerId, {
+            debug: 0,
+            config: {
+              iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:global.stun.twilio.com:3478' }
+              ]
+            }
+          });
+
+          this.peer.on('open', () => {
+            this.isPeerConnected = true;
+          });
+
+          this.peer.on('connection', (conn) => {
+            this.guestConnections.set(conn.peer, conn);
+
+            conn.on('data', (data) => {
+              try {
+                const event = data as MultiplayerEvent;
+                if (event && event.type) {
+                  this.notifyHandlers(event);
+                  // Host relays guest event to all other connected guests
+                  this.guestConnections.forEach((otherConn, pId) => {
+                    if (pId !== conn.peer && otherConn.open) {
+                      otherConn.send(event);
+                    }
+                  });
+                }
+              } catch (e) {}
+            });
+
+            conn.on('close', () => {
+              this.guestConnections.delete(conn.peer);
+            });
+
+            conn.on('error', () => {
+              this.guestConnections.delete(conn.peer);
+            });
+          });
+
+          this.peer.on('error', (err) => {
+            // If ID is already taken, fallback to random ID and retry
+            console.warn('Host peer notice:', err?.type);
+          });
+
+        } else {
+          // Guest creates an ephemeral peer and connects to the Host
+          this.peer = new Peer({
+            debug: 0,
+            config: {
+              iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:global.stun.twilio.com:3478' }
+              ]
+            }
+          });
+
+          this.peer.on('open', () => {
+            this.isPeerConnected = true;
+            this.connectToHost(hostPeerId);
+          });
+
+          this.peer.on('error', (err) => {
+            console.warn('Guest peer notice:', err?.type);
+          });
         }
-
-        const sseUrl = `https://ntfy.sh/${encodeURIComponent(topic)}/sse`;
-        this.cloudEventSource = new EventSource(sseUrl);
-
-        this.cloudEventSource.onopen = () => {
-          this.isCloudConnected = true;
-        };
-
-        this.cloudEventSource.onmessage = (event) => {
-          try {
-            if (!event.data) return;
-            const parsed = JSON.parse(event.data);
-            if (parsed.event === 'open' || parsed.event === 'keepalive') return;
-
-            const msgId = parsed.id || '';
-            if (msgId && this.processedEventIds.has(msgId)) return;
-            if (msgId) {
-              this.processedEventIds.add(msgId);
-              if (this.processedEventIds.size > 300) {
-                const first = this.processedEventIds.values().next().value;
-                if (first !== undefined) this.processedEventIds.delete(first);
-              }
-            }
-
-            if (parsed.message) {
-              const gameEvent = JSON.parse(parsed.message) as MultiplayerEvent;
-              if (gameEvent && gameEvent.type) {
-                this.notifyHandlers(gameEvent);
-              }
-            }
-          } catch (e) {
-            console.warn('Cloud SSE parse notice:', e);
-          }
-        };
-
-        this.cloudEventSource.onerror = () => {
-          // Automatic browser reconnect
-        };
       }
     } catch (err) {
-      console.warn('Cloud EventSource initialization notice:', err);
+      console.warn('PeerJS init error:', err);
     }
 
-    // 2. High-Frequency Polling Fallback over Cloud PubSub (Protects against Mobile Background Sleeping)
-    if (this.pollingInterval) {
-      clearInterval(this.pollingInterval);
-    }
-    this.pollingInterval = setInterval(async () => {
-      try {
-        if (!this.roomCode) return;
-        const topic = this.getTopic(this.roomCode);
-        const pollUrl = `https://ntfy.sh/${encodeURIComponent(topic)}/json?poll=1&since=${this.lastPollTimestamp}`;
-        const res = await fetch(pollUrl);
-        if (!res.ok) return;
-
-        const text = await res.text();
-        const lines = text.trim().split('\n').filter(Boolean);
-
-        lines.forEach(line => {
-          try {
-            const parsed = JSON.parse(line);
-            if (parsed.event === 'message' && parsed.message) {
-              const msgId = parsed.id || '';
-              if (!this.processedEventIds.has(msgId)) {
-                if (msgId) this.processedEventIds.add(msgId);
-                const gameEvent = JSON.parse(parsed.message) as MultiplayerEvent;
-                if (gameEvent && gameEvent.type) {
-                  this.notifyHandlers(gameEvent);
-                }
-              }
-              if (parsed.time) {
-                this.lastPollTimestamp = Math.max(this.lastPollTimestamp, parsed.time);
-              }
-            }
-          } catch (e) {}
-        });
-      } catch (err) {}
-    }, 600);
-
-    // 3. Local Vite Dev Server Fallback (For local localhost / LAN mode)
-    try {
-      if (typeof window !== 'undefined' && 'EventSource' in window) {
-        if (this.localEventSource) {
-          this.localEventSource.close();
-          this.localEventSource = null;
-        }
-
-        this.localEventSource = new EventSource(`/api/sync/events?room=${encodeURIComponent(formattedCode)}`);
-        this.localEventSource.onmessage = (event) => {
-          try {
-            if (!event.data || event.data === ': ping') return;
-            const parsed = JSON.parse(event.data);
-            if (parsed && parsed.event) {
-              this.notifyHandlers(parsed.event as MultiplayerEvent);
-            }
-          } catch (e) {}
-        };
-        this.localEventSource.onerror = () => {};
-      }
-    } catch (e) {}
-
-    // 4. Supabase Realtime Channel (If user provided custom Supabase credentials)
+    // 2. Supabase Realtime Channel (If user provided Supabase config)
     const client = getSupabaseClient();
     if (client) {
       try {
@@ -183,7 +154,7 @@ class RoomSyncManager {
       }
     }
 
-    // 5. Local BroadcastChannel (For tabs on the same browser)
+    // 3. Local BroadcastChannel (For tabs on the same device)
     try {
       if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
         if (this.localBroadcastChannel) {
@@ -200,41 +171,72 @@ class RoomSyncManager {
     } catch (e) {}
   }
 
-  public async broadcast(event: MultiplayerEvent, explicitRoomCode?: string) {
-    const targetRoom = (explicitRoomCode || this.roomCode).toUpperCase().trim();
-    if (!targetRoom) return;
+  private connectToHost(hostPeerId: string) {
+    if (!this.peer || this.peer.destroyed) return;
 
-    const topic = this.getTopic(targetRoom);
-    const eventPayload = JSON.stringify(event);
-
-    // 1. Worldwide Cloud PubSub via HTTPS (Reaches all mobile & desktop devices on Vercel instantly)
     try {
-      fetch(`https://ntfy.sh/${encodeURIComponent(topic)}`, {
-        method: 'POST',
-        headers: {
-          'Title': 'SCM_EVENT',
-          'Priority': 'urgent',
-          'Content-Type': 'text/plain'
-        },
-        body: eventPayload
-      }).catch(err => {
-        console.warn('Cloud broadcast notice:', err);
+      const conn = this.peer.connect(hostPeerId, { reliable: true });
+      this.hostConnection = conn;
+
+      conn.on('open', () => {
+        // Send any queued outgoing messages
+        while (this.pendingOutgoing.length > 0) {
+          const ev = this.pendingOutgoing.shift();
+          if (ev) conn.send(ev);
+        }
       });
-    } catch (err) {}
 
-    // 2. LAN Local Sync API (If running locally via vite dev server)
+      conn.on('data', (data) => {
+        try {
+          const event = data as MultiplayerEvent;
+          if (event && event.type) {
+            this.notifyHandlers(event);
+          }
+        } catch (e) {}
+      });
+
+      conn.on('close', () => {
+        this.hostConnection = null;
+        // Auto-reconnect after 1.5s
+        setTimeout(() => {
+          if (this.roomCode && !this.isHost) {
+            this.connectToHost(hostPeerId);
+          }
+        }, 1500);
+      });
+
+      conn.on('error', () => {
+        this.hostConnection = null;
+      });
+    } catch (e) {}
+  }
+
+  public broadcast(event: MultiplayerEvent, explicitRoomCode?: string) {
+    // 1. Send via WebRTC P2P
     try {
-      fetch('/api/sync/broadcast', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          roomCode: targetRoom,
-          event
-        })
-      }).catch(() => {});
-    } catch (err) {}
+      if (this.isHost) {
+        // Host broadcasts to all connected guests
+        this.guestConnections.forEach((conn) => {
+          if (conn.open) {
+            conn.send(event);
+          }
+        });
+      } else {
+        // Guest sends to Host
+        if (this.hostConnection && this.hostConnection.open) {
+          this.hostConnection.send(event);
+        } else {
+          this.pendingOutgoing.push(event);
+          if (this.pendingOutgoing.length > 20) {
+            this.pendingOutgoing.shift();
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('P2P broadcast notice:', err);
+    }
 
-    // 3. Send via Supabase if connected
+    // 2. Send via Supabase if connected
     if (this.supabaseChannel && this.isConnectedToSupabase) {
       this.supabaseChannel.send({
         type: 'broadcast',
@@ -243,9 +245,26 @@ class RoomSyncManager {
       }).catch(err => console.warn('Supabase broadcast error:', err));
     }
 
-    // 4. Local BroadcastChannel
+    // 3. Local BroadcastChannel
     if (this.localBroadcastChannel) {
       this.localBroadcastChannel.postMessage(event);
+    }
+  }
+
+  private cleanupPeer() {
+    if (this.hostConnection) {
+      try { this.hostConnection.close(); } catch (e) {}
+      this.hostConnection = null;
+    }
+    this.guestConnections.forEach(conn => {
+      try { conn.close(); } catch (e) {}
+    });
+    this.guestConnections.clear();
+
+    if (this.peer) {
+      try { this.peer.destroy(); } catch (e) {}
+      this.peer = null;
+      this.isPeerConnected = false;
     }
   }
 
@@ -256,20 +275,7 @@ class RoomSyncManager {
       this.eventHandlers.clear();
     }
 
-    if (this.pollingInterval) {
-      clearInterval(this.pollingInterval);
-      this.pollingInterval = null;
-    }
-
-    if (this.cloudEventSource) {
-      this.cloudEventSource.close();
-      this.cloudEventSource = null;
-    }
-
-    if (this.localEventSource) {
-      this.localEventSource.close();
-      this.localEventSource = null;
-    }
+    this.cleanupPeer();
 
     if (this.supabaseChannel) {
       this.supabaseChannel.unsubscribe();
