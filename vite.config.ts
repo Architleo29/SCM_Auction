@@ -123,6 +123,7 @@ function localSyncPlugin(): Plugin {
                       history: []
                     }
                   }
+                };
               } else if (event?.type === 'PLAYER_PROFILE_UPDATED' && event.payload?.playerId) {
                 const targetId = event.payload.playerId;
                 if (rooms[roomCode].state?.players?.[targetId]) {
