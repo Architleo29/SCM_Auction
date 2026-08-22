@@ -587,6 +587,11 @@ export const App: React.FC = () => {
       // Solo / Multiplayer: Player moves to Quoting
       setSubmittedQuotes([]);
       setPhase('DOSSIER');
+      broadcastSync({
+        phase: 'DOSSIER',
+        currentRfq: rfq,
+        roomConfig: roomConfigRef.current
+      });
     }
   };
 
@@ -1139,6 +1144,7 @@ export const App: React.FC = () => {
             onAddAiBot={handleAddAiBot}
             onRemovePlayer={handleRemovePlayer}
             onStartGame={handleStartGame}
+            onOpenRfqBuilder={() => setPhase('RFQ_BUILDER')}
             onQuickPlayVsBots={handleQuickPlayVsBots}
             onStartAiOnlyMode={handleStartAiOnlySimulation}
             onOpenManualModal={() => setIsManualModalOpen(true)}
