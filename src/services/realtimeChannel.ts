@@ -237,7 +237,7 @@ class RoomSyncManager {
     }
 
     // 2. Send via Supabase if connected
-    if (this.supabaseChannel && this.isConnectedToSupabase) {
+    if (this.supabaseChannel) {
       this.supabaseChannel.send({
         type: 'broadcast',
         event: 'game_event',
