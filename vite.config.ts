@@ -123,7 +123,16 @@ function localSyncPlugin(): Plugin {
                       history: []
                     }
                   }
-                };
+              } else if (event?.type === 'PLAYER_PROFILE_UPDATED' && event.payload?.playerId) {
+                const targetId = event.payload.playerId;
+                if (rooms[roomCode].state?.players?.[targetId]) {
+                  rooms[roomCode].state.players[targetId].profile = {
+                    ...rooms[roomCode].state.players[targetId].profile,
+                    ...event.payload.stats,
+                    ...(event.payload.profile || {})
+                  };
+                  rooms[roomCode].state.players[targetId].ready = true;
+                }
               }
 
               res.writeHead(200, { 'Content-Type': 'application/json' });

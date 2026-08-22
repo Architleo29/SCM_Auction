@@ -4,6 +4,7 @@ import { RealtimeChannel } from '@supabase/supabase-js';
 export type MultiplayerEvent = 
   | { type: 'PLAYER_JOINED'; payload: { id: string; name: string; isHost: boolean; profile: any } }
   | { type: 'PLAYER_LEFT'; payload: { id: string } }
+  | { type: 'PLAYER_PROFILE_UPDATED'; payload: { playerId: string; stats: { qualityLevel: number; speedLevel: number; costEfficiency: number }; profile?: any } }
   | { type: 'ROOM_STATE_SYNC'; payload: any }
   | { type: 'QUOTE_SUBMITTED'; payload: { playerId: string; quote: any } }
   | { type: 'AUCTION_BID'; payload: { playerId: string; playerName: string; amount: number; isAi: boolean } }

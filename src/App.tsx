@@ -209,6 +209,60 @@ export const App: React.FC = () => {
           break;
         }
 
+        case 'PLAYER_PROFILE_UPDATED': {
+          const targetId = event.payload.playerId;
+          setPlayers(prev => {
+            const existing = prev[targetId];
+            if (!existing) {
+              if (event.payload.profile) {
+                const newPlayer: PlayerState = {
+                  id: targetId,
+                  name: event.payload.profile.name || 'Vendor Company',
+                  isHost: false,
+                  isAi: false,
+                  profile: event.payload.profile,
+                  score: 0,
+                  bankedProfit: 0,
+                  contractsWon: 0,
+                  reputation: event.payload.profile.reputationScore || 50,
+                  intelPoints: 2,
+                  disciplineWalkaways: 0,
+                  ready: true,
+                  submittedQuote: null,
+                  history: []
+                };
+                const nextP = { ...prev, [targetId]: newPlayer };
+                if (isHostRef.current) {
+                  setTimeout(() => {
+                    broadcastSync({ players: nextP });
+                  }, 50);
+                }
+                return nextP;
+              }
+              return prev;
+            }
+
+            const updatedPlayer = {
+              ...existing,
+              ready: true,
+              profile: {
+                ...existing.profile,
+                ...event.payload.stats,
+                ...(event.payload.profile || {})
+              }
+            };
+
+            const nextP = { ...prev, [targetId]: updatedPlayer };
+            if (isHostRef.current) {
+              setTimeout(() => {
+                broadcastSync({ players: nextP });
+              }, 50);
+            }
+            return nextP;
+          });
+          break;
+        }
+
         case 'QUOTE_SUBMITTED':
           setSubmittedQuotes(prev => [...prev.filter(q => q.playerId !== event.payload.playerId), event.payload.quote]);
           setPlayers(prev => {
@@ -1170,10 +1224,21 @@ export const App: React.FC = () => {
       };
       const updatedMe = {
         ...me,
+        ready: true,
         profile: updatedProfile
       };
       const nextPlayers = { ...prev, [myPlayerId]: updatedMe };
-      broadcastSync({ players: nextPlayers });
+
+      // Broadcast specific profile update event across the room
+      roomSync.broadcast({
+        type: 'PLAYER_PROFILE_UPDATED',
+        payload: {
+          playerId: myPlayerId,
+          stats,
+          profile: updatedProfile
+        }
+      });
+
       return nextPlayers;
     });
   };
