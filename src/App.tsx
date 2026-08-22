@@ -535,78 +535,7 @@ export const App: React.FC = () => {
     broadcastSync({ players: updated });
   };
 
-  // 3b. 1-Click AI-Only Battle Royale (Opens RFQ Builder first)
-  const handleStartAiOnlySimulation = (format: AuctionFormat = 'english') => {
-    const code = `AI-SIM-${Math.floor(10 + Math.random() * 90)}`;
-    const config: RoomConfig = {
-      code,
-      hostId: myPlayerId,
-      scenarioId: 'manufacturing',
-      totalRounds: 3,
-      currentRound: 1,
-      difficulty: 'standard',
-      auctionFormatSequence: [format, 'dutch', 'japanese'],
-      maxPlayers: 4,
-      createdAt: Date.now()
-    };
-
-    // User is the Game Director Spectator
-    const spectatorPlayer: PlayerState = {
-      id: myPlayerId,
-      name: 'Game Director (Spectator)',
-      isHost: true,
-      isAi: false,
-      profile: generateCompanyProfile('Game Director', 0),
-      score: 0,
-      bankedProfit: 0,
-      contractsWon: 0,
-      reputation: 100,
-      intelPoints: 5,
-      disciplineWalkaways: 0,
-      ready: true,
-      submittedQuote: null,
-      history: []
-    };
-
-    const botPersonalities: AIPersonality[] = ['aggressive', 'conservative', 'opportunist', 'copycat'];
-    const botNames = {
-      aggressive: 'Vulcan Heavy Ind. (Aggressive AI)',
-      conservative: 'Apex SafeBuild (Conservative AI)',
-      opportunist: 'Matrix Dynamic Bids (Opportunist AI)',
-      copycat: 'Echo Mirror Systems (Copycat AI)'
-    };
-
-    const initialPlayers: Record<string, PlayerState> = {
-      [myPlayerId]: spectatorPlayer
-    };
-
-    botPersonalities.forEach((personality, idx) => {
-      const bId = `bot_${idx}_${Date.now()}`;
-      initialPlayers[bId] = {
-        id: bId,
-        name: botNames[personality],
-        isHost: false,
-        isAi: true,
-        aiPersonality: personality,
-        profile: generateCompanyProfile(botNames[personality], idx + 1),
-        score: 0,
-        bankedProfit: 0,
-        contractsWon: 0,
-        reputation: 65,
-        intelPoints: 2,
-        disciplineWalkaways: 0,
-        ready: true,
-        submittedQuote: null,
-        history: []
-      };
-    });
-
-    setRoomConfig(config);
-    setPlayers(initialPlayers);
-    setPhase('RFQ_BUILDER');
-  };
-
-  // 3c. 1-Click Quick Play (You vs 3 Bots - Opens RFQ Builder first)
+  // 3. 1-Click Quick Play (You vs 3 Bots - Opens RFQ Builder first)
   const handleQuickPlayVsBots = (format: AuctionFormat = 'english') => {
     const code = `SOLO-${Math.floor(10 + Math.random() * 90)}`;
     const myProfile = generateCompanyProfile('Apex Procurement (You)', 0);
@@ -1341,7 +1270,6 @@ export const App: React.FC = () => {
             onStartGame={handleStartGame}
             onOpenRfqBuilder={() => setPhase('RFQ_BUILDER')}
             onQuickPlayVsBots={handleQuickPlayVsBots}
-            onStartAiOnlyMode={handleStartAiOnlySimulation}
             onOpenManualModal={() => setIsManualModalOpen(true)}
             onUpdatePlayerProfile={handleUpdateMyProfile}
             onToggleReady={handleToggleReady}

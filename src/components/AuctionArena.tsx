@@ -100,17 +100,17 @@ export const AuctionArena: React.FC<AuctionArenaProps> = ({
   return (
     <div className="max-w-5xl mx-auto p-3.5 sm:p-6 space-y-4 sm:space-y-6 animate-fade-in">
       
-      {/* Spectator Mode Banner */}
+      {/* Buyer Oversight Banner */}
       {isSpectator && (
-        <div className="p-3.5 rounded-2xl bg-gradient-to-r from-purple-950/80 via-slate-900 to-indigo-950/80 border border-purple-800/60 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="p-3.5 rounded-2xl bg-gradient-to-r from-indigo-950/80 via-slate-900 to-purple-950/80 border border-indigo-700/60 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-purple-600/30 text-purple-300 shrink-0">
+            <div className="p-2 rounded-xl bg-indigo-600/30 text-indigo-300 shrink-0">
               <Eye className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-xs font-semibold text-purple-200">🍿 Spectator Simulation Mode</p>
+              <p className="text-xs font-semibold text-indigo-200 font-mono uppercase tracking-wider">🏛️ Procurement Directorate Live Tender Floor</p>
               <p className="text-xs text-slate-300">
-                Watching AI bot personalities compete against each other in real-time.
+                Overseeing competing vendor bids in real time. Winning price will be evaluated under QCBS rules upon completion.
               </p>
             </div>
           </div>
@@ -118,10 +118,10 @@ export const AuctionArena: React.FC<AuctionArenaProps> = ({
           {onSkipToEnd && (
             <button
               onClick={onSkipToEnd}
-              className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs shadow-lg shadow-purple-600/30 transition flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
+              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs shadow-lg shadow-indigo-600/30 transition flex items-center justify-center gap-1.5 shrink-0 cursor-pointer active:scale-95"
             >
               <FastForward className="w-3.5 h-3.5" />
-              Fast-Forward to Winner
+              Fast-Forward Auction
             </button>
           )}
         </div>

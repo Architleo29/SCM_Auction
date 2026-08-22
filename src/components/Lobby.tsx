@@ -21,7 +21,8 @@ import {
   Share2,
   Building2,
   AlertCircle,
-  CheckCircle2
+  CheckCircle2,
+  ArrowRight
 } from 'lucide-react';
 import { RoomConfig, PlayerState, IndustryScenarioId, GameDifficulty, AIPersonality, AuctionFormat } from '../types/game';
 import { SCENARIOS } from '../data/scenarios';
@@ -38,7 +39,6 @@ interface LobbyProps {
   onStartGame: () => void;
   onOpenRfqBuilder?: () => void;
   onQuickPlayVsBots: (format: AuctionFormat) => void;
-  onStartAiOnlyMode: (format: AuctionFormat) => void;
   onOpenManualModal?: () => void;
   onUpdatePlayerProfile?: (stats: { qualityLevel: number; speedLevel: number; costEfficiency: number }) => void;
   onToggleReady?: (isReady: boolean) => void;
@@ -57,7 +57,6 @@ export const Lobby: React.FC<LobbyProps> = ({
   onStartGame,
   onOpenRfqBuilder,
   onQuickPlayVsBots,
-  onStartAiOnlyMode,
   onOpenManualModal,
   onUpdatePlayerProfile,
   onToggleReady,
@@ -581,22 +580,16 @@ export const Lobby: React.FC<LobbyProps> = ({
           </div>
         </div>
 
-        {/* 2. Choose Mode */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+        {/* 2. Launch Solo Quick Play vs AI */}
+        <div className="flex items-center justify-center pt-2">
           <button
-            onClick={() => onStartAiOnlyMode(chosenAuctionFormat)}
-            className="w-full sm:w-auto px-6 py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-xl shadow-indigo-600/30 transition flex items-center justify-center gap-2 cursor-pointer active:scale-95"
-          >
-            <Cpu className="w-4 h-4" />
-            🤖 Build RFQ & Watch 4 AI Bots Battle
-          </button>
-
-          <button
+            type="button"
             onClick={() => onQuickPlayVsBots(chosenAuctionFormat)}
-            className="w-full sm:w-auto px-6 py-4 rounded-2xl bg-slate-900 border border-slate-700 hover:border-indigo-500 text-slate-200 font-semibold text-sm shadow-xl transition flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+            className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-sm shadow-xl shadow-indigo-600/30 transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2.5 cursor-pointer"
           >
-            <Sparkles className="w-4 h-4 text-indigo-400" />
-            🎮 Play Solo vs 3 AI Bots
+            <Sparkles className="w-5 h-5 text-amber-300 animate-pulse" />
+            <span>Play Solo vs 3 AI Competitors</span>
+            <ArrowRight className="w-4 h-4" />
           </button>
         </div>
       </div>
