@@ -1269,7 +1269,6 @@ export const App: React.FC = () => {
             onRemovePlayer={handleRemovePlayer}
             onStartGame={handleStartGame}
             onOpenRfqBuilder={() => setPhase('RFQ_BUILDER')}
-            onQuickPlayVsBots={handleQuickPlayVsBots}
             onOpenManualModal={() => setIsManualModalOpen(true)}
             onUpdatePlayerProfile={handleUpdateMyProfile}
             onToggleReady={handleToggleReady}

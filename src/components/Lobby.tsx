@@ -38,7 +38,6 @@ interface LobbyProps {
   onRemovePlayer: (playerId: string) => void;
   onStartGame: () => void;
   onOpenRfqBuilder?: () => void;
-  onQuickPlayVsBots: (format: AuctionFormat) => void;
   onOpenManualModal?: () => void;
   onUpdatePlayerProfile?: (stats: { qualityLevel: number; speedLevel: number; costEfficiency: number }) => void;
   onToggleReady?: (isReady: boolean) => void;
@@ -56,7 +55,6 @@ export const Lobby: React.FC<LobbyProps> = ({
   onRemovePlayer,
   onStartGame,
   onOpenRfqBuilder,
-  onQuickPlayVsBots,
   onOpenManualModal,
   onUpdatePlayerProfile,
   onToggleReady,
@@ -520,85 +518,6 @@ export const Lobby: React.FC<LobbyProps> = ({
         <p className="text-sm text-slate-400">
           Compete in high-stakes reverse auctions against rival vendors and procurement scoring engines. Build quotes, price risk, survive market shocks, and bank profits in INR (₹).
         </p>
-
-        {/* 1. Choose Auction Type Upfront */}
-        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 sm:p-5 max-w-xl mx-auto space-y-3 shadow-xl">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-mono font-bold uppercase text-indigo-400 flex items-center gap-1.5">
-              <Gavel className="w-3.5 h-3.5" />
-              1. Choose Auction Format
-            </span>
-            <span className="text-xs text-slate-400 font-mono">
-              {chosenAuctionFormat === 'english' && 'Descending Counter-Bids'}
-              {chosenAuctionFormat === 'dutch' && 'Ascending Clock (First to Buzz)'}
-              {chosenAuctionFormat === 'japanese' && 'Hold Button (2nd-Price Payout)'}
-            </span>
-          </div>
-
-          <div className="grid grid-cols-3 gap-2.5">
-            <button
-              type="button"
-              onClick={() => setChosenAuctionFormat('english')}
-              className={`p-3 rounded-2xl border border-t-4 border-t-orange-500 text-xs font-mono font-bold transition cursor-pointer ${
-                chosenAuctionFormat === 'english'
-                  ? 'bg-orange-500/20 border-orange-500 text-orange-300 shadow-lg shadow-orange-500/20'
-                  : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <span className="text-base block mb-0.5">🔨</span>
-              <span className="text-slate-100 font-bold block">English</span>
-              <span className="text-[0.625rem] font-normal text-orange-400/90 block">Real-Time Bids</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setChosenAuctionFormat('dutch')}
-              className={`p-3 rounded-2xl border border-t-4 border-t-teal-400 text-xs font-mono font-bold transition cursor-pointer ${
-                chosenAuctionFormat === 'dutch'
-                  ? 'bg-teal-500/20 border-teal-400 text-teal-300 shadow-lg shadow-teal-500/20'
-                  : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <span className="text-base block mb-0.5">⏳</span>
-              <span className="text-slate-100 font-bold block">Dutch</span>
-              <span className="text-[0.625rem] font-normal text-teal-400/90 block">First to Buzz</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setChosenAuctionFormat('japanese')}
-              className={`p-3 rounded-2xl border border-t-4 border-t-violet-400 text-xs font-mono font-bold transition cursor-pointer ${
-                chosenAuctionFormat === 'japanese'
-                  ? 'bg-violet-500/20 border-violet-400 text-violet-300 shadow-lg shadow-violet-500/20'
-                  : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <span className="text-base block mb-0.5">🇯🇵</span>
-              <span className="text-slate-100 font-bold block">Japanese</span>
-              <span className="text-[0.625rem] font-normal text-violet-400/90 block">Hold to Stay</span>
-            </button>
-          </div>
-        </div>
-
-        {/* 2. Launch Solo Quick Play vs AI */}
-        <div className="flex items-center justify-center pt-2">
-          <button
-            type="button"
-            onClick={() => onQuickPlayVsBots(chosenAuctionFormat)}
-            className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-sm shadow-xl shadow-indigo-600/30 transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2.5 cursor-pointer"
-          >
-            <Sparkles className="w-5 h-5 text-amber-300 animate-pulse" />
-            <span>Play Solo vs 3 AI Competitors</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-
-      <div className="relative flex items-center justify-center my-2">
-        <div className="border-t border-slate-800 w-full" />
-        <span className="bg-slate-50 dark:bg-slate-900 px-4 text-xs font-mono text-slate-500 uppercase tracking-widest absolute">
-          or custom multiplayer room
-        </span>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -694,6 +613,49 @@ export const Lobby: React.FC<LobbyProps> = ({
                       {count}P
                     </button>
                   ))}
+                </div>
+              </div>
+
+              {/* Starting Auction Format */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center justify-between">
+                  <span>Starting Auction Format</span>
+                  <span className="text-xs font-mono text-indigo-400 capitalize">{chosenAuctionFormat}</span>
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setChosenAuctionFormat('english')}
+                    className={`py-2 rounded-xl text-xs font-mono font-bold border transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                      chosenAuctionFormat === 'english'
+                        ? 'bg-orange-500/20 border-orange-500 text-orange-300 shadow-md'
+                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <span>🔨</span> English
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setChosenAuctionFormat('dutch')}
+                    className={`py-2 rounded-xl text-xs font-mono font-bold border transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                      chosenAuctionFormat === 'dutch'
+                        ? 'bg-teal-500/20 border-teal-400 text-teal-300 shadow-md'
+                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <span>⏳</span> Dutch
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setChosenAuctionFormat('japanese')}
+                    className={`py-2 rounded-xl text-xs font-mono font-bold border transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                      chosenAuctionFormat === 'japanese'
+                        ? 'bg-violet-500/20 border-violet-400 text-violet-300 shadow-md'
+                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <span>🇯🇵</span> Japanese
+                  </button>
                 </div>
               </div>
             </div>

@@ -210,9 +210,9 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
       <div className="flex justify-end pt-2">
         <button
           onClick={onProceedToEvent}
-          className="w-full sm:w-auto px-7 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-xl shadow-indigo-600/30 transition flex items-center justify-center gap-2 cursor-pointer min-h-[3.125rem] active:scale-95"
+          className="w-full sm:w-auto px-7 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-sm shadow-xl shadow-indigo-600/30 transition flex items-center justify-center gap-2 cursor-pointer min-h-[3.125rem] active:scale-95"
         >
-          Draw Dynamic Market Shock Event
+          <span>Continue to P&L Settlement & Financial Breakdown</span>
           <ArrowRight className="w-4 h-4" />
         </button>
       </div>
