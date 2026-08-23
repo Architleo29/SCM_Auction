@@ -31,7 +31,6 @@ import { Navbar } from './components/Navbar';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { SupabaseModal } from './components/SupabaseModal';
 import { Lobby } from './components/Lobby';
-import { CompanyDossier } from './components/CompanyDossier';
 import { RfqBoard } from './components/RfqBoard';
 import { IntelMarket } from './components/IntelMarket';
 import { QuoteBuilder } from './components/QuoteBuilder';
@@ -714,10 +713,10 @@ export const App: React.FC = () => {
   const handlePublishCustomRfq = (rfq: RFQ) => {
     setCurrentRfq(rfq);
     setSubmittedQuotes([]);
-    setPhase('DOSSIER');
+    setPhase('RFQ');
 
     broadcastSync({
-      phase: 'DOSSIER',
+      phase: 'RFQ',
       currentRfq: rfq,
       roomConfig: roomConfigRef.current || roomConfig
     });
@@ -746,10 +745,10 @@ export const App: React.FC = () => {
 
     setCurrentRfq(rfq);
     setSubmittedQuotes([]);
-    setPhase('DOSSIER');
+    setPhase('RFQ');
 
     broadcastSync({
-      phase: 'DOSSIER',
+      phase: 'RFQ',
       currentRfq: rfq,
       roomConfig
     });
@@ -1379,68 +1378,7 @@ export const App: React.FC = () => {
           )
         )}
 
-        {phase === 'DOSSIER' && isHost && currentRfq && (
-          <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6 animate-fade-in">
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
-                <div>
-                  <span className="text-xs font-mono text-indigo-400 font-bold uppercase tracking-wider">
-                    🏛️ Procurement Authority Dashboard • Round {roomConfig?.currentRound} of {roomConfig?.totalRounds}
-                  </span>
-                  <h2 className="text-2xl font-bold text-slate-100 mt-1">{currentRfq.title}</h2>
-                </div>
-                <span className="px-3 py-1.5 bg-indigo-950 text-indigo-300 border border-indigo-800 rounded-xl text-xs font-mono font-bold self-start sm:self-auto">
-                  Tender Published
-                </span>
-              </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
-                <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800">
-                  <span className="text-slate-500 uppercase block text-[0.625rem]">Auction Starting Price</span>
-                  <strong className="text-emerald-400 text-sm">{formatINR(currentRfq.budgetCeiling)}</strong>
-                </div>
-                <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800">
-                  <span className="text-slate-500 uppercase block text-[0.625rem]">Turnaround Days</span>
-                  <strong className="text-amber-400 text-sm">{currentRfq.requiredDeliveryDays} Days</strong>
-                </div>
-                <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800">
-                  <span className="text-slate-500 uppercase block text-[0.625rem]">Auction Format</span>
-                  <strong className="text-indigo-400 text-sm capitalize">{currentRfq.auctionFormat}</strong>
-                </div>
-                <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800">
-                  <span className="text-slate-500 uppercase block text-[0.625rem]">Competing Vendors</span>
-                  <strong className="text-slate-100 text-sm">{Object.values(players).filter(p => !p.isHost).length} Firms</strong>
-                </div>
-              </div>
-
-              <div className="p-4 bg-slate-950 rounded-2xl border border-slate-800 text-xs text-slate-300 space-y-2">
-                <span className="font-bold text-slate-200 uppercase font-mono block">Commercial Tender Scope:</span>
-                <p className="leading-relaxed">{currentRfq.description}</p>
-              </div>
-
-              <div className="flex justify-end pt-2">
-                <button
-                  type="button"
-                  onClick={handleProceedToQuote}
-                  className="px-8 py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-xl shadow-indigo-600/30 transition flex items-center gap-2 cursor-pointer active:scale-95"
-                >
-                  📢 Open Vendor Quoting Window
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {phase === 'DOSSIER' && !isHost && me && (
-          <CompanyDossier
-            profile={me.profile}
-            playerName={me.name}
-            roundNumber={roomConfig?.currentRound || 1}
-            totalRounds={roomConfig?.totalRounds || 6}
-            onProceed={handleProceedToRfq}
-            onUpdateProfile={handleUpdateMyProfile}
-          />
-        )}
 
         {phase === 'RFQ' && isHost && currentRfq && (
           <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6 animate-fade-in">
