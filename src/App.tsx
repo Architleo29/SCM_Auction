@@ -369,7 +369,7 @@ export const App: React.FC = () => {
               currentPrice: event.payload.amount,
               currentLeaderId: event.payload.playerId,
               currentLeaderName: event.payload.playerName,
-              timeRemaining: prev.timeRemaining < 15 ? prev.timeRemaining + 15 : prev.timeRemaining,
+              timeRemaining: prev.timeRemaining < 15 ? prev.timeRemaining + 8 : prev.timeRemaining,
               bids: [
                 {
                   timestamp: Date.now(),
@@ -381,6 +381,8 @@ export const App: React.FC = () => {
                 ...prev.bids
               ]
             };
+            // Only accept if it's actually a lower price (race condition guard)
+            if (event.payload.amount >= prev.currentPrice) return prev;
             activeAuctionRef.current = updated;
             if (isHostRef.current) {
               setTimeout(() => {
@@ -891,6 +893,7 @@ export const App: React.FC = () => {
       dutchTickCount: 0
     };
 
+    activeAuctionRef.current = initialAuction;
     setActiveAuction(initialAuction);
     setPhase('AUCTION');
 
@@ -1083,14 +1086,30 @@ export const App: React.FC = () => {
       }
     };
     roomSync.broadcast(bidEvent);
-    setActiveAuction(prev => ({
-      ...prev,
-      currentPrice: amount,
-      currentLeaderId: me.id,
-      currentLeaderName: me.name,
-      timeRemaining: prev.timeRemaining < 15 ? prev.timeRemaining + 15 : prev.timeRemaining,
-      bids: [{ timestamp: Date.now(), playerId: me.id, playerName: me.name, amount, isAi: false }, ...prev.bids]
-    }));
+    setActiveAuction(prev => {
+      const updated = {
+        ...prev,
+        currentPrice: amount,
+        currentLeaderId: me.id,
+        currentLeaderName: me.name,
+        timeRemaining: prev.timeRemaining < 15 ? prev.timeRemaining + 8 : prev.timeRemaining,
+        bids: [{ timestamp: Date.now(), playerId: me.id, playerName: me.name, amount, isAi: false }, ...prev.bids]
+      };
+      activeAuctionRef.current = updated;
+      // Update submittedQuote price to reflect current bid
+      if (me.submittedQuote) {
+        const updatedPlayers = { ...playersRef.current };
+        if (updatedPlayers[me.id]) {
+          updatedPlayers[me.id] = {
+            ...updatedPlayers[me.id],
+            submittedQuote: { ...updatedPlayers[me.id].submittedQuote!, price: amount }
+          };
+          playersRef.current = updatedPlayers;
+          setPlayers(updatedPlayers);
+        }
+      }
+      return updated;
+    });
   };
 
   const handleBuzzDutch = () => {
@@ -1550,7 +1569,10 @@ export const App: React.FC = () => {
             onPlaceEnglishBid={handlePlaceEnglishBid}
             onBuzzDutchAccept={handleBuzzDutch}
             onExitJapaneseAuction={handleExitJapanese}
-            onSkipToEnd={isHost ? () => handleAuctionResolved(activeAuction.currentLeaderId || Object.keys(players)[0], activeAuction.currentPrice) : undefined}
+            onSkipToEnd={isHost ? () => {
+                const fallbackVendor = activeAuction.activePlayerIds[0] || Object.values(players).find(p => !p.isHost && !p.name.includes('Director') && !p.name.includes('Spectator'))?.id || Object.keys(players)[0];
+                handleAuctionResolved(activeAuction.currentLeaderId || fallbackVendor, activeAuction.currentPrice);
+              } : undefined}
           />
         )}
 

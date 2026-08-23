@@ -500,7 +500,7 @@ export const AuctionArena: React.FC<AuctionArenaProps> = ({
 
           <div className="p-3 bg-slate-950 rounded-2xl border border-slate-800 text-xs text-slate-400 font-mono space-y-1">
             <p className="text-slate-300 font-bold">💡 Anti-Sniping Rule:</p>
-            <p>Any bid placed under 15 seconds automatically extends the clock by +8 seconds.</p>
+            <p>Any bid placed under 15 seconds automatically extends the clock by +8 seconds to prevent sniping.</p>
           </div>
         </div>
 
