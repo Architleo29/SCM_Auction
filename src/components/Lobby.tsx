@@ -552,46 +552,14 @@ export const Lobby: React.FC<LobbyProps> = ({
                 </div>
               </div>
 
-              {/* Starting Auction Format */}
+              {/* Auction Format */}
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center justify-between">
-                  <span>Starting Auction Format</span>
-                  <span className="text-xs font-mono text-indigo-400 font-semibold">{chosenAuctionFormat === 'english' ? 'Reverse English' : chosenAuctionFormat === 'dutch' ? 'Reverse Dutch' : 'Reverse Japanese'}</span>
+                  <span>Auction Format</span>
+                  <span className="text-xs font-mono text-orange-400 font-semibold">🔨 Reverse English</span>
                 </label>
-                <div className="grid grid-cols-3 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setChosenAuctionFormat('english')}
-                    className={`py-2.5 px-1.5 rounded-xl text-xs font-mono font-bold border transition cursor-pointer flex items-center justify-center gap-1 ${
-                      chosenAuctionFormat === 'english'
-                        ? 'bg-orange-500/20 border-orange-500 text-orange-300 shadow-md ring-1 ring-orange-400'
-                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
-                    }`}
-                  >
-                    <span>🔨</span> Reverse English
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setChosenAuctionFormat('dutch')}
-                    className={`py-2.5 px-1.5 rounded-xl text-xs font-mono font-bold border transition cursor-pointer flex items-center justify-center gap-1 ${
-                      chosenAuctionFormat === 'dutch'
-                        ? 'bg-teal-500/20 border-teal-400 text-teal-300 shadow-md ring-1 ring-teal-400'
-                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
-                    }`}
-                  >
-                    <span>⏳</span> Reverse Dutch
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setChosenAuctionFormat('japanese')}
-                    className={`py-2.5 px-1.5 rounded-xl text-xs font-mono font-bold border transition cursor-pointer flex items-center justify-center gap-1 ${
-                      chosenAuctionFormat === 'japanese'
-                        ? 'bg-violet-500/20 border-violet-400 text-violet-300 shadow-md ring-1 ring-violet-400'
-                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
-                    }`}
-                  >
-                    <span>🇯🇵</span> Reverse Japanese
-                  </button>
+                <div className="py-2.5 px-3 rounded-xl bg-orange-500/10 border border-orange-500/40 text-xs font-mono text-orange-300 text-center font-bold">
+                  🔨 Reverse English Auction — Vendors compete by placing progressively lower bids
                 </div>
               </div>
             </div>
@@ -658,7 +626,7 @@ export const Lobby: React.FC<LobbyProps> = ({
 
       <div className="text-center pt-2">
         <span className="text-[11px] font-mono text-slate-500">
-          🚀 SCM Procurement Auction Simulator • Reverse English / Reverse Dutch / Reverse Japanese
+          🚀 SCM Procurement Auction Simulator • Reverse English Auction
         </span>
       </div>
 

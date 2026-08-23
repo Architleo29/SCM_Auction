@@ -10,7 +10,7 @@ export type IndustryScenarioId =
   | 'energy'
   | 'government';
 
-export type AuctionFormat = 'english' | 'dutch' | 'japanese';
+export type AuctionFormat = 'english';
 
 export type AIPersonality = 'aggressive' | 'conservative' | 'opportunist' | 'copycat';
 

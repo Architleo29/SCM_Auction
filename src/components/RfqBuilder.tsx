@@ -181,8 +181,8 @@ export const RfqBuilder: React.FC<RfqBuilderProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {[
               { id: 'english', label: '🔨 Reverse English', desc: 'Price ticks down with open counter-bids from vendors' },
-              { id: 'dutch', label: '⏳ Reverse Dutch', desc: 'Price ticks upwards every 2s until the first bidder buzzes in' },
-              { id: 'japanese', label: '🇯🇵 Reverse Japanese', desc: 'Price steps down in discrete rounds; exiters cannot re-enter' }
+              { id: 'english', label: '⏳ Reverse English', desc: 'Price ticks upwards every 2s until the first bidder buzzes in' },
+              { id: 'english', label: '🇯🇵 Reverse English', desc: 'Price steps down in discrete rounds; exiters cannot re-enter' }
             ].map(fmt => (
               <button
                 key={fmt.id}

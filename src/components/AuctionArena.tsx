@@ -55,7 +55,7 @@ export const AuctionArena: React.FC<AuctionArenaProps> = ({
 
   // Custom bid input for English mode (Allows freely typing any price)
   const [customBidInput, setCustomBidInput] = useState<string>((auctionState.currentPrice - step1).toString());
-  const [isHoldingJapanese, setIsHoldingJapanese] = useState<boolean>(true);
+  
 
   // Local smooth ticking auction countdown clock (Guarantees ticking on guest devices)
   const [localTimeRemaining, setLocalTimeRemaining] = useState<number>(auctionState.timeRemaining);
@@ -111,17 +111,8 @@ export const AuctionArena: React.FC<AuctionArenaProps> = ({
     onPlaceEnglishBid(amount);
   };
 
-  const handleBuzz = () => {
-    sounds.buzz();
-    onBuzzDutchAccept();
-  };
 
-  const handleReleaseJapanese = () => {
-    if (isHoldingJapanese) {
-      setIsHoldingJapanese(false);
-      onExitJapaneseAuction();
-    }
-  };
+
 
   return (
     <div className="max-w-5xl mx-auto p-3.5 sm:p-6 space-y-4 sm:space-y-6 animate-fade-in">
@@ -157,7 +148,7 @@ export const AuctionArena: React.FC<AuctionArenaProps> = ({
       <div className={`bg-slate-900 border rounded-3xl p-4 sm:p-6 shadow-xl relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-4 ${
         rfq.auctionFormat === 'english'
           ? 'border-orange-500/30 bg-gradient-to-r from-orange-950/20 via-slate-900 to-slate-900'
-          : rfq.auctionFormat === 'dutch'
+          : false
           ? 'border-teal-500/30 bg-gradient-to-r from-teal-950/20 via-slate-900 to-slate-900'
           : 'border-violet-500/30 bg-gradient-to-r from-violet-950/20 via-slate-900 to-slate-900'
       }`}>
@@ -166,14 +157,14 @@ export const AuctionArena: React.FC<AuctionArenaProps> = ({
             <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold font-mono uppercase tracking-wider border ${
               rfq.auctionFormat === 'english'
                 ? 'bg-orange-950/60 text-orange-300 border-orange-800/60'
-                : rfq.auctionFormat === 'dutch'
+                : false
                 ? 'bg-teal-950/60 text-teal-300 border-teal-800/60'
                 : 'bg-violet-950/60 text-violet-300 border-violet-800/60'
             }`}>
               <Gavel className="w-3.5 h-3.5 inline mr-1" />
               {rfq.auctionFormat === 'english' && '🔨 Reverse English (Price Drops)'}
-              {rfq.auctionFormat === 'dutch' && '⏳ Reverse Dutch (Price Rises)'}
-              {rfq.auctionFormat === 'japanese' && '🇯🇵 Reverse Japanese Clock (Price Drops)'}
+              {false && '⏳ Reverse Dutch (Price Rises)'}
+              {false && '🇯🇵 Reverse Japanese Clock (Price Drops)'}
             </span>
             <span className="text-xs font-mono text-slate-400">
               Round {rfq.roundNumber}
@@ -182,13 +173,13 @@ export const AuctionArena: React.FC<AuctionArenaProps> = ({
           <h2 className="text-xl sm:text-2xl font-bold text-slate-100">{rfq.title}</h2>
           <p className="text-xs text-slate-400 mt-1">
             {rfq.auctionFormat === 'english' && 'Vendors compete by undercutting bids downward. Lowest qualifying bidder takes the lead!'}
-            {rfq.auctionFormat === 'dutch' && 'The Buyer starts with a low offer. The contract price ticks UPWARDS every 2 seconds. The first vendor to click "Buzz & Accept" claims the contract on the spot!'}
-            {rfq.auctionFormat === 'japanese' && 'The price clock steps DOWNWARDS every 2 seconds. Vendors stay active until the price drops too low, then release to exit safely.'}
+            {false && 'The Buyer starts with a low offer. The contract price ticks UPWARDS every 2 seconds. The first vendor to click "Buzz & Accept" claims the contract on the spot!'}
+            {false && 'The price clock steps DOWNWARDS every 2 seconds. Vendors stay active until the price drops too low, then release to exit safely.'}
           </p>
         </div>
 
         {/* Real-time Clock / Speed Indicator */}
-        {rfq.auctionFormat === 'dutch' ? (
+        {false ? (
           <div className="px-4 sm:px-5 py-3 rounded-2xl border border-teal-500/40 bg-teal-950/30 text-teal-300 flex items-center justify-between sm:justify-start gap-4 shrink-0 font-mono shadow-md">
             <div className="flex items-center gap-3">
               <Zap className="w-6 h-6 text-teal-400 animate-pulse" />
@@ -246,12 +237,8 @@ export const AuctionArena: React.FC<AuctionArenaProps> = ({
                 {rfq.auctionFormat === 'english' && (
                   <>In Reverse English, vendors place lower bids to take 1st place. Watch your <strong>Profit Margin</strong> below! If your margin falls below 5%, <strong>stop bidding</strong> so you do not lose money.</>
                 )}
-                {rfq.auctionFormat === 'dutch' && (
-                  <>In Reverse Dutch, the price rises every 2 seconds. The first person to click <strong>Buzz In</strong> wins immediately! Wait until the profit is good, but don't wait too long or a rival will grab it.</>
-                )}
-                {rfq.auctionFormat === 'japanese' && (
-                  <>In Japanese Clock, the price drops automatically. Keep holding the button to stay in. When the price reaches your cost floor, release the button to leave safely.</>
-                )}
+                
+                
               </p>
             </div>
           )}
@@ -259,7 +246,7 @@ export const AuctionArena: React.FC<AuctionArenaProps> = ({
           {/* Main Price Display Card */}
           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 shadow-xl text-center relative overflow-hidden space-y-3">
             <span className="text-xs sm:text-xs uppercase font-mono font-semibold tracking-wider text-slate-400 block">
-              {rfq.auctionFormat === 'dutch' ? 'Current Rising Contract Price' : 'Current Lowest Bid (Winning Price)'}
+              {'Current Lowest Bid (Winning Price)'}
             </span>
 
             <div className="text-3xl sm:text-5xl font-bold font-mono text-emerald-400 tracking-tight animate-pulse">
@@ -401,51 +388,11 @@ export const AuctionArena: React.FC<AuctionArenaProps> = ({
             </div>
           )}
 
-          {/* MODE 2: REVERSE DUTCH CONTROLS */}
-          {rfq.auctionFormat === 'dutch' && !isSpectator && (
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 sm:p-6 shadow-xl text-center space-y-4">
-              <div className="space-y-1">
-                <h3 className="font-bold text-slate-100 text-base sm:text-lg">Optimal Stopping Point</h3>
-                <p className="text-xs text-slate-400 max-w-md mx-auto">
-                  Price is ascending every 2 seconds. First vendor to hit Accept wins immediately!
-                </p>
-              </div>
 
-              <button
-                onClick={handleBuzz}
-                className="w-full py-4 sm:py-6 px-4 rounded-3xl bg-gradient-to-r from-amber-500 to-emerald-600 hover:from-amber-400 hover:to-emerald-500 text-white font-semibold text-sm sm:text-xl tracking-wider uppercase shadow-2xl shadow-emerald-500/20 transition transform active:scale-95 flex items-center justify-center gap-2 sm:gap-3 cursor-pointer min-h-[56px]"
-              >
-                <Zap className="w-5 h-5 sm:w-6 sm:h-6 fill-current animate-bounce-subtle shrink-0" />
-                <span>Buzz & Accept: {formatINR(auctionState.currentPrice)}</span>
-              </button>
-            </div>
-          )}
 
-          {/* MODE 3: JAPANESE AUCTION CONTROLS */}
-          {rfq.auctionFormat === 'japanese' && !isSpectator && (
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 sm:p-6 shadow-xl text-center space-y-4">
-              <div className="space-y-1">
-                <h3 className="font-bold text-slate-100 text-base sm:text-lg">Japanese Clock Auction</h3>
-                <p className="text-xs text-slate-400 max-w-md mx-auto">
-                  Stay active in the descending price clock. Release to exit permanently.
-                </p>
-              </div>
 
-              {isHoldingJapanese ? (
-                <button
-                  onClick={handleReleaseJapanese}
-                  className="w-full py-4 sm:py-5 px-4 rounded-3xl bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs sm:text-base shadow-xl shadow-rose-600/30 transition flex items-center justify-center gap-2 cursor-pointer min-h-[3.125rem] active:scale-95"
-                >
-                  <Hand className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
-                  <span>Release & Exit at {formatINR(auctionState.currentPrice)}</span>
-                </button>
-              ) : (
-                <div className="p-4 rounded-2xl bg-slate-950 border border-rose-900/60 text-rose-300 text-xs font-mono">
-                  ❌ You have exited the Japanese auction. Watching remaining rivals resolve...
-                </div>
-              )}
-            </div>
-          )}
+
+
 
           {/* Spectator View Helper */}
           {isSpectator && (

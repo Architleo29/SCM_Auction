@@ -158,7 +158,7 @@ export const AUCTION_FORMAT_ACCENTS = {
     badgeLight: 'bg-orange-50 text-orange-700 border-orange-300'
   },
   dutch: {
-    name: 'Reverse Dutch',
+    name: 'Reverse English',
     icon: '⏳',
     darkAccent: '#2DD4BF', // teal-400
     lightAccent: '#0F766E', // teal-700
@@ -168,7 +168,7 @@ export const AUCTION_FORMAT_ACCENTS = {
     badgeLight: 'bg-teal-50 text-teal-700 border-teal-300'
   },
   japanese: {
-    name: 'Japanese Clock',
+    name: 'English Clock',
     icon: '🇯🇵',
     darkAccent: '#A78BFA', // violet-400
     lightAccent: '#6D28D9', // violet-700

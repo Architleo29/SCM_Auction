@@ -394,45 +394,12 @@ export const App: React.FC = () => {
           break;
 
         case 'AUCTION_BUZZ':
-          handleAuctionResolved(event.payload.playerId, event.payload.price);
+          // Dutch format removed
           break;
 
-        case 'AUCTION_EXIT': {
-          const exitPlayerId = event.payload.playerId;
-          setActiveAuction(prev => {
-            const updatedActive = prev.activePlayerIds.filter(id => id !== exitPlayerId);
-            const updatedExits = [
-              { timestamp: Date.now(), playerId: event.payload.playerId, playerName: event.payload.playerName, exitPrice: event.payload.exitPrice },
-              ...prev.exits
-            ];
-            const updatedBids = [
-              { timestamp: Date.now(), playerId: event.payload.playerId, playerName: `🔴 ${event.payload.playerName} Exited`, amount: event.payload.exitPrice, isAi: false },
-              ...prev.bids
-            ];
-
-            if (isHostRef.current && updatedActive.length === 1) {
-              setTimeout(() => {
-                const secondPrice = updatedExits[0]?.exitPrice || event.payload.exitPrice;
-                handleAuctionResolved(updatedActive[0], secondPrice);
-              }, 400);
-            }
-
-            const nextAuctionState = {
-              ...prev,
-              activePlayerIds: updatedActive,
-              exits: updatedExits,
-              bids: updatedBids
-            };
-            activeAuctionRef.current = nextAuctionState;
-            if (isHostRef.current) {
-              setTimeout(() => {
-                broadcastSync({ activeAuction: nextAuctionState });
-              }, 20);
-            }
-            return nextAuctionState;
-          });
+        case 'AUCTION_EXIT':
+          // Japanese format removed
           break;
-        }
       }
     };
 
@@ -595,7 +562,7 @@ export const App: React.FC = () => {
           totalRounds: 3,
           currentRound: 1,
           difficulty: 'standard',
-          auctionFormatSequence: ['english', 'dutch', 'japanese'],
+          auctionFormatSequence: ['english', 'english', 'english'],
           maxPlayers: 4,
           createdAt: Date.now()
         };
@@ -610,7 +577,7 @@ export const App: React.FC = () => {
         totalRounds: 3,
         currentRound: 1,
         difficulty: 'standard',
-        auctionFormatSequence: ['english', 'dutch', 'japanese'],
+        auctionFormatSequence: ['english', 'english', 'english'],
         maxPlayers: 4,
         createdAt: Date.now()
       };
@@ -675,7 +642,7 @@ export const App: React.FC = () => {
       totalRounds: 3,
       currentRound: 1,
       difficulty: 'standard',
-      auctionFormatSequence: [format, 'dutch', 'japanese'],
+      auctionFormatSequence: [format, 'english', 'english'],
       maxPlayers: 4,
       createdAt: Date.now()
     };
@@ -865,9 +832,9 @@ export const App: React.FC = () => {
     const sortedInitialQuotes = [...finalQuotePool].sort((a, b) => a.price - b.price);
     const lowestInitialQuote = sortedInitialQuotes[0];
 
-    const initPrice = rfq.auctionFormat === 'dutch' 
+    const initPrice = rfq.auctionFormat === 'english' 
       ? Math.round(rfq.budgetCeiling * 0.65) // Starts low and ticks UP
-      : rfq.auctionFormat === 'japanese'
+      : rfq.auctionFormat === 'english'
       ? Math.round(rfq.budgetCeiling * 1.25) // Starts high and ticks DOWN
       : (lowestInitialQuote ? lowestInitialQuote.price : Math.round(rfq.budgetCeiling * 0.98));
 
@@ -876,7 +843,7 @@ export const App: React.FC = () => {
       status: 'BIDDING',
       currentPrice: initPrice,
       budgetCeiling: rfq.budgetCeiling,
-      timeRemaining: rfq.auctionFormat === 'dutch' ? 30 : 35,
+      timeRemaining: rfq.auctionFormat === 'english' ? 30 : 35,
       currentLeaderId: lowestInitialQuote?.playerId || null,
       currentLeaderName: lowestInitialQuote?.playerName || null,
       bids: sortedInitialQuotes.map(q => ({
@@ -917,32 +884,8 @@ export const App: React.FC = () => {
 
       if (!activeRfq) return;
 
-      // 1. REVERSE DUTCH AUCTION (NO COUNTDOWN TIMER - Price ticks up continuously until someone buzzes or host ends it)
-      if (state.format === 'dutch') {
-        state.dutchTickCount = (state.dutchTickCount || 0) + 1;
+      // Dutch and Japanese formats removed — English only (Reverse English)
 
-        if (state.dutchTickCount % 2 === 0) {
-          const nextPrice = Math.min(
-            Math.round(activeRfq.budgetCeiling * 1.50),
-            Math.round(state.currentPrice * 1.035)
-          );
-          state.currentPrice = nextPrice;
-
-          for (const p of Object.values(currentActivePlayers)) {
-            if (p.isAi && shouldAiAcceptInDutchAuction(p, nextPrice, activeRfq)) {
-              clearInterval(auctionTimerRef.current!);
-              handleAuctionResolved(p.id, nextPrice);
-              return;
-            }
-          }
-        }
-
-        sounds.tick();
-        activeAuctionRef.current = state;
-        setActiveAuction(state);
-        broadcastSync({ activeAuction: state });
-        return;
-      }
 
       // 2. TIMED AUCTIONS (English / Japanese)
       if (state.timeRemaining <= 1) {
@@ -955,48 +898,7 @@ export const App: React.FC = () => {
       state.timeRemaining -= 1;
       sounds.tick();
 
-      // 2. JAPANESE CLOCK AUCTION (Drops price every 2 seconds, bots exit below floor)
-      if (state.format === 'japanese' && state.timeRemaining % 2 === 0) {
-        state.currentPrice = Math.max(
-          Math.round(activeRfq.budgetCeiling * 0.55),
-          Math.round(state.currentPrice * 0.975)
-        );
-
-        // Check each active AI bot to see if they hold or exit
-        const remainingActive: string[] = [];
-        for (const pId of state.activePlayerIds) {
-          const p = currentActivePlayers[pId];
-          if (p && p.isAi) {
-            const shouldHold = shouldAiHoldInJapaneseAuction(p, state.currentPrice, activeRfq);
-            if (shouldHold) {
-              remainingActive.push(pId);
-            } else {
-              // Bot Exits permanently
-              state.exits = [
-                { timestamp: Date.now(), playerId: p.id, playerName: p.name, exitPrice: state.currentPrice },
-                ...state.exits
-              ];
-              state.bids = [
-                { timestamp: Date.now(), playerId: p.id, playerName: `🔴 ${p.name} Exited`, amount: state.currentPrice, isAi: true },
-                ...state.bids
-              ];
-            }
-          } else if (p) {
-            remainingActive.push(pId);
-          }
-        }
-
-        state.activePlayerIds = remainingActive;
-
-        // If only 1 player remains in Japanese auction, they win!
-        if (remainingActive.length === 1) {
-          clearInterval(auctionTimerRef.current!);
-          const winnerId = remainingActive[0];
-          const secondPrice = state.exits[0]?.exitPrice || state.currentPrice;
-          handleAuctionResolved(winnerId, secondPrice);
-          return;
-        }
-      }
+      // Japanese format removed — English only
 
       // 3. REVERSE ENGLISH AUCTION (Active dynamic counter-bidding every 1-2s)
       if (state.format === 'english') {
@@ -1112,42 +1014,9 @@ export const App: React.FC = () => {
     });
   };
 
-  const handleBuzzDutch = () => {
-    if (!me) return;
-    roomSync.broadcast({
-      type: 'AUCTION_BUZZ',
-      payload: { playerId: me.id, playerName: me.name, price: activeAuction.currentPrice }
-    });
-    handleAuctionResolved(me.id, activeAuction.currentPrice);
-  };
+  const handleBuzzDutch = () => {};
 
-  const handleExitJapanese = () => {
-    if (!me) return;
-    const exitPrice = activeAuction.currentPrice;
-    roomSync.broadcast({
-      type: 'AUCTION_EXIT',
-      payload: { playerId: me.id, playerName: me.name, exitPrice }
-    });
-
-    setActiveAuction(prev => {
-      const updatedActive = prev.activePlayerIds.filter(id => id !== me.id);
-      const updatedExits = [{ timestamp: Date.now(), playerId: me.id, playerName: me.name, exitPrice }, ...prev.exits];
-      const updatedBids = [{ timestamp: Date.now(), playerId: me.id, playerName: `🔴 ${me.name} Exited`, amount: exitPrice, isAi: false }, ...prev.bids];
-
-      if (isHost && updatedActive.length === 1) {
-        setTimeout(() => {
-          handleAuctionResolved(updatedActive[0], exitPrice);
-        }, 400);
-      }
-
-      return {
-        ...prev,
-        activePlayerIds: updatedActive,
-        exits: updatedExits,
-        bids: updatedBids
-      };
-    });
-  };
+  const handleExitJapanese = () => {};
 
   // 9. Draw Dynamic Event Card
   const handleProceedToEvent = () => {

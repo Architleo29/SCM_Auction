@@ -160,7 +160,7 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({ isOpen, onClos
                     <h4 className="font-bold text-slate-100 text-sm">Live Reverse Auction Floor</h4>
                   </div>
                   <p className="text-xs text-slate-400 leading-relaxed">
-                    Battle human and AI rivals across <strong>Reverse English</strong> (price undercutting), <strong>Reverse Dutch</strong> (first to buzz), or <strong>Reverse Japanese</strong> (hold-to-stay clock).
+                    Battle human and AI rivals across <strong>Reverse English</strong> (price undercutting), <strong>Reverse English</strong> (first to buzz), or <strong>Reverse English</strong> (hold-to-stay clock).
                   </p>
                 </div>
 
@@ -204,7 +204,7 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({ isOpen, onClos
                   <div className="bg-slate-900/90 p-3 rounded-xl border border-slate-800 space-y-1">
                     <strong className="text-amber-300 block">3. Drives Auction Formats</strong>
                     <span className="text-slate-400">
-                      Used by Reverse Dutch (starts low and climbs to ceiling) and Japanese (drops from ceiling) clocks.
+                      Used by Reverse English (starts low and climbs to ceiling) and Japanese (drops from ceiling) clocks.
                     </span>
                   </div>
                 </div>
@@ -238,12 +238,12 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({ isOpen, onClos
                 </div>
               </div>
 
-              {/* Reverse Dutch */}
+              {/* Reverse English */}
               <div className="bg-slate-950 p-5 rounded-2xl border border-teal-500/30 space-y-2.5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-teal-400 font-bold text-sm">
                     <Zap className="w-4 h-4" />
-                    <span>⏳ 2. Reverse Dutch Auction (Ascending Price Clock)</span>
+                    <span>⏳ 2. Reverse English Auction (Ascending Price Clock)</span>
                   </div>
                   <span className="text-[0.625rem] font-mono uppercase bg-teal-950 text-teal-300 border border-teal-800 px-2 py-0.5 rounded font-bold">
                     First to Buzz
@@ -264,7 +264,7 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({ isOpen, onClos
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-violet-400 font-bold text-sm">
                     <TrendingDown className="w-4 h-4" />
-                    <span>🇯🇵 3. Reverse Japanese Clock Auction (Hold-to-Stay)</span>
+                    <span>🇯🇵 3. Reverse English Clock Auction (Hold-to-Stay)</span>
                   </div>
                   <span className="text-[0.625rem] font-mono uppercase bg-violet-950 text-violet-300 border border-violet-800 px-2 py-0.5 rounded font-bold">
                     2nd-Price Payout
@@ -381,7 +381,7 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({ isOpen, onClos
                   <span className="text-2xl">🎯</span>
                   <div>
                     <h5 className="font-bold text-slate-100 text-xs">Sniper Execution</h5>
-                    <p className="text-[0.625rem] text-slate-400">Won a Reverse Dutch auction within 2 seconds of margin target</p>
+                    <p className="text-[0.625rem] text-slate-400">Won a Reverse English auction within 2 seconds of margin target</p>
                   </div>
                 </div>
 
