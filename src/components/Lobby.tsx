@@ -120,6 +120,9 @@ export const Lobby: React.FC<LobbyProps> = ({
                 <span className="text-xs text-slate-400 font-mono">
                   {roomConfig.totalRounds} Fiscal Rounds • {maxPlayers} Max Vendors • {roomConfig.difficulty.toUpperCase()}
                 </span>
+                <span className="px-2.5 py-0.5 rounded-full text-[0.6875rem] font-bold uppercase tracking-wider bg-orange-950 text-orange-300 border border-orange-800 font-mono">
+                  🔨 Reverse English Auction
+                </span>
               </div>
               <h2 className="text-xl sm:text-2xl font-bold text-slate-100">{scenario.name}</h2>
               
@@ -285,16 +288,18 @@ export const Lobby: React.FC<LobbyProps> = ({
 
                   <button
                     type="button"
-                    onClick={onStartGame}
-                    disabled={vendorList.length < 2}
-                    className={`px-6 py-3 rounded-2xl font-semibold text-xs sm:text-sm shadow-xl flex items-center justify-center gap-2 transition cursor-pointer ${
-                      vendorList.length >= 2
-                        ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30'
-                        : 'bg-slate-800 text-slate-500 cursor-not-allowed opacity-50'
-                    }`}
+                    onClick={() => {
+                      if (vendorList.length < 2) {
+                        handleAutoFillAi();
+                      }
+                      setTimeout(() => {
+                        onStartGame();
+                      }, 100);
+                    }}
+                    className="px-6 py-3 rounded-2xl font-semibold text-xs sm:text-sm shadow-xl bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30 flex items-center justify-center gap-2 transition cursor-pointer active:scale-95"
                   >
                     <Play className="w-4 h-4 fill-current" />
-                    <span>Quick Start (Default RFQ)</span>
+                    <span>Start Live Auction Tender 🚀</span>
                   </button>
                 </div>
               </div>
@@ -472,6 +477,40 @@ export const Lobby: React.FC<LobbyProps> = ({
         <p className="text-sm text-slate-400">
           Compete in high-stakes reverse auctions against rival vendors and procurement scoring engines. Build quotes, price risk, survive market shocks, and bank profits in INR (₹).
         </p>
+      </div>
+
+
+
+      {/* 1-CLICK SOLO PLAY & GAME LAUNCHER */}
+      <div className="bg-gradient-to-r from-orange-950/80 via-slate-900 to-indigo-950/80 border border-orange-500/40 rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="p-3 rounded-2xl bg-orange-600/30 border border-orange-500/40 text-orange-300 shadow-md">
+              <Gavel className="w-6 h-6 text-orange-400" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-lg sm:text-xl font-bold text-slate-100">
+                  Solo Mode: Reverse English Procurement Auction
+                </h3>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono bg-orange-950 text-orange-300 border border-orange-800 font-bold">
+                  1-Click Instant Play
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 mt-0.5">
+                Play immediately as a <strong>Competing Supplier</strong> against 3 smart AI bots (Aggressive, Conservative, Opportunist). Submit your commercial quote, engage in real-time downward counter-bidding, and win high-margin tenders!
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => onQuickPlayVsBots('english')}
+            className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white font-bold text-sm shadow-xl shadow-orange-600/30 transition flex items-center justify-center gap-2 cursor-pointer active:scale-95 shrink-0"
+          >
+            <Play className="w-4 h-4 fill-current" />
+            <span>Launch Solo English Auction ⚡</span>
+          </button>
+        </div>
       </div>
 
 

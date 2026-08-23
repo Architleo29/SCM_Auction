@@ -969,8 +969,47 @@ export const App: React.FC = () => {
   // 5. Start Game / Round Initialization
   const handleStartGame = () => {
     if (!roomConfig) return;
-    const scenario = SCENARIOS[roomConfig.scenarioId];
-    const format = roomConfig.auctionFormatSequence[(roomConfig.currentRound - 1) % roomConfig.auctionFormatSequence.length];
+
+    // Ensure at least 2 competing vendors exist (auto-fill if needed)
+    let currentPlayers = { ...playersRef.current };
+    const vendors = Object.values(currentPlayers).filter(p => !p.isHost);
+    if (vendors.length < 2) {
+      const needed = (roomConfig.maxPlayers || 4) - vendors.length;
+      const botTypes: AIPersonality[] = ['aggressive', 'conservative', 'opportunist', 'copycat'];
+      const botNames = {
+        aggressive: 'Vulcan Heavy Ind. (Aggressive)',
+        conservative: 'Apex SafeBuild (Conservative)',
+        opportunist: 'Matrix Dynamic Bids (Opportunist)',
+        copycat: 'Echo Mirror Systems (Copycat)'
+      };
+      for (let i = 0; i < needed; i++) {
+        const personality = botTypes[i % botTypes.length];
+        const bId = `bot_${Date.now()}_${i}`;
+        const profile = generateCompanyProfile(botNames[personality], Object.keys(currentPlayers).length);
+        currentPlayers[bId] = {
+          id: bId,
+          name: botNames[personality],
+          isHost: false,
+          isAi: true,
+          aiPersonality: personality,
+          profile,
+          score: 0,
+          bankedProfit: 0,
+          contractsWon: 0,
+          reputation: profile.reputationScore,
+          intelPoints: 2,
+          disciplineWalkaways: 0,
+          ready: true,
+          submittedQuote: null,
+          history: []
+        };
+      }
+      playersRef.current = currentPlayers;
+      setPlayers(currentPlayers);
+    }
+
+    const scenario = SCENARIOS[roomConfig.scenarioId] || SCENARIOS.manufacturing;
+    const format = 'english';
 
     const rfq: RFQ = {
       ...scenario.sampleRfqs[0],
