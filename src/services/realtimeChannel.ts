@@ -1,21 +1,53 @@
 import { getSupabaseClient } from './supabase';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { Peer, DataConnection } from 'peerjs';
+import { 
+  PlayerState, 
+  RoomConfig, 
+  RFQ, 
+  AuctionState, 
+  Quote, 
+  DynamicEventCard, 
+  BuyerEvaluationResult, 
+  GamePhase 
+} from '../types/game';
+import { 
+  ForwardBuyerState, 
+  ForwardAuctionState, 
+  ForwardItem, 
+  ForwardValuationMode 
+} from '../engine/forwardAuction';
+
+export interface RoomStateSyncPayload {
+  roomConfig?: RoomConfig | null;
+  phase?: GamePhase;
+  players?: Record<string, PlayerState>;
+  currentRfq?: RFQ | null;
+  activeAuction?: AuctionState;
+  evaluationResult?: BuyerEvaluationResult | null;
+  activeEvent?: DynamicEventCard | null;
+  isForwardMode?: boolean;
+  forwardValuationMode?: ForwardValuationMode;
+  forwardCatalog?: ForwardItem[];
+  forwardLotIndex?: number;
+  forwardBuyers?: Record<string, ForwardBuyerState>;
+  forwardAuctionState?: ForwardAuctionState | null;
+}
 
 export type MultiplayerEvent = 
   | { type: 'PLAYER_JOINED'; payload: { id: string; name: string; isHost: boolean; profile: any; ready?: boolean } }
-  | { type: 'PLAYER_HEARTBEAT'; payload: { player: any } }
+  | { type: 'PLAYER_HEARTBEAT'; payload: { player: PlayerState } }
   | { type: 'PLAYER_LEFT'; payload: { id: string } }
   | { type: 'PLAYER_PROFILE_UPDATED'; payload: { playerId: string; stats: { qualityLevel: number; speedLevel: number; costEfficiency: number }; profile?: any } }
   | { type: 'PLAYER_READY_TOGGLED'; payload: { playerId: string; ready: boolean } }
-  | { type: 'ROOM_STATE_SYNC'; payload: any }
-  | { type: 'QUOTE_SUBMITTED'; payload: { playerId: string; quote: any } }
+  | { type: 'ROOM_STATE_SYNC'; payload: RoomStateSyncPayload }
+  | { type: 'QUOTE_SUBMITTED'; payload: { playerId: string; quote: Quote } }
   | { type: 'AUCTION_BID'; payload: { playerId: string; playerName: string; amount: number; isAi: boolean } }
   | { type: 'FORWARD_AUCTION_BID'; payload: { playerId: string; playerName: string; amount: number } }
   | { type: 'AUCTION_BUZZ'; payload: { playerId: string; playerName: string; price: number } }
   | { type: 'AUCTION_EXIT'; payload: { playerId: string; playerName: string; exitPrice: number } }
-  | { type: 'DYNAMIC_EVENT_TRIGGERED'; payload: any }
-  | { type: 'NEXT_PHASE'; payload: { phase: string; data?: any } };
+  | { type: 'DYNAMIC_EVENT_TRIGGERED'; payload: { event: DynamicEventCard } }
+  | { type: 'NEXT_PHASE'; payload: { phase: GamePhase; data?: any } };
 
 type EventHandler = (event: MultiplayerEvent) => void;
 

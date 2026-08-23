@@ -223,5 +223,19 @@ export default defineConfig({
     port: 3000,
     host: true,
     open: false
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom'],
+          'vendor-icons': ['lucide-react'],
+          'vendor-webrtc': ['peerjs'],
+          'vendor-supabase': ['@supabase/supabase-js'],
+          'vendor-fx': ['canvas-confetti']
+        }
+      }
+    },
+    chunkSizeWarningLimit: 600
   }
 });
