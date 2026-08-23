@@ -141,10 +141,10 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({ isOpen, onClos
                     <div className="w-7 h-7 rounded-xl bg-cyan-600/20 text-cyan-400 border border-cyan-500/30 flex items-center justify-center font-bold font-mono text-xs">
                       2
                     </div>
-                    <h4 className="font-bold text-slate-100 text-sm">Tender Review (RFQ)</h4>
+                    <h4 className="font-bold text-slate-100 text-sm">Tender Review & Budget Ceiling</h4>
                   </div>
                   <p className="text-xs text-slate-400 leading-relaxed">
-                    Inspect the buyer's <strong>Budget Ceiling</strong> and <strong>QCBS scoring weights</strong> (e.g. 50% Price, 30% Quality, 20% Timeline). Any quote above the ceiling is disqualified!
+                    Inspect the buyer's <strong>Budget Ceiling</strong> and <strong>QCBS scoring weights</strong> (e.g. Price, Quality, Timeline, Risk & Reputation). Any quote above the ceiling is disqualified!
                   </p>
                 </div>
 
@@ -154,10 +154,10 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({ isOpen, onClos
                     <div className="w-7 h-7 rounded-xl bg-amber-600/20 text-amber-400 border border-amber-500/30 flex items-center justify-center font-bold font-mono text-xs">
                       3
                     </div>
-                    <h4 className="font-bold text-slate-100 text-sm">Blind Commercial Quoting</h4>
+                    <h4 className="font-bold text-slate-100 text-sm">Strategy & Blind Quoting</h4>
                   </div>
                   <p className="text-xs text-slate-400 leading-relaxed">
-                    Check your <strong>Fully Loaded Cost (FLC)</strong>. Use the price slider to set your bid with a safe ~15% profit margin before the timer runs out.
+                    Adjust your <strong>Quality (1-5★)</strong>, <strong>Speed (T1-T5)</strong>, and <strong>Price Level (1-5)</strong>. Review your fixed & variable costs, and watch your live P&L statement update in real time.
                   </p>
                 </div>
 
@@ -174,6 +174,37 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({ isOpen, onClos
                   </p>
                 </div>
 
+              </div>
+
+              {/* DEDICATED SPOTLIGHT: WHY BUDGET CEILING IS NECESSARY IN REVERSE AUCTIONS */}
+              <div className="bg-slate-950 p-5 rounded-2xl border border-cyan-500/40 shadow-lg space-y-3">
+                <div className="flex items-center gap-2 text-cyan-400 font-bold text-sm">
+                  <ShieldCheck className="w-5 h-5 text-cyan-400 shrink-0" />
+                  <span>🏛️ Why is a Budget Ceiling Essential in Reverse Auctions?</span>
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  In a traditional auction (selling), prices start low and bid <strong>UPWARDS</strong> from a reserve floor. But in a <strong>Reverse Auction (procurement)</strong>, prices start high and compete <strong>DOWNWARDS</strong>. Here is why the ceiling is critical:
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs pt-1">
+                  <div className="bg-slate-900/90 p-3 rounded-xl border border-slate-800 space-y-1">
+                    <strong className="text-cyan-300 block">1. The Opening Anchor</strong>
+                    <span className="text-slate-400">
+                      Without a ceiling, where would a reverse auction begin? The ceiling defines the maximum starting price from which bids and clock ticks decrease.
+                    </span>
+                  </div>
+                  <div className="bg-slate-900/90 p-3 rounded-xl border border-slate-800 space-y-1">
+                    <strong className="text-emerald-300 block">2. Buyer Reserve Protection</strong>
+                    <span className="text-slate-400">
+                      Protects the buyer from price gouging or supplier collusion. Bids exceeding the approved budget are automatically disqualified as non-viable.
+                    </span>
+                  </div>
+                  <div className="bg-slate-900/90 p-3 rounded-xl border border-slate-800 space-y-1">
+                    <strong className="text-amber-300 block">3. Drives Auction Formats</strong>
+                    <span className="text-slate-400">
+                      In <strong>Dutch</strong> and <strong>Japanese</strong> reverse auctions, the automated price clock requires the ceiling to calculate initial ticking increments.
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           )}
