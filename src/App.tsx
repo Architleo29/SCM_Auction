@@ -892,7 +892,7 @@ export const App: React.FC = () => {
 
       if (!activeRfq) return;
 
-      // 1. REVERSE DUTCH AUCTION (NO COUNTDOWN TIMER - Price ticks up until someone buzzes or host ends it)
+      // 1. REVERSE DUTCH AUCTION (NO COUNTDOWN TIMER - Price ticks up continuously until someone buzzes or host ends it)
       if (state.format === 'dutch') {
         state.dutchTickCount = (state.dutchTickCount || 0) + 1;
 
@@ -912,6 +912,8 @@ export const App: React.FC = () => {
         }
 
         sounds.tick();
+        setActiveAuction(state);
+        broadcastSync({ activeAuction: state });
         return;
       }
 
@@ -1523,7 +1525,7 @@ export const App: React.FC = () => {
             onPlaceEnglishBid={handlePlaceEnglishBid}
             onBuzzDutchAccept={handleBuzzDutch}
             onExitJapaneseAuction={handleExitJapanese}
-            onSkipToEnd={() => handleAuctionResolved(activeAuction.currentLeaderId || Object.keys(players)[0], activeAuction.currentPrice)}
+            onSkipToEnd={isHost ? () => handleAuctionResolved(activeAuction.currentLeaderId || Object.keys(players)[0], activeAuction.currentPrice) : undefined}
           />
         )}
 

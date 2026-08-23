@@ -175,7 +175,7 @@ export const AuctionArena: React.FC<AuctionArenaProps> = ({
                 <p className="text-xl font-bold">Price Rising Continuously</p>
               </div>
             </div>
-            {onSkipToEnd && (
+            {isSpectator && onSkipToEnd && (
               <button
                 onClick={onSkipToEnd}
                 className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow transition cursor-pointer active:scale-95 ml-2"
