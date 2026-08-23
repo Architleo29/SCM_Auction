@@ -1098,7 +1098,6 @@ export const App: React.FC = () => {
   // 9. Draw Dynamic Event Card
   const handleProceedToEvent = () => {
     setActiveEvent(null);
-    // directly call PnL calculation inline to ensure state sync
     const activeRfq = rfqRef.current;
     if (!activeRfq || !evaluationResult) return;
     
@@ -1111,16 +1110,19 @@ export const App: React.FC = () => {
     Object.values(updatedPlayers).forEach(p => {
       const isWinner = p.id === evaluationResult.winnerId;
       const pnl = settleContractPnL(p, activeRfq, winningQuote, isWinner, null);
-      const newBankedProfit = p.bankedProfit + pnl.realizedProfit;
-      const newContractsWon = p.contractsWon + (isWinner ? 1 : 0);
+      const currentBanked = typeof p.bankedProfit === 'number' ? p.bankedProfit : 0;
+      const currentWins = typeof p.contractsWon === 'number' ? p.contractsWon : 0;
+      const newBankedProfit = currentBanked + pnl.realizedProfit;
+      const newContractsWon = currentWins + (isWinner ? 1 : 0);
       const newScore = calculateTotalScore(newBankedProfit, newContractsWon, 100, pnl.riskAdjustedProfit);
+      
       updatedPlayers[p.id] = {
         ...p,
         bankedProfit: newBankedProfit,
         contractsWon: newContractsWon,
         score: newScore,
         lastPnL: pnl,
-        history: [...p.history, pnl]
+        history: [...(p.history || []), pnl]
       };
     });
     playersRef.current = updatedPlayers;
