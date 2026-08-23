@@ -40,6 +40,7 @@ interface LobbyProps {
   onOpenRfqBuilder?: () => void;
   onOpenManualModal?: () => void;
   onUpdatePlayerProfile?: (stats: { qualityLevel: number; speedLevel: number; costEfficiency: number }) => void;
+  onQuickPlayVsBots?: (format?: AuctionFormat) => void;
   onStartForwardGame?: (valuationMode: 'private' | 'common') => void;
   onToggleReady?: (isReady: boolean) => void;
   isSupabaseConnected?: boolean;
@@ -58,6 +59,7 @@ export const Lobby: React.FC<LobbyProps> = ({
   onOpenRfqBuilder,
   onOpenManualModal,
   onUpdatePlayerProfile,
+  onQuickPlayVsBots,
   onStartForwardGame,
   onToggleReady,
   isSupabaseConnected,
