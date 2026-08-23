@@ -456,7 +456,7 @@ export const App: React.FC = () => {
             players: playersRef.current,
             currentRfq: rfqRef.current,
             activeAuction: activeAuctionRef.current,
-            evaluationResult: evaluationResultRef.current
+            evaluationResult: evaluationResult
           }
         }, roomConfig.code);
       } else {
