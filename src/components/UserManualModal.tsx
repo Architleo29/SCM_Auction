@@ -12,7 +12,10 @@ import {
   CheckCircle2, 
   AlertTriangle,
   ArrowRight,
-  ShieldCheck
+  ShieldCheck,
+  Star,
+  DollarSign,
+  FileSpreadsheet
 } from 'lucide-react';
 
 interface UserManualModalProps {
@@ -38,13 +41,13 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({ isOpen, onClos
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-xl sm:text-2xl font-bold text-slate-100">
-                  How to Play & Win
+                  Game Manual & Strategy Guide
                 </h2>
                 <span className="px-2.5 py-0.5 rounded-full text-[0.625rem] font-mono bg-indigo-950 text-indigo-300 border border-indigo-800 font-bold">
-                  Quick Guide
+                  v2.0 Clean SCM
                 </span>
               </div>
-              <p className="text-xs text-slate-400">Master quoting, 3 auction formats, and banking profits in INR (₹)</p>
+              <p className="text-xs text-slate-400">Master QCBS quoting, reverse auctions, P&L financials, and the ₹15k participation model</p>
             </div>
           </div>
 
@@ -78,7 +81,7 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({ isOpen, onClos
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
-            <span>🔨</span> 2. Auction Formats
+            <span>🔨</span> 2. Reverse Auction Formats
           </button>
 
           <button
@@ -89,7 +92,7 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({ isOpen, onClos
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
-            <span>💡</span> 3. Winning Strategy
+            <span>💡</span> 3. Quality vs Price Economics
           </button>
 
           <button
@@ -100,7 +103,7 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({ isOpen, onClos
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
-            <span>🏆</span> 4. Score & Leaderboard
+            <span>🏆</span> 4. Executive Leaderboard
           </button>
         </div>
 
@@ -115,7 +118,7 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({ isOpen, onClos
                 <div>
                   <h3 className="font-bold text-slate-100 text-sm mb-0.5">Your Core Objective</h3>
                   <p className="text-xs text-slate-300">
-                    You represent a competing Supplier Firm. Over multiple tender rounds, configure your company advantages, price contracts above your cost floor, out-maneuver rival vendors in live auctions, and bank the highest net profits!
+                    You represent a competing Supplier Firm. Across fiscal quarters, evaluate tender terms, configure your Quality USP & Price position, out-maneuver rival vendors in live reverse auctions, and maximize your banked net profit in INR (₹).
                   </p>
                 </div>
               </div>
@@ -128,36 +131,36 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({ isOpen, onClos
                     <div className="w-7 h-7 rounded-xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center font-bold font-mono text-xs">
                       1
                     </div>
-                    <h4 className="font-bold text-slate-100 text-sm">Company Strategy (10 Points)</h4>
+                    <h4 className="font-bold text-slate-100 text-sm">Tender Opportunity & Starting Price</h4>
                   </div>
                   <p className="text-xs text-slate-400 leading-relaxed">
-                    Distribute your 10 points between <strong>Quality</strong> (higher technical score), <strong>Speed</strong> (faster turnaround), and <strong>Cost Efficiency</strong> (lowers your baseline production cost).
+                    Inspect the buyer's <strong>Starting Price Limit</strong> and <strong>QCBS Evaluation Weights</strong> (Price % vs. Quality %). Any quote above the starting price ceiling is automatically disqualified.
                   </p>
                 </div>
 
                 {/* Step 2 */}
                 <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2 hover:border-slate-700 transition">
                   <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-xl bg-cyan-600/20 text-cyan-400 border border-cyan-500/30 flex items-center justify-center font-bold font-mono text-xs">
+                    <div className="w-7 h-7 rounded-xl bg-amber-600/20 text-amber-400 border border-amber-500/30 flex items-center justify-center font-bold font-mono text-xs">
                       2
                     </div>
-                    <h4 className="font-bold text-slate-100 text-sm">Tender Review & Auction Starting Price</h4>
+                    <h4 className="font-bold text-slate-100 text-sm">Strategic USP & Live P&L Quoting</h4>
                   </div>
                   <p className="text-xs text-slate-400 leading-relaxed">
-                    Inspect the buyer's <strong>Auction Starting Price</strong> and <strong>QCBS scoring weights</strong> (e.g. Price, Quality, Timeline, Risk & Reputation). Any quote above this starting price is disqualified!
+                    Choose your <strong>Quality Level (1★ to 5★)</strong> and <strong>Bid Price Position (1 to 5)</strong>. Watch your variable costs and net profit margin update live in the real-time GAAP Income Statement!
                   </p>
                 </div>
 
                 {/* Step 3 */}
                 <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2 hover:border-slate-700 transition">
                   <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-xl bg-amber-600/20 text-amber-400 border border-amber-500/30 flex items-center justify-center font-bold font-mono text-xs">
+                    <div className="w-7 h-7 rounded-xl bg-cyan-600/20 text-cyan-400 border border-cyan-500/30 flex items-center justify-center font-bold font-mono text-xs">
                       3
                     </div>
-                    <h4 className="font-bold text-slate-100 text-sm">Strategy & Blind Quoting</h4>
+                    <h4 className="font-bold text-slate-100 text-sm">Live Reverse Auction Floor</h4>
                   </div>
                   <p className="text-xs text-slate-400 leading-relaxed">
-                    Adjust your <strong>Quality (1-5★)</strong>, <strong>Speed (T1-T5)</strong>, and <strong>Price Level (1-5)</strong>. Review your fixed & variable costs, and watch your live P&L statement update in real time.
+                    Battle human and AI rivals across <strong>Reverse English</strong> (price undercutting), <strong>Reverse Dutch</strong> (first to buzz), or <strong>Reverse Japanese</strong> (hold-to-stay clock).
                   </p>
                 </div>
 
@@ -167,41 +170,41 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({ isOpen, onClos
                     <div className="w-7 h-7 rounded-xl bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-bold font-mono text-xs">
                       4
                     </div>
-                    <h4 className="font-bold text-slate-100 text-sm">Live Auction & P&L Settlement</h4>
+                    <h4 className="font-bold text-slate-100 text-sm">QCBS Award & P&L Settlement</h4>
                   </div>
                   <p className="text-xs text-slate-400 leading-relaxed">
-                    Battle rivals on the live floor! Once the auction concludes, review contract evaluation scores and bank your realized net profits into your balance sheet.
+                    The winning bidder delivers the contract and records <strong>Realized Net Profit</strong> (Revenue - Costs - Taxes - ₹15k fee). Outbid vendors incur only the <strong>₹15,000 Participation Fee</strong>.
                   </p>
                 </div>
 
               </div>
 
-              {/* DEDICATED SPOTLIGHT: WHY BUDGET CEILING IS NECESSARY IN REVERSE AUCTIONS */}
+              {/* DEDICATED SPOTLIGHT: STARTING PRICE CEILING IN REVERSE AUCTIONS */}
               <div className="bg-slate-950 p-5 rounded-2xl border border-cyan-500/40 shadow-lg space-y-3">
                 <div className="flex items-center gap-2 text-cyan-400 font-bold text-sm">
                   <ShieldCheck className="w-5 h-5 text-cyan-400 shrink-0" />
-                  <span>🏛️ Why is the Auction Starting Price (Ceiling) Essential in Reverse Auctions?</span>
+                  <span>🏛️ Why is the Starting Price Ceiling Essential in Reverse Auctions?</span>
                 </div>
                 <p className="text-xs text-slate-300 leading-relaxed">
-                  In a traditional auction (selling), prices start low and bid <strong>UPWARDS</strong> from a reserve floor. But in a <strong>Reverse Auction (procurement)</strong>, prices start high and compete <strong>DOWNWARDS</strong>. Here is why the ceiling is critical:
+                  In a traditional selling auction, prices start at zero and bid <strong>UPWARDS</strong>. In a <strong>Procurement Reverse Auction</strong>, the buyer starts at a maximum budget ceiling and suppliers compete <strong>DOWNWARDS</strong>.
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs pt-1">
                   <div className="bg-slate-900/90 p-3 rounded-xl border border-slate-800 space-y-1">
                     <strong className="text-cyan-300 block">1. The Opening Anchor</strong>
                     <span className="text-slate-400">
-                      Without a ceiling, where would a reverse auction begin? The ceiling defines the maximum starting price from which bids and clock ticks decrease.
+                      Defines the top ceiling from which all live auction clock ticks and vendor counter-bids descend.
                     </span>
                   </div>
                   <div className="bg-slate-900/90 p-3 rounded-xl border border-slate-800 space-y-1">
                     <strong className="text-emerald-300 block">2. Buyer Reserve Protection</strong>
                     <span className="text-slate-400">
-                      Protects the buyer from price gouging or supplier collusion. Bids exceeding the approved budget are automatically disqualified as non-viable.
+                      Protects the procurement authority from price gouging; quotes above the starting ceiling are disqualified.
                     </span>
                   </div>
                   <div className="bg-slate-900/90 p-3 rounded-xl border border-slate-800 space-y-1">
                     <strong className="text-amber-300 block">3. Drives Auction Formats</strong>
                     <span className="text-slate-400">
-                      In <strong>Dutch</strong> and <strong>Japanese</strong> reverse auctions, the automated price clock requires the ceiling to calculate initial ticking increments.
+                      Used by Reverse Dutch (starts low and climbs to ceiling) and Japanese (drops from ceiling) clocks.
                     </span>
                   </div>
                 </div>
@@ -214,127 +217,141 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({ isOpen, onClos
             <div className="space-y-4 animate-fade-in">
               
               {/* Reverse English */}
-              <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-2.5">
+              <div className="bg-slate-950 p-5 rounded-2xl border border-orange-500/30 space-y-2.5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-orange-400 font-bold text-sm">
                     <Gavel className="w-4 h-4" />
-                    <span>🔨 1. Reverse English Auction (Live Price War)</span>
+                    <span>🔨 1. Reverse English Auction (Live Counter-Bid War)</span>
                   </div>
                   <span className="text-[0.625rem] font-mono uppercase bg-orange-950 text-orange-300 border border-orange-800 px-2 py-0.5 rounded font-bold">
                     Descending Bids
                   </span>
                 </div>
                 <p className="text-xs text-slate-300">
-                  Vendors submit decreasing counter-bids in real time. The lowest quoted price holds the lead.
+                  Suppliers submit decreasing counter-bids in real time. The lowest qualifying bid takes the lead!
                 </p>
                 <div className="bg-slate-900/80 p-3 rounded-xl text-xs space-y-1 font-mono border border-slate-800/80 text-slate-300">
                   <p className="text-orange-300 font-bold">⚡ How to Play:</p>
-                  <p>• Click <strong>-₹10K</strong>, <strong>-₹25K</strong>, or enter a custom lower bid to take the lead.</p>
-                  <p>• <strong>Anti-Sniping:</strong> Any bid placed with less than 15s left adds +10s to the clock.</p>
-                  <p>• <strong>Pro-Tip:</strong> Watch your profit margin indicator! If margin drops below 5%, stop and let competitors overbid.</p>
+                  <p>• Click <strong>-₹10K</strong>, <strong>-₹25K</strong>, or enter a custom lower bid to capture the lead.</p>
+                  <p>• <strong>Anti-Sniping:</strong> Any bid placed in the final 15s adds +15s to the timer.</p>
+                  <p>• <strong>Margin Guard:</strong> Watch your real-time margin indicator so you don't bid below your cost floor!</p>
                 </div>
               </div>
 
               {/* Reverse Dutch */}
-              <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-2.5">
+              <div className="bg-slate-950 p-5 rounded-2xl border border-teal-500/30 space-y-2.5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-teal-400 font-bold text-sm">
                     <Zap className="w-4 h-4" />
-                    <span>⏳ 2. Reverse Dutch Auction (Ascending Speed Clock)</span>
+                    <span>⏳ 2. Reverse Dutch Auction (Ascending Price Clock)</span>
                   </div>
                   <span className="text-[0.625rem] font-mono uppercase bg-teal-950 text-teal-300 border border-teal-800 px-2 py-0.5 rounded font-bold">
                     First to Buzz
                   </span>
                 </div>
                 <p className="text-xs text-slate-300">
-                  The contract price starts low (below market cost) and ticks <strong>UP</strong> by +3.5% every 2 seconds.
+                  The contract price starts low (unprofitably cheap) and ticks <strong>UPWARDS</strong> by +3.5% every 2 seconds.
                 </p>
                 <div className="bg-slate-900/80 p-3 rounded-xl text-xs space-y-1 font-mono border border-slate-800/80 text-slate-300">
                   <p className="text-teal-300 font-bold">⚡ How to Play:</p>
-                  <p>• The <strong>first vendor</strong> to click <strong className="text-teal-400">"Buzz In & Accept"</strong> wins the contract on the spot at that price!</p>
-                  <p>• <strong>The Dilemma:</strong> Buzz too early = low profit. Wait too long = a rival buzzes before you and takes the deal!</p>
+                  <p>• The <strong>first supplier</strong> to click <strong className="text-teal-300">"Buzz In & Accept"</strong> instantly wins the tender at the current ticking price!</p>
+                  <p>• <strong>Strategic Tension:</strong> Buzz too early $ightarrow$ slim profit. Wait too long $ightarrow$ an aggressive rival buzzes first!</p>
                 </div>
               </div>
 
               {/* Japanese Clock */}
-              <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-2.5">
+              <div className="bg-slate-950 p-5 rounded-2xl border border-violet-500/30 space-y-2.5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-violet-400 font-bold text-sm">
                     <TrendingDown className="w-4 h-4" />
-                    <span>🇯🇵 3. Japanese Clock Auction (Hold to Stay)</span>
+                    <span>🇯🇵 3. Reverse Japanese Clock Auction (Hold-to-Stay)</span>
                   </div>
                   <span className="text-[0.625rem] font-mono uppercase bg-violet-950 text-violet-300 border border-violet-800 px-2 py-0.5 rounded font-bold">
                     2nd-Price Payout
                   </span>
                 </div>
                 <p className="text-xs text-slate-300">
-                  The price clock automatically steps <strong>DOWN</strong> at fixed intervals.
+                  The price clock automatically steps <strong>DOWNWARDS</strong> in rounds.
                 </p>
                 <div className="bg-slate-900/80 p-3 rounded-xl text-xs space-y-1 font-mono border border-slate-800/80 text-slate-300">
                   <p className="text-violet-300 font-bold">⚡ How to Play:</p>
-                  <p>• Press and hold the button to remain in the auction as the price drops.</p>
-                  <p>• Release the button to permanently exit once the price falls below your cost floor.</p>
-                  <p>• <strong>Bonus Rule:</strong> The last vendor left wins and receives the <strong>2nd-place exit price</strong> (higher payout)!</p>
+                  <p>• Hold the button to stay active as the price drops.</p>
+                  <p>• Release to permanently exit once the price drops below your breakeven threshold.</p>
+                  <p>• <strong>2nd-Price Incentive:</strong> The last standing vendor wins at the <strong>2nd-place exit price</strong> (higher payout)!</p>
                 </div>
               </div>
 
             </div>
           )}
 
-          {/* TAB 3: STRATEGY & PROFIT */}
+          {/* TAB 3: QUALITY VS PRICE STRATEGY */}
           {activeTab === 'strategy' && (
             <div className="space-y-4 animate-fade-in">
               
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
-                  <div className="flex items-center gap-1.5 text-amber-400 font-bold text-xs">
-                    <AlertTriangle className="w-4 h-4" />
-                    <span>1. Avoid Winner's Curse</span>
-                  </div>
-                  <p className="text-xs text-slate-400 leading-relaxed">
-                    In procurement auctions, the lowest bidder often bids too low and loses money. Never bid below your <strong>Breakeven Cost (FLC)</strong>!
-                  </p>
+              {/* Quality Tiers Cost Curve */}
+              <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-3">
+                <div className="flex items-center gap-2 text-amber-400 font-bold text-sm">
+                  <Star className="w-4 h-4" />
+                  <span>Quality Level Multiplier & Cost Impact (Scale 1–5★)</span>
                 </div>
-
-                <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
-                  <div className="flex items-center gap-1.5 text-cyan-400 font-bold text-xs">
-                    <ShieldCheck className="w-4 h-4" />
-                    <span>2. QCBS (Quality & Cost) Scoring Power</span>
+                <p className="text-xs text-slate-300">
+                  Your chosen Quality Level directly scales your variable production costs (Materials & Labor) and determines your QCBS technical score:
+                </p>
+                <div className="grid grid-cols-5 gap-2 text-center font-mono text-xs pt-1">
+                  <div className="bg-slate-900 p-2.5 rounded-xl border border-slate-800">
+                    <span className="text-amber-400 font-bold block">1★ Economy</span>
+                    <span className="text-emerald-400 text-[11px] font-semibold">-20% Cost</span>
+                    <span className="text-slate-500 text-[10px] block">High Margin</span>
                   </div>
-                  <p className="text-xs text-slate-400 leading-relaxed">
-                    <strong>QCBS</strong> stands for <em>Quality- and Cost-Based Selection</em>. The buyer awards contracts based on the highest total score (Price + Quality + Speed + Trust), not just lowest price!
-                  </p>
-                </div>
-
-                <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
-                  <div className="flex items-center gap-1.5 text-emerald-400 font-bold text-xs">
-                    <Percent className="w-4 h-4" />
-                    <span>3. Target 15-20% Margins</span>
+                  <div className="bg-slate-900 p-2.5 rounded-xl border border-slate-800">
+                    <span className="text-amber-400 font-bold block">2★ Value</span>
+                    <span className="text-emerald-400 text-[11px] font-semibold">-10% Cost</span>
+                    <span className="text-slate-500 text-[10px] block">Good Margin</span>
                   </div>
-                  <p className="text-xs text-slate-400 leading-relaxed">
-                    Consistent 15-20% margins build a fortress balance sheet. Disciplined pricing always beats reckless low-ball bidding.
-                  </p>
+                  <div className="bg-slate-900 p-2.5 rounded-xl border border-slate-800">
+                    <span className="text-amber-400 font-bold block">3★ Standard</span>
+                    <span className="text-slate-300 text-[11px] font-semibold">Baseline</span>
+                    <span className="text-slate-500 text-[10px] block">Balanced</span>
+                  </div>
+                  <div className="bg-slate-900 p-2.5 rounded-xl border border-slate-800">
+                    <span className="text-amber-400 font-bold block">4★ Premium</span>
+                    <span className="text-rose-400 text-[11px] font-semibold">+15% Cost</span>
+                    <span className="text-slate-500 text-[10px] block">High Quality</span>
+                  </div>
+                  <div className="bg-slate-900 p-2.5 rounded-xl border border-slate-800">
+                    <span className="text-amber-400 font-bold block">5★ Flagship</span>
+                    <span className="text-rose-400 text-[11px] font-semibold">+30% Cost</span>
+                    <span className="text-slate-500 text-[10px] block">100% Quality</span>
+                  </div>
                 </div>
               </div>
 
-              {/* MBA Procurement Framework Guide */}
-              <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-3">
-                <h4 className="font-bold text-indigo-300 text-xs uppercase font-mono tracking-wider">
-                  🎓 Core MBA Concepts Applied in This Simulator
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
-                  <div className="bg-slate-900 p-3 rounded-xl border border-slate-800 space-y-1">
-                    <strong className="text-amber-400 block">📊 1. Cost Accounting</strong>
-                    <span className="text-slate-400">Total Breakeven Cost = Variable Production (Labor + Materials + Shipping) + Fixed Factory Overhead.</span>
+              {/* QCBS Scoring & Participation Fee */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
+                  <div className="flex items-center gap-1.5 text-indigo-400 font-bold text-xs">
+                    <Percent className="w-4 h-4" />
+                    <span>QCBS Buyer Scoring Formula</span>
                   </div>
-                  <div className="bg-slate-900 p-3 rounded-xl border border-slate-800 space-y-1">
-                    <strong className="text-indigo-400 block">⚖️ 2. QCBS Scoring Formula</strong>
-                    <span className="text-slate-400">Total Score = (Price × Wp) + (Quality × Wq) + (Speed × Ws) + (Trust × Wt). Quality beats price when buyer weights quality!</span>
+                  <p className="text-xs text-slate-400 leading-relaxed font-mono">
+                    Total Score = (Price Wt × Price Score) + (Quality Wt × Quality Score)
+                  </p>
+                  <p className="text-[11px] text-slate-400">
+                    When the buyer sets high Quality Weight (e.g. 50%), a higher-priced 5★ quote can easily defeat a low-ball 1★ economy bid!
+                  </p>
+                </div>
+
+                <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
+                  <div className="flex items-center gap-1.5 text-rose-400 font-bold text-xs">
+                    <FileSpreadsheet className="w-4 h-4" />
+                    <span>₹15,000 Tender Participation Fee</span>
                   </div>
-                  <div className="bg-slate-900 p-3 rounded-xl border border-slate-800 space-y-1">
-                    <strong className="text-emerald-400 block">🔨 3. Game Theory & Auctions</strong>
-                    <span className="text-slate-400">English (price war), Dutch (first to buzz), and Japanese (hold-to-stay) reverse mechanisms.</span>
-                  </div>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Submitting a tender response incurs a fixed <strong>₹15,000 Bid Preparation Fee</strong>.
+                  </p>
+                  <p className="text-[11px] text-slate-400">
+                    If you are outbid, you lose ₹15,000. If you win, the ₹15,000 is deducted from your gross operating profit during GAAP settlement.
+                  </p>
                 </div>
               </div>
 
@@ -348,31 +365,31 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({ isOpen, onClos
               <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-3">
                 <div className="flex items-center gap-2 text-purple-300 font-bold text-sm">
                   <Award className="w-5 h-5 text-amber-400" />
-                  <span>Leaderboard Championship Formula</span>
+                  <span>Executive Leaderboard Championship Formula</span>
                 </div>
                 <p className="text-xs text-slate-300">
-                  Your final tournament score at the end of all rounds is calculated as:
+                  Your tournament ranking on the Executive Leaderboard across all fiscal rounds is computed as:
                 </p>
                 <div className="bg-slate-900 p-4 rounded-xl border border-slate-800 text-center font-mono text-indigo-300 font-bold text-xs sm:text-sm">
-                  Total Score = (Banked Profit ₹ × 1.0) + (Contracts Won × 10,000) + (Reputation × 250)
+                  Total Score = (Cumulative Banked Profit ₹ × 1.0) + (Contracts Won × 1,000)
                 </div>
               </div>
 
-              {/* Achievements Grid */}
+              {/* Achievement Badges */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex items-center gap-3">
                   <span className="text-2xl">🎯</span>
                   <div>
-                    <h5 className="font-bold text-slate-100 text-xs">Sniper Award</h5>
-                    <p className="text-[0.625rem] text-slate-400">Won a Dutch auction within 2 seconds of margin target</p>
+                    <h5 className="font-bold text-slate-100 text-xs">Sniper Execution</h5>
+                    <p className="text-[0.625rem] text-slate-400">Won a Reverse Dutch auction within 2 seconds of margin target</p>
                   </div>
                 </div>
 
                 <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex items-center gap-3">
                   <span className="text-2xl">🛡️</span>
                   <div>
-                    <h5 className="font-bold text-slate-100 text-xs">Iron Fortress</h5>
-                    <p className="text-[0.625rem] text-slate-400">Protected a 20%+ margin across consecutive rounds</p>
+                    <h5 className="font-bold text-slate-100 text-xs">Margin Discipline</h5>
+                    <p className="text-[0.625rem] text-slate-400">Maintained 15%+ realized net margin across consecutive rounds</p>
                   </div>
                 </div>
 
@@ -380,15 +397,15 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({ isOpen, onClos
                   <span className="text-2xl">⚡</span>
                   <div>
                     <h5 className="font-bold text-slate-100 text-xs">High Roller</h5>
-                    <p className="text-[0.625rem] text-slate-400">Banked over ₹10,00,000 in cumulative net profits</p>
+                    <p className="text-[0.625rem] text-slate-400">Banked over ₹10,00,000 in cumulative net cash profit</p>
                   </div>
                 </div>
 
                 <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex items-center gap-3">
-                  <span className="text-2xl">🧠</span>
+                  <span className="text-2xl">👑</span>
                   <div>
-                    <h5 className="font-bold text-slate-100 text-xs">Disciplined Master</h5>
-                    <p className="text-[0.625rem] text-slate-400">Walked away from an unprofitable price race to the bottom</p>
+                    <h5 className="font-bold text-slate-100 text-xs">Procurement Titan</h5>
+                    <p className="text-[0.625rem] text-slate-400">Won multiple high-stake reverse tenders in a single tournament</p>
                   </div>
                 </div>
               </div>
@@ -400,7 +417,7 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({ isOpen, onClos
 
         {/* Footer */}
         <div className="p-4 sm:p-5 border-t border-slate-800 bg-slate-950/80 flex items-center justify-between">
-          <span className="text-xs text-slate-500 font-mono">SCM Procurement Simulator • Quick Reference</span>
+          <span className="text-xs text-slate-500 font-mono">SCM Procurement Simulator • v2.0 Clean Guide</span>
           <button
             onClick={onClose}
             className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs shadow-lg shadow-indigo-600/30 transition cursor-pointer active:scale-95 flex items-center gap-1.5"
