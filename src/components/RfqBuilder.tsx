@@ -8,7 +8,7 @@ import {
   ArrowLeft,
   Gavel
 } from 'lucide-react';
-import { RFQ, IndustryScenarioId, AuctionFormat, SLATier } from '../types/game';
+import { RFQ, IndustryScenarioId, AuctionFormat } from '../types/game';
 import { SCENARIOS } from '../data/scenarios';
 import { formatINR } from '../utils/formatters';
 import { sounds } from '../utils/soundEffects';
@@ -94,7 +94,7 @@ export const RfqBuilder: React.FC<RfqBuilderProps> = ({
   onPublishRfq,
   onBackToMainScreen
 }) => {
-  const [scenarioId, setScenarioId] = useState<IndustryScenarioId>(initialScenarioId);
+  const [scenarioId] = useState<IndustryScenarioId>(initialScenarioId);
   const [auctionFormat, setAuctionFormat] = useState<AuctionFormat>(selectedAuctionFormat);
   
   // Contract specs
@@ -104,7 +104,7 @@ export const RfqBuilder: React.FC<RfqBuilderProps> = ({
   const [requiredDeliveryDays, setRequiredDeliveryDays] = useState(30);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Background direct drivers (auto-populated from scenario)
+  // Background direct drivers
   const [baseLaborHours, setBaseLaborHours] = useState(2200);
   const [laborRate, setLaborRate] = useState(50);
   const [baseMaterialsQty, setBaseMaterialsQty] = useState(1200);
@@ -113,7 +113,6 @@ export const RfqBuilder: React.FC<RfqBuilderProps> = ({
   const [logisticsUnitCost, setLogisticsUnitCost] = useState(180);
   const [paymentDelayDays, setPaymentDelayDays] = useState(30);
   const [requiredCompliance, setRequiredCompliance] = useState<string[]>(['ISO-9001']);
-  const [preferredSla, setPreferredSla] = useState<SLATier>('standard');
 
   // Weights (Percentages strictly auto-balanced to 100%)
   const [weights, setWeights] = useState<WeightsState>({
@@ -123,11 +122,9 @@ export const RfqBuilder: React.FC<RfqBuilderProps> = ({
     riskReputation: 15
   });
 
-  // Auto-Fill / Preset Loader with dynamic variation
-  const handleAutoSelect = (targetScenario?: IndustryScenarioId, randomize: boolean = false) => {
+  const handleAutoSelect = (randomize: boolean = false) => {
     sounds.bid();
-    const sId = targetScenario || scenarioId;
-    const scenario = SCENARIOS[sId];
+    const scenario = SCENARIOS[scenarioId] || SCENARIOS['manufacturing'];
     const sample = scenario.sampleRfqs[0];
 
     const scale = randomize ? (0.85 + Math.random() * 0.40) : 1.0;
@@ -165,14 +162,14 @@ export const RfqBuilder: React.FC<RfqBuilderProps> = ({
     });
 
     if (randomize) {
-      setToastMessage(`✨ Auto-Generated tender for ${scenario.name} (Starting Price: ${formatINR(newBudget)}, ${newDeliveryDays} Days)!`);
+      setToastMessage(`✨ Auto-Generated Tender (Starting Price: ${formatINR(newBudget)}, ${newDeliveryDays} Days)!`);
       setTimeout(() => setToastMessage(null), 3500);
     }
   };
 
   useEffect(() => {
-    handleAutoSelect(scenarioId, false);
-  }, [scenarioId]);
+    handleAutoSelect(false);
+  }, []);
 
   const handleWeightChange = (key: WeightKey, value: number) => {
     setWeights(prev => adjustWeights(prev, key, value));
@@ -195,9 +192,9 @@ export const RfqBuilder: React.FC<RfqBuilderProps> = ({
       id: `rfq_${Date.now()}`,
       roundNumber,
       scenarioId,
-      scenarioName: SCENARIOS[scenarioId].name,
-      title: title || `${SCENARIOS[scenarioId].name} Procurement Contract`,
-      description: description || SCENARIOS[scenarioId].description,
+      scenarioName: 'Procurement Tender',
+      title: title || 'Commercial Procurement Contract',
+      description: description || 'Delivery contract under competitive auction and QCBS evaluation criteria.',
       budgetCeiling,
       auctionFormat,
       baseLaborHours,
@@ -238,7 +235,7 @@ export const RfqBuilder: React.FC<RfqBuilderProps> = ({
           </div>
           <h2 className="text-xl sm:text-2xl font-bold text-slate-100">Architect Tender & Evaluation Criteria</h2>
           <p className="text-xs text-slate-400 mt-1">
-            Set the starting price ceiling and customize the buyer's 4 scoring weights (QCBS formula).
+            Set the auction starting price and customize the buyer's 4 scoring weights (QCBS formula).
           </p>
         </div>
 
@@ -255,7 +252,7 @@ export const RfqBuilder: React.FC<RfqBuilderProps> = ({
           )}
           <button
             type="button"
-            onClick={() => handleAutoSelect(undefined, true)}
+            onClick={() => handleAutoSelect(true)}
             className="px-4 py-2.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/40 text-indigo-300 hover:text-indigo-200 text-xs font-mono font-semibold transition flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95"
           >
             <Sparkles className="w-4 h-4 text-indigo-400" />
@@ -272,59 +269,31 @@ export const RfqBuilder: React.FC<RfqBuilderProps> = ({
 
       <form onSubmit={handlePublish} className="space-y-6">
         
-        {/* Industry Scenario & Auction Format Selector */}
-        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl space-y-4">
-          <span className="text-xs font-mono text-indigo-400 font-bold uppercase tracking-wider block">
-            1. Industry Sector & Live Auction Mechanics
-          </span>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-            {Object.values(SCENARIOS).map(sc => (
+        {/* Auction Format Selector */}
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl space-y-3">
+          <label className="block text-xs font-mono text-indigo-400 font-bold uppercase tracking-wider">
+            1. Live Auction Format
+          </label>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {[
+              { id: 'english', label: '🔨 Reverse English', desc: 'Price drops with counter-bids' },
+              { id: 'dutch', label: '⏳ Reverse Dutch', desc: 'Price rises until 1st buzz' },
+              { id: 'japanese', label: '🇯🇵 Reverse Japanese', desc: 'Price drops clock rounds' }
+            ].map(fmt => (
               <button
-                key={sc.id}
+                key={fmt.id}
                 type="button"
-                onClick={() => {
-                  setScenarioId(sc.id);
-                  handleAutoSelect(sc.id, false);
-                }}
-                className={`p-3 rounded-2xl border text-left transition flex flex-col justify-between cursor-pointer ${
-                  scenarioId === sc.id
-                    ? 'bg-indigo-950/60 border-indigo-500 shadow-md shadow-indigo-600/20'
-                    : 'bg-slate-950 border-slate-800 hover:border-slate-700 opacity-70 hover:opacity-100'
+                onClick={() => setAuctionFormat(fmt.id as AuctionFormat)}
+                className={`p-3.5 rounded-2xl border text-left text-xs font-mono transition cursor-pointer ${
+                  auctionFormat === fmt.id
+                    ? 'bg-indigo-600/30 border-indigo-400 text-indigo-200 shadow-md shadow-indigo-600/20'
+                    : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
                 }`}
               >
-                <div>
-                  <span className="text-xs font-mono font-bold text-indigo-400 uppercase tracking-wider block mb-1">Sector</span>
-                  <p className="text-xs font-bold text-slate-100">{sc.name}</p>
-                </div>
-                <span className="text-[0.625rem] font-mono text-slate-400 mt-2 block">{sc.category}</span>
+                <span className="font-bold text-sm block text-slate-100">{fmt.label}</span>
+                <span className="text-xs text-slate-400 block mt-1">{fmt.desc}</span>
               </button>
             ))}
-          </div>
-
-          <div className="pt-2 border-t border-slate-800">
-            <label className="block text-xs font-mono text-slate-300 mb-1.5">Auction Format</label>
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { id: 'english', label: '🔨 Reverse English', desc: 'Price drops with counter-bids' },
-                { id: 'dutch', label: '⏳ Reverse Dutch', desc: 'Price rises until 1st buzz' },
-                { id: 'japanese', label: '🇯🇵 Reverse Japanese', desc: 'Price drops clock rounds' }
-              ].map(fmt => (
-                <button
-                  key={fmt.id}
-                  type="button"
-                  onClick={() => setAuctionFormat(fmt.id as AuctionFormat)}
-                  className={`p-2.5 rounded-xl border text-left text-xs font-mono transition cursor-pointer ${
-                    auctionFormat === fmt.id
-                      ? 'bg-indigo-600/30 border-indigo-400 text-indigo-200 shadow-md'
-                      : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  <span className="font-bold block">{fmt.label}</span>
-                  <span className="text-[0.625rem] text-slate-500 block mt-0.5">{fmt.desc}</span>
-                </button>
-              ))}
-            </div>
           </div>
         </div>
 
@@ -361,7 +330,7 @@ export const RfqBuilder: React.FC<RfqBuilderProps> = ({
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g. Industrial Automation Delivery"
+                placeholder="e.g. Turnkey Equipment Delivery"
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 font-medium"
               />
             </div>

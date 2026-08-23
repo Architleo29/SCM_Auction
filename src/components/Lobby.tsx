@@ -500,23 +500,7 @@ export const Lobby: React.FC<LobbyProps> = ({
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Industry Scenario</label>
-                <select
-                  value={selectedScenario}
-                  onChange={(e) => setSelectedScenario(e.target.value as IndustryScenarioId)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 cursor-pointer"
-                >
-                  {Object.values(SCENARIOS).map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name} ({s.category})
-                    </option>
-                  ))}
-                </select>
-                <p className="text-xs text-slate-500 mt-1 font-mono">
-                  {SCENARIOS[selectedScenario].dominantRisk}
-                </p>
-              </div>
+
 
               <div className="grid grid-cols-2 gap-3">
                 <div>

@@ -150,7 +150,7 @@ export const AuctionArena: React.FC<AuctionArenaProps> = ({
               {rfq.auctionFormat === 'japanese' && '🇯🇵 Reverse Japanese Clock (Price Drops)'}
             </span>
             <span className="text-xs font-mono text-slate-400">
-              Round {rfq.roundNumber} • {rfq.scenarioName}
+              Round {rfq.roundNumber}
             </span>
           </div>
           <h2 className="text-xl sm:text-2xl font-bold text-slate-100">{rfq.title}</h2>
