@@ -40,10 +40,14 @@ export const AuctionArena: React.FC<AuctionArenaProps> = ({
   onExitJapaneseAuction,
   onSkipToEnd
 }) => {
-  const profile = player.profile;
-  const costBreakdown = calculateCostBreakdown(profile, rfq);
+  const chosenQualityLevel = player.submittedQuote?.qualityTier || player.profile?.qualityLevel || 3;
+  const effectiveProfile = {
+    ...player.profile,
+    qualityLevel: chosenQualityLevel
+  };
+  const costBreakdown = calculateCostBreakdown(effectiveProfile, rfq);
   const flc = costBreakdown.fullyLoadedCost;
-  const isSpectator = player.isHost || player.name.includes('Spectator') || player.name.includes('Director');
+  const isSpectator = isBuyerSpectator(player);
 
   const step1 = Math.max(1000, Math.round(rfq.budgetCeiling * 0.01));
   const step2 = Math.max(2500, Math.round(rfq.budgetCeiling * 0.025));
@@ -72,9 +76,27 @@ export const AuctionArena: React.FC<AuctionArenaProps> = ({
     setCustomBidInput(Math.max(1000, auctionState.currentPrice - step1).toString());
   }, [auctionState.currentPrice, step1]);
 
-  const currentMarginAtPrice = auctionState.currentPrice > 0 
-    ? Number((((auctionState.currentPrice - flc) / auctionState.currentPrice) * 100).toFixed(1))
+  const currentPrice = auctionState.currentPrice;
+  const operatingProfitAtPrice = currentPrice - flc;
+  const currentMarginAtPrice = currentPrice > 0 
+    ? Number(((operatingProfitAtPrice / currentPrice) * 100).toFixed(1))
     : 0;
+  const taxRate = effectiveProfile.taxRate || 0.20;
+  const taxAtPrice = operatingProfitAtPrice > 0 ? Math.round(operatingProfitAtPrice * taxRate) : 0;
+  const projectedNetProfitAtPrice = operatingProfitAtPrice - taxAtPrice - 15000;
+
+  const calcStepMargin = (targetPrice: number) => {
+    if (targetPrice <= 0) return 0;
+    return Number((((targetPrice - flc) / targetPrice) * 100).toFixed(1));
+  };
+
+  const previewCustomBidAmount = Number(customBidInput.replace(/[^0-9]/g, '')) || 0;
+  const previewOperatingProfit = previewCustomBidAmount - flc;
+  const previewMargin = previewCustomBidAmount > 0 
+    ? Number(((previewOperatingProfit / previewCustomBidAmount) * 100).toFixed(1))
+    : 0;
+  const previewTax = previewOperatingProfit > 0 ? Math.round(previewOperatingProfit * taxRate) : 0;
+  const previewNetProfit = previewOperatingProfit - previewTax - 15000;
 
   const handlePlaceBid = (amount: number) => {
     if (amount <= 0) {
@@ -257,11 +279,15 @@ export const AuctionArena: React.FC<AuctionArenaProps> = ({
 
             {/* Economics only shown for human playing vendor */}
             {!isSpectator && (
-              <div className="inline-flex flex-wrap items-center justify-center gap-2 sm:gap-4 bg-slate-950 px-4 py-2 rounded-2xl border border-slate-800 text-xs font-mono mt-1">
-                <span className="text-slate-400">Your Cost (FLC): <strong className="text-slate-200">{formatINR(flc)}</strong></span>
-                <span className="text-slate-600 hidden sm:inline">|</span>
+              <div className="inline-flex flex-wrap items-center justify-center gap-2 sm:gap-4 bg-slate-950 px-4 py-2.5 rounded-2xl border border-slate-800 text-xs font-mono mt-1 shadow-inner">
+                <span className="text-slate-400">Your Breakeven Cost (FLC): <strong className="text-slate-200">{formatINR(flc)}</strong></span>
+                <span className="text-slate-700 hidden sm:inline">|</span>
                 <span className="text-slate-400">
-                  Your Margin: <strong className={currentMarginAtPrice >= 10 ? 'text-emerald-400' : 'text-amber-400'}>{currentMarginAtPrice}%</strong>
+                  Net Margin: <strong className={`font-bold ${currentMarginAtPrice >= 10 ? 'text-emerald-400' : currentMarginAtPrice > 0 ? 'text-amber-400' : 'text-rose-400'}`}>{currentMarginAtPrice}%</strong>
+                </span>
+                <span className="text-slate-700 hidden sm:inline">|</span>
+                <span className="text-slate-400">
+                  Est. Net Profit: <strong className={`font-bold ${projectedNetProfitAtPrice >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{formatINR(projectedNetProfitAtPrice)}</strong>
                 </span>
               </div>
             )}
@@ -336,28 +362,41 @@ export const AuctionArena: React.FC<AuctionArenaProps> = ({
               </div>
 
               {/* Custom Bid Input (Stacks on mobile) */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1">
-                <div className="relative flex-1">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-mono font-bold">₹</span>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={customBidInput}
-                    onChange={(e) => setCustomBidInput(e.target.value)}
-                    placeholder="Enter any counter-bid"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-2xl pl-8 pr-4 py-2.5 text-sm font-mono font-bold text-slate-100 focus:outline-none focus:border-indigo-500 min-h-[44px]"
-                  />
+              <div className="space-y-2 pt-1">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                  <div className="relative flex-1">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-mono font-bold">₹</span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={customBidInput}
+                      onChange={(e) => setCustomBidInput(e.target.value)}
+                      placeholder="Enter any custom counter-bid"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-2xl pl-8 pr-4 py-2.5 text-sm font-mono font-bold text-slate-100 focus:outline-none focus:border-indigo-500 min-h-[44px]"
+                    />
+                  </div>
+                  <button
+                    onClick={() => {
+                      const parsed = Number(customBidInput.replace(/[^0-9]/g, ''));
+                      handlePlaceBid(parsed);
+                    }}
+                    disabled={!customBidInput || Number(customBidInput.replace(/[^0-9]/g, '')) >= auctionState.currentPrice}
+                    className="px-6 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs sm:text-sm shadow-lg shadow-indigo-600/30 transition disabled:opacity-40 min-h-[44px] flex items-center justify-center cursor-pointer active:scale-95"
+                  >
+                    Submit Counter-Bid
+                  </button>
                 </div>
-                <button
-                  onClick={() => {
-                    const parsed = Number(customBidInput.replace(/[^0-9]/g, ''));
-                    handlePlaceBid(parsed);
-                  }}
-                  disabled={!customBidInput || Number(customBidInput.replace(/[^0-9]/g, '')) >= auctionState.currentPrice}
-                  className="px-6 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs sm:text-sm shadow-lg shadow-indigo-600/30 transition disabled:opacity-40 min-h-[44px] flex items-center justify-center cursor-pointer active:scale-95"
-                >
-                  Submit Counter-Bid
-                </button>
+
+                {previewCustomBidAmount > 0 && (
+                  <div className="flex items-center justify-between text-[11px] font-mono px-3 py-1.5 rounded-xl bg-slate-950/80 border border-slate-800/80">
+                    <span className="text-slate-400">At {formatINR(previewCustomBidAmount)}:</span>
+                    <div className="flex items-center gap-3">
+                      <span>Margin: <strong className={`font-bold ${previewMargin >= 10 ? 'text-emerald-400' : previewMargin > 0 ? 'text-amber-400' : 'text-rose-400'}`}>{previewMargin}%</strong></span>
+                      <span className="text-slate-700">|</span>
+                      <span>Est. Net Profit: <strong className={`font-bold ${previewNetProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{formatINR(previewNetProfit)}</strong></span>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
