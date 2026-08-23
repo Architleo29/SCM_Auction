@@ -23,7 +23,7 @@ import { generateAiQuote, shouldAiBidInEnglishAuction, shouldAiAcceptInDutchAuct
 import { roomSync, MultiplayerEvent } from './services/realtimeChannel';
 import { getSavedSupabaseConfig } from './services/supabase';
 import { sounds } from './utils/soundEffects';
-import { formatINR } from './utils/formatters';
+import { formatINR, isBuyerSpectator } from './utils/formatters';
 import { Clock, Building2, CheckCircle2, Users, Play, Sparkles, TrendingUp, Sliders, ShieldCheck } from 'lucide-react';
 
 // UI Components
@@ -1592,7 +1592,7 @@ export const App: React.FC = () => {
 
 
 
-        {phase === 'RFQ' && isHost && currentRfq && (
+        {phase === 'RFQ' && isBuyerSpectator(me) && currentRfq && (
           <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6 animate-fade-in">
             <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl space-y-6">
               <div className="flex items-center justify-between border-b border-slate-800 pb-4">
@@ -1622,7 +1622,7 @@ export const App: React.FC = () => {
           </div>
         )}
 
-        {phase === 'RFQ' && !isHost && currentRfq && me && (
+        {phase === 'RFQ' && !isBuyerSpectator(me) && currentRfq && me && (
           <RfqBoard
             rfq={currentRfq}
             player={me}
@@ -1631,7 +1631,7 @@ export const App: React.FC = () => {
           />
         )}
 
-        {phase === 'INTEL' && !isHost && currentRfq && me && (
+        {phase === 'INTEL' && !isBuyerSpectator(me) && currentRfq && me && (
           <IntelMarket
             player={me}
             allPlayers={players}
@@ -1649,7 +1649,7 @@ export const App: React.FC = () => {
           />
         )}
 
-        {phase === 'QUOTING' && isHost && currentRfq && (
+        {phase === 'QUOTING' && isBuyerSpectator(me) && currentRfq && (
           <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6 animate-fade-in">
             <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
@@ -1704,7 +1704,7 @@ export const App: React.FC = () => {
           </div>
         )}
 
-        {phase === 'QUOTING' && !isHost && currentRfq && me && (
+        {phase === 'QUOTING' && !isBuyerSpectator(me) && currentRfq && me && (
           <QuoteBuilder
             rfq={currentRfq}
             player={me}
