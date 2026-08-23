@@ -407,30 +407,7 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
               </div>
             </div>
 
-            {/* Merged Risk & Reputation Index Card */}
-            <div className={`p-4 rounded-2xl border shadow-md space-y-2.5 transition-all ${
-              riskReputationAnalysis.statusColor === 'emerald'
-                ? 'bg-emerald-950/40 border-emerald-500/40'
-                : riskReputationAnalysis.statusColor === 'amber'
-                ? 'bg-amber-950/40 border-amber-500/40'
-                : 'bg-rose-950/40 border-rose-500/40'
-            }`}>
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-purple-400" />
-                  <span className="text-xs font-bold text-slate-100 font-mono">🛡️ Delivery Feasibility & Trust Score</span>
-                  <span className="text-[0.625rem] font-mono px-2 py-0.5 rounded bg-slate-950 text-purple-300 border border-slate-800">
-                    Calculated from your Price, Quality & Speed
-                  </span>
-                </div>
-                <div className="text-right">
-                  <span className="text-sm font-mono font-bold text-indigo-300">★ {riskReputationAnalysis.scaleOf5} / 5.0</span>
-                </div>
-              </div>
-              <p className="text-[0.6875rem] text-slate-300 font-mono leading-relaxed bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
-                {riskReputationAnalysis.statusText}
-              </p>
-            </div>
+
 
           </div>
 

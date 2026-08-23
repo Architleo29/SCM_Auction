@@ -57,12 +57,8 @@ export const CompanyDossier: React.FC<CompanyDossierProps> = ({
 
           <div className="flex items-center gap-3 bg-slate-950 px-4 py-2 rounded-xl border border-slate-800">
             <div className="text-right">
-              <p className="text-[0.625rem] text-slate-500 uppercase font-mono">Market Reputation</p>
-              <p className="text-xl font-mono font-bold text-emerald-400">{profile.reputationScore} / 100</p>
-            </div>
-            <div className="text-right pl-3 border-l border-slate-800">
-              <p className="text-[0.625rem] text-slate-500 uppercase font-mono">Quality Rating</p>
-              <div className="flex text-amber-400 text-sm">
+              <p className="text-[0.625rem] text-slate-500 uppercase font-mono">Baseline Quality</p>
+              <div className="flex text-amber-400 text-base">
                 {'★'.repeat(profile.qualityLevel)}
                 <span className="text-slate-700">{'★'.repeat(5 - profile.qualityLevel)}</span>
               </div>

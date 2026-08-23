@@ -2,7 +2,7 @@ import { PlayerState, RFQ, Quote, DynamicEventCard, PnLResult } from '../types/g
 import { calculateCostBreakdown, SUNK_BID_PREP_COST } from './costCalculator';
 
 /**
- * Computes Post-Auction Delivery Settlement and P&L Breakdown (§10 & §12)
+ * Computes Post-Auction Delivery Settlement and P&L Breakdown
  */
 export function settleContractPnL(
   player: PlayerState,
@@ -15,12 +15,8 @@ export function settleContractPnL(
   const quote = player.submittedQuote;
   const bidPrepCost = quote ? SUNK_BID_PREP_COST : 0;
 
-  // If player did not win, they banked 0 revenue and spent 0 delivery cost (idle round)
+  // If player did not win
   if (!isWinner || !winningQuote || !quote) {
-    // Idle round reputation decay: 1 pt toward 50 (§9.3)
-    const decayDelta = player.reputation > 50 ? -1 : player.reputation < 50 ? 1 : 0;
-    const newReputation = Math.max(0, Math.min(100, player.reputation + decayDelta));
-
     return {
       playerId: player.id,
       contractWon: false,
@@ -37,23 +33,21 @@ export function settleContractPnL(
       marginVariancePts: 0,
       volatilityPenalty: 0,
       riskAdjustedProfit: -bidPrepCost,
-      reputationDelta: decayDelta,
-      newReputation,
-      reputationReason: quote ? 'Lost auction (Bid Prep Cost deducted)' : 'Idle Round (Participation Decay)'
+      reputationDelta: 0,
+      newReputation: 100,
+      reputationReason: quote ? 'Lost auction' : 'Idle Round'
     };
   }
 
-  // 1. Calculate Baseline Delivery Cost (FLC at quote time)
+  // 1. Calculate Baseline Delivery Cost
   const baselineBreakdown = calculateCostBreakdown(profile, rfq, winningQuote.price, winningQuote.riskDisclosureContingency);
   const baselineCost = baselineBreakdown.fullyLoadedCost;
 
   // 2. Apply Dynamic Event Impacts
   let eventCostDelta = 0;
-  let penaltyReason = '';
   if (activeEvent) {
     if (activeEvent.materialsMultiplier) {
       const addedMaterialsCost = baselineBreakdown.directMaterialsCost * activeEvent.materialsMultiplier;
-      // Check if quoted risk buffer absorbs part of the shock
       const shockExcess = Math.max(0, addedMaterialsCost - baselineBreakdown.riskContingencyAmount);
       eventCostDelta += shockExcess;
     }
@@ -65,7 +59,6 @@ export function settleContractPnL(
     }
     if (activeEvent.penaltyCost) {
       eventCostDelta += activeEvent.penaltyCost;
-      penaltyReason = 'Penalty Triggered';
     }
   }
 
@@ -80,27 +73,10 @@ export function settleContractPnL(
   const realizedMarginPct = winningQuote.price > 0 ? Number(((operatingProfit / winningQuote.price) * 100).toFixed(1)) : 0;
   const marginVariancePts = Number((realizedMarginPct - quotedMarginPct).toFixed(1));
 
-  // 5. Volatility Penalty & Risk-Adjusted Profit (RAP) (§12)
+  // 5. Volatility Penalty & Risk-Adjusted Profit
   const marginDiffDecimal = Math.abs(marginVariancePts) / 100;
   const volatilityPenalty = Number(Math.min(0.40, marginDiffDecimal * 0.5).toFixed(2));
   const riskAdjustedProfit = Math.round(realizedProfit * (1 - volatilityPenalty));
-
-  // 6. Reputation Shift (§9.3)
-  let repDelta = 3; // +3 for winning contract participation
-  let repReason = 'Won contract (+3)';
-
-  if (realizedProfit > 0 && eventCostDelta === 0) {
-    repDelta += 8; // On-time, on-spec
-    repReason += ', Delivered on-spec (+8)';
-  } else if (eventCostDelta > baselineBreakdown.riskContingencyAmount) {
-    repDelta -= 5; // Cost overrun beyond contingency
-    repReason += ', Cost overrun (-5)';
-  } else if (realizedProfit < 0) {
-    repDelta -= 12; // Contract default / loss
-    repReason += ', Loss-making default (-12)';
-  }
-
-  const newReputation = Math.max(0, Math.min(100, player.reputation + repDelta));
 
   return {
     playerId: player.id,
@@ -118,26 +94,25 @@ export function settleContractPnL(
     marginVariancePts,
     volatilityPenalty,
     riskAdjustedProfit,
-    reputationDelta: repDelta,
-    newReputation,
-    reputationReason: repReason
+    reputationDelta: 0,
+    newReputation: 100,
+    reputationReason: 'Won contract'
   };
 }
 
 /**
- * Calculates overall game score composite (§1.4 & §12)
+ * Calculates overall game score composite (Banked Profit + Contracts Won)
  */
 export function calculateTotalScore(
   bankedProfit: number,
   contractsWon: number,
-  reputation: number,
-  totalRiskAdjustedProfit: number,
+  reputation: number = 0,
+  totalRiskAdjustedProfit: number = 0,
   penalties: number = 0
 ): number {
   const profitScore = bankedProfit * 1.0;
-  const contractScore = contractsWon * 50;
-  const reputationScore = reputation * 20;
-  const riskAdjustedBonus = totalRiskAdjustedProfit * 0.30;
+  const contractScore = contractsWon * 100;
+  const riskAdjustedBonus = totalRiskAdjustedProfit * 0.20;
 
-  return Math.round(profitScore + contractScore + reputationScore + riskAdjustedBonus - penalties);
+  return Math.round(profitScore + contractScore + riskAdjustedBonus - penalties);
 }

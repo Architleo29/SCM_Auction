@@ -3,7 +3,6 @@ import {
   Sliders, 
   Sparkles, 
   DollarSign, 
-  Clock, 
   FileText, 
   ArrowLeft,
   Gavel
@@ -21,71 +20,12 @@ interface RfqBuilderProps {
   onBackToMainScreen?: () => void;
 }
 
-interface WeightsState {
-  price: number;
-  quality: number;
-  timeline: number;
-  riskReputation: number;
-}
-
-type WeightKey = keyof WeightsState;
-
-const MIN_WEIGHT = 10;
-const MAX_WEIGHT = 60;
-
-const PRESET_WEIGHTS: Record<string, { label: string; weights: WeightsState }> = {
-  balanced: {
-    label: '⚖️ Standard QCBS',
-    weights: { price: 35, quality: 30, timeline: 20, riskReputation: 15 }
-  },
-  costDominant: {
-    label: '💰 Price First',
-    weights: { price: 55, quality: 20, timeline: 15, riskReputation: 10 }
-  },
-  qualityDominant: {
-    label: '⭐ Quality & Trust',
-    weights: { price: 20, quality: 45, timeline: 15, riskReputation: 20 }
-  },
-  speedDominant: {
-    label: '⚡ Fast Track Delivery',
-    weights: { price: 25, quality: 25, timeline: 40, riskReputation: 10 }
-  }
-};
-
-function adjustWeights(
-  currentWeights: WeightsState,
-  changedKey: WeightKey,
-  rawNewValue: number
-): WeightsState {
-  const clampedNewValue = Math.min(MAX_WEIGHT, Math.max(MIN_WEIGHT, rawNewValue));
-  const otherKeys = (Object.keys(currentWeights) as WeightKey[]).filter(k => k !== changedKey);
-  const remainingTotal = 100 - clampedNewValue;
-  const currentOtherSum = otherKeys.reduce((sum, k) => sum + currentWeights[k], 0);
-
-  const newWeights: WeightsState = { ...currentWeights, [changedKey]: clampedNewValue };
-
-  if (currentOtherSum === 0) {
-    const split = Math.floor(remainingTotal / otherKeys.length);
-    otherKeys.forEach((k, idx) => {
-      newWeights[k] = idx === 0 ? remainingTotal - split * (otherKeys.length - 1) : split;
-    });
-    return newWeights;
-  }
-
-  let distributedSum = 0;
-  otherKeys.forEach((k, index) => {
-    if (index === otherKeys.length - 1) {
-      newWeights[k] = remainingTotal - distributedSum;
-    } else {
-      const share = Math.round((currentWeights[k] / currentOtherSum) * remainingTotal);
-      const safeShare = Math.min(MAX_WEIGHT, Math.max(MIN_WEIGHT, share));
-      newWeights[k] = safeShare;
-      distributedSum += safeShare;
-    }
-  });
-
-  return newWeights;
-}
+const PRESET_WEIGHTS = [
+  { label: '⚖️ Balanced (50% Price / 50% Quality)', price: 50, quality: 50 },
+  { label: '💰 Price First (70% Price / 30% Quality)', price: 70, quality: 30 },
+  { label: '⭐ Quality First (30% Price / 70% Quality)', price: 30, quality: 70 },
+  { label: '💎 Premium Standard (40% Price / 60% Quality)', price: 40, quality: 60 }
+];
 
 export const RfqBuilder: React.FC<RfqBuilderProps> = ({
   initialScenarioId,
@@ -101,7 +41,8 @@ export const RfqBuilder: React.FC<RfqBuilderProps> = ({
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [budgetCeiling, setBudgetCeiling] = useState(500000);
-  const [requiredDeliveryDays, setRequiredDeliveryDays] = useState(30);
+  const [priceWeight, setPriceWeight] = useState(60);
+  const qualityWeight = 100 - priceWeight;
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Background direct drivers
@@ -111,16 +52,6 @@ export const RfqBuilder: React.FC<RfqBuilderProps> = ({
   const [unitMaterialCost, setUnitMaterialCost] = useState(120);
   const [baseLogisticsUnits, setBaseLogisticsUnits] = useState(150);
   const [logisticsUnitCost, setLogisticsUnitCost] = useState(180);
-  const [paymentDelayDays, setPaymentDelayDays] = useState(30);
-  const [requiredCompliance, setRequiredCompliance] = useState<string[]>(['ISO-9001']);
-
-  // Weights (Percentages strictly auto-balanced to 100%)
-  const [weights, setWeights] = useState<WeightsState>({
-    price: 35,
-    quality: 30,
-    timeline: 20,
-    riskReputation: 15
-  });
 
   const handleAutoSelect = (randomize: boolean = false) => {
     sounds.bid();
@@ -129,14 +60,10 @@ export const RfqBuilder: React.FC<RfqBuilderProps> = ({
 
     const scale = randomize ? (0.85 + Math.random() * 0.40) : 1.0;
     const newBudget = Math.round((sample.budgetCeiling * scale) / 10000) * 10000;
-    const newDeliveryDays = randomize 
-      ? Math.max(15, Math.round(sample.requiredDeliveryDays + (Math.floor(Math.random() * 5) - 2) * 5)) 
-      : sample.requiredDeliveryDays;
 
     setTitle(sample.title);
     setDescription(sample.description);
     setBudgetCeiling(newBudget);
-    setRequiredDeliveryDays(newDeliveryDays);
 
     setBaseLaborHours(Math.round(sample.baseLaborHours * scale));
     setLaborRate(sample.laborRate);
@@ -144,25 +71,9 @@ export const RfqBuilder: React.FC<RfqBuilderProps> = ({
     setUnitMaterialCost(sample.unitMaterialCost);
     setBaseLogisticsUnits(Math.round(sample.baseLogisticsUnits * scale));
     setLogisticsUnitCost(sample.logisticsUnitCost);
-    setPaymentDelayDays(sample.paymentDelayDays);
-    setRequiredCompliance([...sample.requiredCompliance]);
-
-    const sw = sample.weights;
-    const total4 = (sw.price || 0.35) + (sw.quality || 0.30) + (sw.timeline || 0.20) + (sw.reputation || 0.10) + (sw.risk || 0.05);
-    const p = Math.round(((sw.price || 0.35) / total4) * 100);
-    const q = Math.round(((sw.quality || 0.30) / total4) * 100);
-    const t = Math.round(((sw.timeline || 0.20) / total4) * 100);
-    const rr = 100 - (p + q + t);
-
-    setWeights({
-      price: p,
-      quality: q,
-      timeline: t,
-      riskReputation: rr
-    });
 
     if (randomize) {
-      setToastMessage(`✨ Auto-Generated Tender (Starting Price: ${formatINR(newBudget)}, ${newDeliveryDays} Days)!`);
+      setToastMessage(`✨ Auto-Generated Tender (Starting Price: ${formatINR(newBudget)})!`);
       setTimeout(() => setToastMessage(null), 3500);
     }
   };
@@ -171,30 +82,20 @@ export const RfqBuilder: React.FC<RfqBuilderProps> = ({
     handleAutoSelect(false);
   }, []);
 
-  const handleWeightChange = (key: WeightKey, value: number) => {
-    setWeights(prev => adjustWeights(prev, key, value));
-  };
-
-  const totalWeight = weights.price + weights.quality + weights.timeline + weights.riskReputation;
-
   const handlePublish = (e: React.FormEvent) => {
     e.preventDefault();
     sounds.award();
 
-    const normPrice = weights.price / 100;
-    const normQuality = weights.quality / 100;
-    const normTimeline = weights.timeline / 100;
-    const normRiskRep = weights.riskReputation / 100;
-    const normReputation = normRiskRep * 0.60;
-    const normRisk = normRiskRep * 0.40;
+    const normPrice = priceWeight / 100;
+    const normQuality = qualityWeight / 100;
 
     const rfq: RFQ = {
       id: `rfq_${Date.now()}`,
       roundNumber,
       scenarioId,
-      scenarioName: 'Procurement Tender',
-      title: title || 'Commercial Procurement Contract',
-      description: description || 'Delivery contract under competitive auction and QCBS evaluation criteria.',
+      scenarioName: 'Procurement Contract',
+      title: title || 'Commercial Supply Contract',
+      description: description || 'Procurement contract under competitive auction and QCBS evaluation criteria.',
       budgetCeiling,
       auctionFormat,
       baseLaborHours,
@@ -203,18 +104,18 @@ export const RfqBuilder: React.FC<RfqBuilderProps> = ({
       unitMaterialCost,
       baseLogisticsUnits,
       logisticsUnitCost,
-      requiredDeliveryDays,
-      paymentDelayDays,
-      requiredCompliance,
+      requiredDeliveryDays: 30,
+      paymentDelayDays: 30,
+      requiredCompliance: ['ISO-9001'],
       weights: {
         price: normPrice,
         quality: normQuality,
-        timeline: normTimeline,
-        reputation: normReputation,
-        risk: normRisk,
-        paymentTerms: 0.05,
-        sla: 0.05,
-        sustainability: 0.05
+        timeline: 0,
+        reputation: 0,
+        risk: 0,
+        paymentTerms: 0,
+        sla: 0,
+        sustainability: 0
       }
     };
 
@@ -222,7 +123,7 @@ export const RfqBuilder: React.FC<RfqBuilderProps> = ({
   };
 
   return (
-    <div className="max-w-5xl mx-auto p-3.5 sm:p-6 space-y-6 animate-fade-in">
+    <div className="max-w-4xl mx-auto p-3.5 sm:p-6 space-y-6 animate-fade-in">
       
       {/* Header Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 shadow-xl">
@@ -235,7 +136,7 @@ export const RfqBuilder: React.FC<RfqBuilderProps> = ({
           </div>
           <h2 className="text-xl sm:text-2xl font-bold text-slate-100">Architect Tender & Evaluation Criteria</h2>
           <p className="text-xs text-slate-400 mt-1">
-            Set the auction starting price and customize the buyer's 4 scoring weights (QCBS formula).
+            Set the auction starting price and balance the Buyer's Price vs Quality scoring weights.
           </p>
         </div>
 
@@ -269,7 +170,7 @@ export const RfqBuilder: React.FC<RfqBuilderProps> = ({
 
       <form onSubmit={handlePublish} className="space-y-6">
         
-        {/* Auction Format Selector */}
+        {/* 1. Live Auction Format Selector */}
         <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl space-y-3">
           <label className="block text-xs font-mono text-indigo-400 font-bold uppercase tracking-wider">
             1. Live Auction Format
@@ -297,12 +198,12 @@ export const RfqBuilder: React.FC<RfqBuilderProps> = ({
           </div>
         </div>
 
-        {/* Commercial Scope & Auction Starting Price */}
+        {/* 2. Commercial Terms & Starting Price */}
         <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
             <div className="flex items-center gap-2 text-xs font-mono font-semibold uppercase text-emerald-400">
               <DollarSign className="w-4 h-4" />
-              2. Commercial Terms & Starting Price
+              2. Commercial Scope & Starting Price
             </div>
             <div className="flex items-center gap-2">
               <span className="text-[0.625rem] text-slate-400 uppercase font-mono">Quick Preset:</span>
@@ -323,19 +224,19 @@ export const RfqBuilder: React.FC<RfqBuilderProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="md:col-span-1">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
               <label className="block text-xs font-mono text-slate-300 mb-1">Contract Title</label>
               <input
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g. Turnkey Equipment Delivery"
+                placeholder="e.g. Industrial Automation Equipment Delivery"
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 font-medium"
               />
             </div>
 
-            <div className="md:col-span-1">
+            <div>
               <div className="flex justify-between items-center mb-1">
                 <label className="text-xs font-mono text-slate-300">Auction Starting Price (Max Budget)</label>
                 <span className="text-base font-mono font-bold text-emerald-400">{formatINR(budgetCeiling)}</span>
@@ -350,45 +251,29 @@ export const RfqBuilder: React.FC<RfqBuilderProps> = ({
                 className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500 mt-2"
               />
             </div>
-
-            <div className="md:col-span-1">
-              <div className="flex justify-between items-center mb-1">
-                <label className="text-xs font-mono text-slate-300">Required Turnaround</label>
-                <span className="text-base font-mono font-bold text-amber-400">{requiredDeliveryDays} Days</span>
-              </div>
-              <input
-                type="range"
-                min={10}
-                max={90}
-                step={5}
-                value={requiredDeliveryDays}
-                onChange={(e) => setRequiredDeliveryDays(Number(e.target.value))}
-                className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500 mt-2"
-              />
-            </div>
           </div>
         </div>
 
-        {/* Buyer Multi-Criteria Evaluation Weights Sliders (Guaranteed 100%) */}
+        {/* 3. Buyer Evaluation Weights (Price vs Quality) */}
         <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
             <div>
               <div className="flex items-center gap-2 text-xs font-mono font-semibold uppercase text-cyan-400">
                 <Sliders className="w-4 h-4" />
-                3. Buyer Evaluation Weights (QCBS Formula • Sum: <span className="text-emerald-400 font-bold">{totalWeight}%</span>)
+                3. Buyer Evaluation Weights (Price vs. Quality • Total 100%)
               </div>
               <p className="text-[0.6875rem] text-slate-400 font-mono mt-0.5">
-                Set how your procurement committee scores competing vendor proposals.
+                Balance how your procurement committee values low cost vs high quality standards.
               </p>
             </div>
             
             {/* Quick Strategy Presets */}
             <div className="flex items-center gap-1.5 overflow-x-auto shrink-0">
-              {Object.entries(PRESET_WEIGHTS).map(([key, preset]) => (
+              {PRESET_WEIGHTS.map((preset, idx) => (
                 <button
-                  key={key}
+                  key={idx}
                   type="button"
-                  onClick={() => setWeights({ ...preset.weights })}
+                  onClick={() => setPriceWeight(preset.price)}
                   className="px-2.5 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-800 text-[0.625rem] font-mono text-slate-300 hover:text-white transition shrink-0 cursor-pointer"
                 >
                   {preset.label}
@@ -399,89 +284,53 @@ export const RfqBuilder: React.FC<RfqBuilderProps> = ({
 
           {/* Visual Stacked Multi-Segment Bar */}
           <div className="space-y-1.5">
-            <div className="w-full h-3.5 rounded-full overflow-hidden flex bg-slate-950 border border-slate-800 shadow-inner">
-              <div style={{ width: `${weights.price}%` }} className="bg-emerald-500 transition-all duration-150" title={`Price: ${weights.price}%`} />
-              <div style={{ width: `${weights.quality}%` }} className="bg-indigo-500 transition-all duration-150" title={`Quality: ${weights.quality}%`} />
-              <div style={{ width: `${weights.timeline}%` }} className="bg-amber-500 transition-all duration-150" title={`Timeline: ${weights.timeline}%`} />
-              <div style={{ width: `${weights.riskReputation}%` }} className="bg-purple-500 transition-all duration-150" title={`Risk & Reputation: ${weights.riskReputation}%`} />
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[0.625rem] font-mono text-slate-400 pt-0.5">
-              <span className="text-emerald-400 font-bold">💰 Price {weights.price}%</span>
-              <span className="text-indigo-400 font-bold">⭐ Quality {weights.quality}%</span>
-              <span className="text-amber-400 font-bold">⏱️ Timeline {weights.timeline}%</span>
-              <span className="text-purple-400 font-bold">🛡️ Risk & Reputation {weights.riskReputation}%</span>
+            <div className="w-full h-4 rounded-full overflow-hidden flex bg-slate-950 border border-slate-800 shadow-inner">
+              <div style={{ width: `${priceWeight}%` }} className="bg-emerald-500 transition-all duration-150 flex items-center justify-center text-[10px] font-mono font-bold text-slate-950">
+                {priceWeight}% Price
+              </div>
+              <div style={{ width: `${qualityWeight}%` }} className="bg-indigo-500 transition-all duration-150 flex items-center justify-center text-[10px] font-mono font-bold text-white">
+                {qualityWeight}% Quality
+              </div>
             </div>
           </div>
 
-          {/* Sliders Grid (4 Clean Pillars) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 pt-2">
+          {/* Sliders Grid (2 Clean Pillars) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
             
             {/* Pillar 1: Price Weight */}
-            <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-2">
+            <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
               <div className="flex justify-between items-center text-xs font-mono">
-                <span className="text-slate-300 font-semibold">💰 1. Price Weight</span>
-                <span className="font-bold text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800">{weights.price}%</span>
+                <span className="text-slate-300 font-semibold">💰 Price Weight</span>
+                <span className="font-bold text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800 text-sm">{priceWeight}%</span>
               </div>
               <input
                 type="range"
-                min={MIN_WEIGHT}
-                max={MAX_WEIGHT}
-                value={weights.price}
-                onChange={(e) => handleWeightChange('price', Number(e.target.value))}
-                className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                min={20}
+                max={80}
+                step={5}
+                value={priceWeight}
+                onChange={(e) => setPriceWeight(Number(e.target.value))}
+                className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500"
               />
-              <span className="text-[0.625rem] text-slate-500 font-mono block">Scale 1 – 5 Price Level</span>
+              <span className="text-[0.625rem] text-slate-500 font-mono block">Higher weight rewards cheaper bids</span>
             </div>
 
             {/* Pillar 2: Quality Weight */}
-            <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-2">
+            <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
               <div className="flex justify-between items-center text-xs font-mono">
-                <span className="text-slate-300 font-semibold">⭐ 2. Quality Weight</span>
-                <span className="font-bold text-indigo-400 bg-indigo-950/80 px-2 py-0.5 rounded border border-indigo-800">{weights.quality}%</span>
+                <span className="text-slate-300 font-semibold">⭐ Quality Weight</span>
+                <span className="font-bold text-indigo-400 bg-indigo-950/80 px-2 py-0.5 rounded border border-indigo-800 text-sm">{qualityWeight}%</span>
               </div>
               <input
                 type="range"
-                min={MIN_WEIGHT}
-                max={MAX_WEIGHT}
-                value={weights.quality}
-                onChange={(e) => handleWeightChange('quality', Number(e.target.value))}
-                className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                min={20}
+                max={80}
+                step={5}
+                value={qualityWeight}
+                onChange={(e) => setPriceWeight(100 - Number(e.target.value))}
+                className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
               />
-              <span className="text-[0.625rem] text-slate-500 font-mono block">Scale 1 – 5 Stars</span>
-            </div>
-
-            {/* Pillar 3: Timeline Weight */}
-            <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-2">
-              <div className="flex justify-between items-center text-xs font-mono">
-                <span className="text-slate-300 font-semibold">⏱️ 3. Timeline Weight</span>
-                <span className="font-bold text-amber-400 bg-amber-950/80 px-2 py-0.5 rounded border border-amber-800">{weights.timeline}%</span>
-              </div>
-              <input
-                type="range"
-                min={MIN_WEIGHT}
-                max={MAX_WEIGHT}
-                value={weights.timeline}
-                onChange={(e) => handleWeightChange('timeline', Number(e.target.value))}
-                className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500"
-              />
-              <span className="text-[0.625rem] text-slate-500 font-mono block">Scale 1 – 5 Speed</span>
-            </div>
-
-            {/* Pillar 4: Risk & Reputation Weight */}
-            <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-2">
-              <div className="flex justify-between items-center text-xs font-mono">
-                <span className="text-slate-300 font-semibold">🛡️ 4. Risk & Reputation</span>
-                <span className="font-bold text-purple-400 bg-purple-950/80 px-2 py-0.5 rounded border border-purple-800">{weights.riskReputation}%</span>
-              </div>
-              <input
-                type="range"
-                min={MIN_WEIGHT}
-                max={MAX_WEIGHT}
-                value={weights.riskReputation}
-                onChange={(e) => handleWeightChange('riskReputation', Number(e.target.value))}
-                className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-purple-500"
-              />
-              <span className="text-[0.625rem] text-slate-500 font-mono block">Vendor Track Record</span>
+              <span className="text-[0.625rem] text-slate-500 font-mono block">Higher weight rewards 4-5★ quality</span>
             </div>
 
           </div>

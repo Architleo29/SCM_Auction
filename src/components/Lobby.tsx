@@ -234,8 +234,8 @@ export const Lobby: React.FC<LobbyProps> = ({
                             <span className="bg-slate-900 px-2.5 py-0.5 rounded-full text-indigo-300 font-semibold border border-slate-800 text-[0.6875rem]">
                               🏢 Supplier Firm
                             </span>
-                            <span className="bg-slate-900 px-2.5 py-0.5 rounded-full text-emerald-300 font-semibold border border-slate-800 text-[0.6875rem]">
-                              Market Reputation: {player.reputation || player.profile?.reputationScore || 75}/100
+                            <span className="bg-slate-900 px-2.5 py-0.5 rounded-full text-amber-300 font-semibold border border-slate-800 text-[0.6875rem]">
+                              Quality Tier: {player.profile?.qualityLevel || 3}★
                             </span>
                           </p>
                         </div>

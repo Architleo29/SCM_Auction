@@ -118,22 +118,14 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-4 gap-1.5 pt-2 border-t border-slate-800/80 text-center font-mono text-[0.625rem]">
-                  <div className="bg-slate-900/80 p-1.5 rounded-lg">
-                    <span className="text-slate-500 block text-[9px]">Price</span>
-                    <span className="text-slate-200 font-bold">{score.priceScore}</span>
+                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800/80 text-center font-mono text-xs">
+                  <div className="bg-slate-900/80 p-2 rounded-lg">
+                    <span className="text-slate-500 block text-[10px]">Price ({(rfq.weights.price * 100).toFixed(0)}%)</span>
+                    <span className="text-emerald-400 font-bold">{score.priceScore} pts</span>
                   </div>
-                  <div className="bg-slate-900/80 p-1.5 rounded-lg">
-                    <span className="text-slate-500 block text-[9px]">Quality</span>
-                    <span className="text-slate-200 font-bold">{score.qualityScore}</span>
-                  </div>
-                  <div className="bg-slate-900/80 p-1.5 rounded-lg">
-                    <span className="text-slate-500 block text-[9px]">Timeline</span>
-                    <span className="text-slate-200 font-bold">{score.timelineScore}</span>
-                  </div>
-                  <div className="bg-slate-900/80 p-1.5 rounded-lg">
-                    <span className="text-slate-500 block text-[9px]">Risk & Rep</span>
-                    <span className="text-slate-200 font-bold">{score.riskReputationScore || score.reputationScore}</span>
+                  <div className="bg-slate-900/80 p-2 rounded-lg">
+                    <span className="text-slate-500 block text-[10px]">Quality ({(rfq.weights.quality * 100).toFixed(0)}%)</span>
+                    <span className="text-indigo-400 font-bold">{score.qualityScore} pts</span>
                   </div>
                 </div>
               </div>
@@ -147,11 +139,9 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
             <thead>
               <tr className="border-b border-slate-800 text-slate-400">
                 <th className="py-2.5 px-3">Vendor</th>
-                <th className="py-2.5 px-2">Price ({(rfq.weights.price * 100).toFixed(0)}%)</th>
-                <th className="py-2.5 px-2">Quality ({(rfq.weights.quality * 100).toFixed(0)}%)</th>
-                <th className="py-2.5 px-2">Timeline ({(rfq.weights.timeline * 100).toFixed(0)}%)</th>
-                <th className="py-2.5 px-2">Risk & Rep ({(((rfq.weights.reputation || 0.1) + (rfq.weights.risk || 0.05)) * 100).toFixed(0)}%)</th>
-                <th className="py-2.5 px-3 text-right">TOTAL SCORE</th>
+                <th className="py-2.5 px-3">Price Score ({(rfq.weights.price * 100).toFixed(0)}%)</th>
+                <th className="py-2.5 px-3">Quality Score ({(rfq.weights.quality * 100).toFixed(0)}%)</th>
+                <th className="py-2.5 px-3 text-right">TOTAL QCBS SCORE</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60">
@@ -179,20 +169,12 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
                       )}
                     </td>
 
-                    <td className="py-3 px-2 text-slate-300">
+                    <td className="py-3 px-3 text-emerald-400 font-bold">
                       {score.priceScore} pts
                     </td>
 
-                    <td className="py-3 px-2 text-slate-300">
+                    <td className="py-3 px-3 text-indigo-400 font-bold">
                       {score.qualityScore} pts
-                    </td>
-
-                    <td className="py-3 px-2 text-slate-300">
-                      {score.timelineScore} pts
-                    </td>
-
-                    <td className="py-3 px-2 text-slate-300">
-                      {score.riskReputationScore || score.reputationScore} pts
                     </td>
 
                     <td className="py-3 px-3 text-right font-bold text-indigo-400 text-sm">
