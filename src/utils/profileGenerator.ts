@@ -29,7 +29,7 @@ export function generateCompanyProfile(customName?: string, index: number = 0): 
   const riskContingencyNeed = Number((0.05 + Math.random() * 0.07).toFixed(2)); // 5% - 12%
   const capacity = Math.floor(1 + Math.random() * 2); // 1 - 2 capacity slots
   const reputationScore = 75; // Standard baseline starting reputation (75/100) for all vendors
-  const qualityLevel = Math.floor(2 + Math.random() * 4); // 2 - 5 stars
+  const qualityLevel = 3; // Neutral baseline
   const deliveryCapabilityDays = Math.round(20 + Math.random() * 15);
   const targetProfitMargin = Number((0.15 + Math.random() * 0.10).toFixed(2)); // 15% - 25%
 

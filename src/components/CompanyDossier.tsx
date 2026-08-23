@@ -55,15 +55,7 @@ export const CompanyDossier: React.FC<CompanyDossierProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-3 bg-slate-950 px-4 py-2 rounded-xl border border-slate-800">
-            <div className="text-right">
-              <p className="text-[0.625rem] text-slate-500 uppercase font-mono">Baseline Quality</p>
-              <div className="flex text-amber-400 text-base">
-                {'★'.repeat(profile.qualityLevel)}
-                <span className="text-slate-700">{'★'.repeat(5 - profile.qualityLevel)}</span>
-              </div>
-            </div>
-          </div>
+
         </div>
       </div>
 
@@ -77,7 +69,7 @@ export const CompanyDossier: React.FC<CompanyDossierProps> = ({
           <p className="text-xs text-slate-300 leading-relaxed">
             Welcome to the Tender Arena! Below are your firm's <strong>Confidential Economic Multipliers</strong>. 
             Your <strong>Labor Index</strong> and <strong>Material Multipliers</strong> determine your baseline cost for building products. 
-            Higher <strong>Quality & Reputation</strong> gives you higher technical evaluation points (QCBS), meaning you can often win contracts even if a competitor bids a slightly lower price!
+            In the Quoting screen, you will choose your <strong>Quality USP (1 to 5★)</strong> and <strong>Bid Price</strong> to compete for the buyer's contract!
           </p>
         </div>
       )}
