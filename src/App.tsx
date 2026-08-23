@@ -166,7 +166,10 @@ export const App: React.FC = () => {
             });
           }
           if (event.payload.currentRfq) setCurrentRfq(event.payload.currentRfq);
-          if (event.payload.activeAuction) setActiveAuction(event.payload.activeAuction);
+          if (event.payload.activeAuction) {
+            setActiveAuction(event.payload.activeAuction);
+            activeAuctionRef.current = event.payload.activeAuction;
+          }
           if (event.payload.evaluationResult) setEvaluationResult(event.payload.evaluationResult);
           if (event.payload.activeEvent) setActiveEvent(event.payload.activeEvent);
           break;
@@ -360,23 +363,32 @@ export const App: React.FC = () => {
           break;
 
         case 'AUCTION_BID':
-          setActiveAuction(prev => ({
-            ...prev,
-            currentPrice: event.payload.amount,
-            currentLeaderId: event.payload.playerId,
-            currentLeaderName: event.payload.playerName,
-            timeRemaining: prev.timeRemaining < 15 ? prev.timeRemaining + 15 : prev.timeRemaining,
-            bids: [
-              {
-                timestamp: Date.now(),
-                playerId: event.payload.playerId,
-                playerName: event.payload.playerName,
-                amount: event.payload.amount,
-                isAi: event.payload.isAi
-              },
-              ...prev.bids
-            ]
-          }));
+          setActiveAuction(prev => {
+            const updated = {
+              ...prev,
+              currentPrice: event.payload.amount,
+              currentLeaderId: event.payload.playerId,
+              currentLeaderName: event.payload.playerName,
+              timeRemaining: prev.timeRemaining < 15 ? prev.timeRemaining + 15 : prev.timeRemaining,
+              bids: [
+                {
+                  timestamp: Date.now(),
+                  playerId: event.payload.playerId,
+                  playerName: event.payload.playerName,
+                  amount: event.payload.amount,
+                  isAi: event.payload.isAi
+                },
+                ...prev.bids
+              ]
+            };
+            activeAuctionRef.current = updated;
+            if (isHostRef.current) {
+              setTimeout(() => {
+                broadcastSync({ activeAuction: updated });
+              }, 20);
+            }
+            return updated;
+          });
           break;
 
         case 'AUCTION_BUZZ':
@@ -403,12 +415,19 @@ export const App: React.FC = () => {
               }, 400);
             }
 
-            return {
+            const nextAuctionState = {
               ...prev,
               activePlayerIds: updatedActive,
               exits: updatedExits,
               bids: updatedBids
             };
+            activeAuctionRef.current = nextAuctionState;
+            if (isHostRef.current) {
+              setTimeout(() => {
+                broadcastSync({ activeAuction: nextAuctionState });
+              }, 20);
+            }
+            return nextAuctionState;
           });
           break;
         }
@@ -428,14 +447,16 @@ export const App: React.FC = () => {
 
     const interval = setInterval(() => {
       if (isHostRef.current) {
-        // Host broadcasts current state snapshot to all connected guests
+        // Host broadcasts complete authoritative state snapshot to all connected guests
         roomSync.broadcast({
           type: 'ROOM_STATE_SYNC',
           payload: {
             roomConfig: roomConfigRef.current,
             phase: phaseRef.current,
             players: playersRef.current,
-            currentRfq: rfqRef.current
+            currentRfq: rfqRef.current,
+            activeAuction: activeAuctionRef.current,
+            evaluationResult: evaluationResultRef.current
           }
         }, roomConfig.code);
       } else {
@@ -453,12 +474,13 @@ export const App: React.FC = () => {
     return () => clearInterval(interval);
   }, [roomConfig?.code, isHost, myPlayerId]);
 
-  // Host State Broadcast Helper
+  // Authoritative State Broadcast Helper (Syncs instantly across all devices)
   const broadcastSync = (updates: any) => {
+    const code = roomConfigRef.current?.code || roomConfig?.code;
     roomSync.broadcast({
       type: 'ROOM_STATE_SYNC',
       payload: updates
-    });
+    }, code);
   };
 
   // 1. Create Custom Room
@@ -897,21 +919,23 @@ export const App: React.FC = () => {
         state.dutchTickCount = (state.dutchTickCount || 0) + 1;
 
         if (state.dutchTickCount % 2 === 0) {
-          state.currentPrice = Math.min(
+          const nextPrice = Math.min(
             Math.round(activeRfq.budgetCeiling * 1.50),
             Math.round(state.currentPrice * 1.035)
           );
+          state.currentPrice = nextPrice;
 
           for (const p of Object.values(currentActivePlayers)) {
-            if (p.isAi && shouldAiAcceptInDutchAuction(p, state.currentPrice, activeRfq)) {
+            if (p.isAi && shouldAiAcceptInDutchAuction(p, nextPrice, activeRfq)) {
               clearInterval(auctionTimerRef.current!);
-              handleAuctionResolved(p.id, state.currentPrice);
+              handleAuctionResolved(p.id, nextPrice);
               return;
             }
           }
         }
 
         sounds.tick();
+        activeAuctionRef.current = state;
         setActiveAuction(state);
         broadcastSync({ activeAuction: state });
         return;
@@ -1008,6 +1032,7 @@ export const App: React.FC = () => {
         }
       }
 
+      activeAuctionRef.current = state;
       setActiveAuction(state);
       broadcastSync({ activeAuction: state });
     }, 1000);
