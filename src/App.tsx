@@ -1024,7 +1024,7 @@ export const App: React.FC = () => {
       return q;
     });
 
-    const evalResult = evaluateQuotes(activeRfq, evaluatedQuotes, currentActivePlayers);
+    const evalResult = evaluateQuotes(activeRfq, evaluatedQuotes, currentActivePlayers, winnerId, finalPrice);
     setEvaluationResult(evalResult);
     setSubmittedQuotes(evaluatedQuotes);
     quotesRef.current = evaluatedQuotes;

@@ -6,11 +6,13 @@ import { RFQ, Quote, PlayerState, BuyerEvaluationResult, VendorCriterionScore } 
 export function evaluateQuotes(
   rfq: RFQ,
   quotes: Quote[],
-  players: Record<string, PlayerState>
+  players: Record<string, PlayerState>,
+  forcedWinnerId?: string,
+  forcedWinningPrice?: number
 ): BuyerEvaluationResult {
   const scoresByPlayer: Record<string, VendorCriterionScore> = {};
 
-  if (quotes.length === 0) {
+  if (quotes.length === 0 && Object.keys(players).length === 0) {
     return {
       winnerId: '',
       winnerName: 'No Bids Submitted',
@@ -20,18 +22,43 @@ export function evaluateQuotes(
     };
   }
 
+  // Ensure all active players have an entry
+  const effectiveQuotes = [...quotes];
+  Object.values(players).forEach(p => {
+    if (!p.isHost && !effectiveQuotes.some(q => q.playerId === p.id)) {
+      effectiveQuotes.push({
+        playerId: p.id,
+        playerName: p.name,
+        price: p.submittedQuote?.price || rfq.budgetCeiling * 0.90,
+        priceTier: 3,
+        qualityTier: p.profile?.qualityLevel || 3,
+        timelineTier: 3,
+        riskReputationScore: 100,
+        paymentTerms: 'net_30',
+        deliveryDays: 30,
+        warrantyMonths: 12,
+        slaTier: 'standard',
+        sustainability: 'standard',
+        complianceChecked: ['ISO-9001'],
+        riskDisclosureContingency: 0.05,
+        submittedAt: Date.now(),
+        isLossLeader: false
+      });
+    }
+  });
+
   // 1. Find Min price in quote pool for normalization
-  const validPrices = quotes.map(q => q.price).filter(p => p > 0);
+  const validPrices = effectiveQuotes.map(q => q.price).filter(p => p > 0);
   const minPrice = validPrices.length > 0 ? Math.min(...validPrices) : rfq.budgetCeiling;
 
   // 2. Evaluate each quote
-  for (const quote of quotes) {
+  for (const quote of effectiveQuotes) {
     const player = players[quote.playerId];
     if (!player) continue;
 
     const passedGates = true;
 
-    // Normalized Price Score (QCBS Inverse Ratio: lowest price gets 1.0; higher gets minPrice / price)
+    // Normalized Price Score (QCBS Inverse Ratio)
     const priceScore = quote.price > 0 
       ? Math.min(1.0, Math.max(0.0, minPrice / quote.price))
       : 0.0;
@@ -62,17 +89,25 @@ export function evaluateQuotes(
   }
 
   // 3. Rank Players by Weighted Score
-  const rankedPlayerIds = Object.keys(scoresByPlayer).sort((a, b) => {
+  let rankedPlayerIds = Object.keys(scoresByPlayer).sort((a, b) => {
     return scoresByPlayer[b].totalWeightedScore - scoresByPlayer[a].totalWeightedScore;
   });
 
-  const winnerId = rankedPlayerIds[0] || '';
-  const winningQuote = quotes.find(q => q.playerId === winnerId);
+  // If a winner was decided by the live auction floor (English/Dutch/Japanese buzz), ensure they rank #1
+  let winnerId = forcedWinnerId || rankedPlayerIds[0] || '';
+  if (forcedWinnerId && scoresByPlayer[forcedWinnerId]) {
+    rankedPlayerIds = [forcedWinnerId, ...rankedPlayerIds.filter(id => id !== forcedWinnerId)];
+  }
+
+  const winningQuote = effectiveQuotes.find(q => q.playerId === winnerId);
+  const winningPrice = forcedWinningPrice !== undefined && forcedWinningPrice > 0 
+    ? forcedWinningPrice 
+    : winningQuote?.price || rfq.budgetCeiling * 0.90;
 
   return {
     winnerId,
-    winnerName: winningQuote?.playerName || players[winnerId]?.name || 'Unknown',
-    winningPrice: winningQuote?.price || 0,
+    winnerName: winningQuote?.playerName || players[winnerId]?.name || 'Winning Vendor',
+    winningPrice,
     scoresByPlayer,
     rankedPlayerIds
   };

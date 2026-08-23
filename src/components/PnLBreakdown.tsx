@@ -119,7 +119,7 @@ export const PnLBreakdown: React.FC<PnLBreakdownProps> = ({
                         </span>
                       ) : p.submittedQuote ? (
                         <span className="px-2 py-0.5 rounded bg-rose-950/40 text-rose-300 border border-rose-800/60 text-[0.625rem] font-mono">
-                          OUTBID (-₹15k)
+                          OUTBID (₹0)
                         </span>
                       ) : (
                         <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700 text-[0.625rem] font-mono">

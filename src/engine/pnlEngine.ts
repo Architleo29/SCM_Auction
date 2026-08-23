@@ -1,5 +1,7 @@
 import { PlayerState, RFQ, Quote, DynamicEventCard, PnLResult } from '../types/game';
-import { calculateCostBreakdown, SUNK_BID_PREP_COST } from './costCalculator';
+import { calculateCostBreakdown } from './costCalculator';
+
+export const SUNK_BID_PREP_COST = 0; // Set to 0 so outbid players are not penalized arbitrarily
 
 /**
  * Computes Post-Auction Delivery Settlement and P&L Breakdown
@@ -12,38 +14,47 @@ export function settleContractPnL(
   activeEvent: DynamicEventCard | null
 ): PnLResult {
   const profile = player.profile;
-  const quote = player.submittedQuote;
-  const bidPrepCost = quote ? SUNK_BID_PREP_COST : 0;
+  const quote = player.submittedQuote || winningQuote;
+  const bidPrepCost = SUNK_BID_PREP_COST;
 
   // If player did not win
-  if (!isWinner || !winningQuote || !quote) {
+  if (!isWinner || !winningQuote) {
+    const quotedP = quote ? quote.price : 0;
     return {
       playerId: player.id,
       contractWon: false,
-      quotedPrice: quote ? quote.price : 0,
+      quotedPrice: quotedP,
       bidPrepCost,
       baselineCost: 0,
       eventCostDelta: 0,
       actualDeliveryCost: 0,
       operatingProfit: 0,
       tax: 0,
-      realizedProfit: -bidPrepCost,
-      quotedMarginPct: quote ? Number(((quote.price - calculateCostBreakdown(profile, rfq).fullyLoadedCost) / quote.price * 100).toFixed(1)) : 0,
+      realizedProfit: 0,
+      quotedMarginPct: quotedP > 0 ? Number(((quotedP - calculateCostBreakdown(profile, rfq).fullyLoadedCost) / quotedP * 100).toFixed(1)) : 0,
       realizedMarginPct: 0,
       marginVariancePts: 0,
       volatilityPenalty: 0,
-      riskAdjustedProfit: -bidPrepCost,
+      riskAdjustedProfit: 0,
       reputationDelta: 0,
       newReputation: 100,
-      reputationReason: quote ? 'Lost auction' : 'Idle Round'
+      reputationReason: quote ? 'Outbid in auction' : 'Idle Round'
     };
   }
 
-  // 1. Calculate Baseline Delivery Cost
-  const baselineBreakdown = calculateCostBreakdown(profile, rfq, winningQuote.price, winningQuote.riskDisclosureContingency);
+  // WINNER SETTLEMENT
+  const contractAwardPrice = winningQuote.price > 0 ? winningQuote.price : rfq.budgetCeiling * 0.85;
+
+  // 1. Calculate Baseline Delivery Cost for Winner
+  const baselineBreakdown = calculateCostBreakdown(
+    profile, 
+    rfq, 
+    contractAwardPrice, 
+    winningQuote.riskDisclosureContingency || 0.05
+  );
   const baselineCost = baselineBreakdown.fullyLoadedCost;
 
-  // 2. Apply Dynamic Event Impacts
+  // 2. Apply Dynamic Event Impacts (if any)
   let eventCostDelta = 0;
   if (activeEvent) {
     if (activeEvent.materialsMultiplier) {
@@ -64,16 +75,16 @@ export function settleContractPnL(
 
   // 3. Calculate Actual Delivery Cost & Tax
   const actualDeliveryCost = Math.round(baselineCost + eventCostDelta);
-  const operatingProfit = winningQuote.price - actualDeliveryCost;
-  const tax = operatingProfit > 0 ? Math.round(operatingProfit * profile.taxRate) : 0;
-  const realizedProfit = operatingProfit - tax - bidPrepCost;
+  const operatingProfit = contractAwardPrice - actualDeliveryCost;
+  const tax = operatingProfit > 0 ? Math.round(operatingProfit * (profile.taxRate || 0.20)) : 0;
+  const realizedProfit = operatingProfit - tax;
 
   // 4. Margins & Variance
   const quotedMarginPct = baselineBreakdown.quotedMarginPct;
-  const realizedMarginPct = winningQuote.price > 0 ? Number(((operatingProfit / winningQuote.price) * 100).toFixed(1)) : 0;
+  const realizedMarginPct = contractAwardPrice > 0 ? Number(((operatingProfit / contractAwardPrice) * 100).toFixed(1)) : 0;
   const marginVariancePts = Number((realizedMarginPct - quotedMarginPct).toFixed(1));
 
-  // 5. Volatility Penalty & Risk-Adjusted Profit
+  // 5. Risk-Adjusted Profit
   const marginDiffDecimal = Math.abs(marginVariancePts) / 100;
   const volatilityPenalty = Number(Math.min(0.40, marginDiffDecimal * 0.5).toFixed(2));
   const riskAdjustedProfit = Math.round(realizedProfit * (1 - volatilityPenalty));
@@ -81,8 +92,8 @@ export function settleContractPnL(
   return {
     playerId: player.id,
     contractWon: true,
-    quotedPrice: winningQuote.price,
-    bidPrepCost,
+    quotedPrice: contractAwardPrice,
+    bidPrepCost: 0,
     baselineCost,
     eventCostDelta,
     actualDeliveryCost,
@@ -106,7 +117,7 @@ export function settleContractPnL(
 export function calculateTotalScore(
   bankedProfit: number,
   contractsWon: number,
-  reputation: number = 0,
+  reputation: number = 100,
   totalRiskAdjustedProfit: number = 0,
   penalties: number = 0
 ): number {
