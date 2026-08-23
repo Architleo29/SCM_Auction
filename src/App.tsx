@@ -274,7 +274,7 @@ export const App: React.FC = () => {
                   score: 0,
                   bankedProfit: 0,
                   contractsWon: 0,
-                  reputation: event.payload.profile.reputationScore || 50,
+                  reputation: event.payload.profile.reputationScore || 75,
                   intelPoints: 2,
                   disciplineWalkaways: 0,
                   ready: true,
@@ -384,6 +384,36 @@ export const App: React.FC = () => {
         case 'AUCTION_BUZZ':
           handleAuctionResolved(event.payload.playerId, event.payload.price);
           break;
+
+        case 'AUCTION_EXIT': {
+          const exitPlayerId = event.payload.playerId;
+          setActiveAuction(prev => {
+            const updatedActive = prev.activePlayerIds.filter(id => id !== exitPlayerId);
+            const updatedExits = [
+              { timestamp: Date.now(), playerId: event.payload.playerId, playerName: event.payload.playerName, exitPrice: event.payload.exitPrice },
+              ...prev.exits
+            ];
+            const updatedBids = [
+              { timestamp: Date.now(), playerId: event.payload.playerId, playerName: `🔴 ${event.payload.playerName} Exited`, amount: event.payload.exitPrice, isAi: false },
+              ...prev.bids
+            ];
+
+            if (isHostRef.current && updatedActive.length === 1) {
+              setTimeout(() => {
+                const secondPrice = updatedExits[0]?.exitPrice || event.payload.exitPrice;
+                handleAuctionResolved(updatedActive[0], secondPrice);
+              }, 400);
+            }
+
+            return {
+              ...prev,
+              activePlayerIds: updatedActive,
+              exits: updatedExits,
+              bids: updatedBids
+            };
+          });
+          break;
+        }
       }
     };
 
@@ -1041,11 +1071,30 @@ export const App: React.FC = () => {
 
   const handleExitJapanese = () => {
     if (!me) return;
-    setActiveAuction(prev => ({
-      ...prev,
-      activePlayerIds: prev.activePlayerIds.filter(id => id !== me.id),
-      exits: [{ timestamp: Date.now(), playerId: me.id, playerName: me.name, exitPrice: prev.currentPrice }, ...prev.exits]
-    }));
+    const exitPrice = activeAuction.currentPrice;
+    roomSync.broadcast({
+      type: 'AUCTION_EXIT',
+      payload: { playerId: me.id, playerName: me.name, exitPrice }
+    });
+
+    setActiveAuction(prev => {
+      const updatedActive = prev.activePlayerIds.filter(id => id !== me.id);
+      const updatedExits = [{ timestamp: Date.now(), playerId: me.id, playerName: me.name, exitPrice }, ...prev.exits];
+      const updatedBids = [{ timestamp: Date.now(), playerId: me.id, playerName: `🔴 ${me.name} Exited`, amount: exitPrice, isAi: false }, ...prev.bids];
+
+      if (isHost && updatedActive.length === 1) {
+        setTimeout(() => {
+          handleAuctionResolved(updatedActive[0], exitPrice);
+        }, 400);
+      }
+
+      return {
+        ...prev,
+        activePlayerIds: updatedActive,
+        exits: updatedExits,
+        bids: updatedBids
+      };
+    });
   };
 
   // 9. Draw Dynamic Event Card

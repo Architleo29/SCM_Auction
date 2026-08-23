@@ -145,9 +145,9 @@ export const AuctionArena: React.FC<AuctionArenaProps> = ({
                 : 'bg-violet-950/60 text-violet-300 border-violet-800/60'
             }`}>
               <Gavel className="w-3.5 h-3.5 inline mr-1" />
-              {rfq.auctionFormat === 'english' && '🔨 Reverse English'}
-              {rfq.auctionFormat === 'dutch' && '⏳ Reverse Dutch'}
-              {rfq.auctionFormat === 'japanese' && '🇯🇵 Japanese Clock'}
+              {rfq.auctionFormat === 'english' && '🔨 Reverse English (Price Drops)'}
+              {rfq.auctionFormat === 'dutch' && '⏳ Reverse Dutch (Price Rises)'}
+              {rfq.auctionFormat === 'japanese' && '🇯🇵 Reverse Japanese Clock (Price Drops)'}
             </span>
             <span className="text-xs font-mono text-slate-400">
               Round {rfq.roundNumber} • {rfq.scenarioName}
@@ -155,9 +155,9 @@ export const AuctionArena: React.FC<AuctionArenaProps> = ({
           </div>
           <h2 className="text-xl sm:text-2xl font-bold text-slate-100">{rfq.title}</h2>
           <p className="text-xs text-slate-400 mt-1">
-            {rfq.auctionFormat === 'english' && 'Price drops in real time. Lower your price to take the lead, but do not bid below your cost!'}
-            {rfq.auctionFormat === 'dutch' && 'Price rises every 2s. The first vendor to click "Accept & Win" takes the contract!'}
-            {rfq.auctionFormat === 'japanese' && 'Price steps down. Press and hold to stay in. Release to exit safely when price is too low.'}
+            {rfq.auctionFormat === 'english' && 'Vendors compete by undercutting bids downward. Lowest qualifying bidder takes the lead!'}
+            {rfq.auctionFormat === 'dutch' && 'The Buyer starts with a low offer. The contract price ticks UPWARDS every 2 seconds. The first vendor to click "Buzz & Accept" claims the contract on the spot!'}
+            {rfq.auctionFormat === 'japanese' && 'The price clock steps DOWNWARDS every 2 seconds. Vendors stay active until the price drops too low, then release to exit safely.'}
           </p>
         </div>
 
