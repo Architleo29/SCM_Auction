@@ -209,7 +209,6 @@ export const RfqBuilder: React.FC<RfqBuilderProps> = ({
       requiredDeliveryDays,
       paymentDelayDays,
       requiredCompliance,
-      preferredSla,
       weights: {
         price: normPrice,
         quality: normQuality,
@@ -295,10 +294,10 @@ export const RfqBuilder: React.FC<RfqBuilderProps> = ({
                 }`}
               >
                 <div>
-                  <span className="text-lg block mb-1">{sc.icon}</span>
+                  <span className="text-xs font-mono font-bold text-indigo-400 uppercase tracking-wider block mb-1">Sector</span>
                   <p className="text-xs font-bold text-slate-100">{sc.name}</p>
                 </div>
-                <span className="text-[0.625rem] font-mono text-slate-400 mt-2 block">{sc.region}</span>
+                <span className="text-[0.625rem] font-mono text-slate-400 mt-2 block">{sc.category}</span>
               </button>
             ))}
           </div>
