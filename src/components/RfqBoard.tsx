@@ -151,39 +151,41 @@ export const RfqBoard: React.FC<RfqBoardProps> = ({
 
       {/* Buyer Evaluation Weights Card */}
       <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 sm:p-5 shadow-md space-y-3">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
           <div className="flex items-center gap-2 text-cyan-400 font-semibold text-xs uppercase font-mono">
             <Award className="w-4 h-4" />
-            Buyer Evaluation Weights (Public Ranges)
+            Buyer Evaluation Weights & Criteria
           </div>
           <span className="text-[0.625rem] sm:text-xs text-slate-400 font-mono">
-            Lowest price does not guarantee victory
+            Independent 1–5 parameters • Dependent Risk & Reputation index
           </span>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 pt-1">
           <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800">
-            <span className="text-[0.625rem] text-slate-500 font-mono uppercase">Price Weight</span>
-            <p className="text-base font-mono font-bold text-slate-100 mt-0.5">{(rfq.weights.price * 100).toFixed(0)}%</p>
-            <span className="text-[0.625rem] text-slate-500 font-mono">Range: [30-40%]</span>
+            <span className="text-[0.625rem] text-slate-500 font-mono uppercase">💰 Price Weight</span>
+            <p className="text-base font-mono font-bold text-emerald-400 mt-0.5">{(rfq.weights.price * 100).toFixed(0)}%</p>
+            <span className="text-[0.625rem] text-slate-500 font-mono">Scale: 1 – 5 Level</span>
           </div>
 
           <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800">
-            <span className="text-[0.625rem] text-slate-500 font-mono uppercase">Quality Weight</span>
-            <p className="text-base font-mono font-bold text-slate-100 mt-0.5">{(rfq.weights.quality * 100).toFixed(0)}%</p>
-            <span className="text-[0.625rem] text-slate-500 font-mono">Range: [15-25%]</span>
+            <span className="text-[0.625rem] text-slate-500 font-mono uppercase">⭐ Quality Weight</span>
+            <p className="text-base font-mono font-bold text-indigo-400 mt-0.5">{(rfq.weights.quality * 100).toFixed(0)}%</p>
+            <span className="text-[0.625rem] text-slate-500 font-mono">Scale: 1 – 5 Stars</span>
           </div>
 
           <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800">
-            <span className="text-[0.625rem] text-slate-500 font-mono uppercase">Timeline Weight</span>
-            <p className="text-base font-mono font-bold text-slate-100 mt-0.5">{(rfq.weights.timeline * 100).toFixed(0)}%</p>
-            <span className="text-[0.625rem] text-slate-500 font-mono">Range: [10-20%]</span>
+            <span className="text-[0.625rem] text-slate-500 font-mono uppercase">⏱️ Timeline Weight</span>
+            <p className="text-base font-mono font-bold text-amber-400 mt-0.5">{(rfq.weights.timeline * 100).toFixed(0)}%</p>
+            <span className="text-[0.625rem] text-slate-500 font-mono">Scale: 1 – 5 Speed</span>
           </div>
 
           <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800">
-            <span className="text-[0.625rem] text-slate-500 font-mono uppercase">Reputation Weight</span>
-            <p className="text-base font-mono font-bold text-slate-100 mt-0.5">{(rfq.weights.reputation * 100).toFixed(0)}%</p>
-            <span className="text-[0.625rem] text-slate-500 font-mono">Range: [10-20%]</span>
+            <span className="text-[0.625rem] text-slate-500 font-mono uppercase">🛡️ Risk & Reputation</span>
+            <p className="text-base font-mono font-bold text-purple-400 mt-0.5">
+              {(((rfq.weights.reputation || 0.1) + (rfq.weights.risk || 0.05)) * 100).toFixed(0)}%
+            </p>
+            <span className="text-[0.625rem] text-purple-300 font-mono">Dependent Index</span>
           </div>
         </div>
       </div>
