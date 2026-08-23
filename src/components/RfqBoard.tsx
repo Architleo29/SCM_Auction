@@ -34,8 +34,8 @@ export const RfqBoard: React.FC<RfqBoardProps> = ({
               <span className="text-xs font-mono uppercase text-indigo-400 font-bold tracking-wider">
                 🏛️ Tender Opportunity • Round {rfq.roundNumber}
               </span>
-              <span className="px-2 py-0.5 rounded-full text-[0.625rem] font-mono bg-indigo-950 text-indigo-300 border border-indigo-800 capitalize">
-                {rfq.auctionFormat} Auction
+              <span className="px-2.5 py-0.5 rounded-full text-[0.6875rem] font-mono bg-indigo-950 text-indigo-300 border border-indigo-800 font-semibold">
+                {rfq.auctionFormat === 'english' ? '🔨 Reverse English' : rfq.auctionFormat === 'dutch' ? '⏳ Reverse Dutch' : '🇯🇵 Reverse Japanese'} Auction
               </span>
             </div>
             <h2 className="text-xl sm:text-2xl font-bold text-slate-100">{rfq.title}</h2>
@@ -66,7 +66,7 @@ export const RfqBoard: React.FC<RfqBoardProps> = ({
             <Gavel className="w-4 h-4 text-indigo-400 shrink-0" />
             <div>
               <span className="text-[0.625rem] text-slate-500 uppercase block">Live Auction Format</span>
-              <strong className="text-indigo-300 capitalize">{rfq.auctionFormat} Format</strong>
+              <strong className="text-indigo-300">{rfq.auctionFormat === 'english' ? 'Reverse English' : rfq.auctionFormat === 'dutch' ? 'Reverse Dutch' : 'Reverse Japanese'}</strong>
             </div>
           </div>
         </div>

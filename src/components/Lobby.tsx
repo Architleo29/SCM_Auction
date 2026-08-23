@@ -556,41 +556,41 @@ export const Lobby: React.FC<LobbyProps> = ({
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center justify-between">
                   <span>Starting Auction Format</span>
-                  <span className="text-xs font-mono text-indigo-400 capitalize">{chosenAuctionFormat}</span>
+                  <span className="text-xs font-mono text-indigo-400 font-semibold">{chosenAuctionFormat === 'english' ? 'Reverse English' : chosenAuctionFormat === 'dutch' ? 'Reverse Dutch' : 'Reverse Japanese'}</span>
                 </label>
                 <div className="grid grid-cols-3 gap-2">
                   <button
                     type="button"
                     onClick={() => setChosenAuctionFormat('english')}
-                    className={`py-2 rounded-xl text-xs font-mono font-bold border transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                    className={`py-2.5 px-1.5 rounded-xl text-xs font-mono font-bold border transition cursor-pointer flex items-center justify-center gap-1 ${
                       chosenAuctionFormat === 'english'
-                        ? 'bg-orange-500/20 border-orange-500 text-orange-300 shadow-md'
+                        ? 'bg-orange-500/20 border-orange-500 text-orange-300 shadow-md ring-1 ring-orange-400'
                         : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
                     }`}
                   >
-                    <span>🔨</span> English
+                    <span>🔨</span> Reverse English
                   </button>
                   <button
                     type="button"
                     onClick={() => setChosenAuctionFormat('dutch')}
-                    className={`py-2 rounded-xl text-xs font-mono font-bold border transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                    className={`py-2.5 px-1.5 rounded-xl text-xs font-mono font-bold border transition cursor-pointer flex items-center justify-center gap-1 ${
                       chosenAuctionFormat === 'dutch'
-                        ? 'bg-teal-500/20 border-teal-400 text-teal-300 shadow-md'
+                        ? 'bg-teal-500/20 border-teal-400 text-teal-300 shadow-md ring-1 ring-teal-400'
                         : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
                     }`}
                   >
-                    <span>⏳</span> Dutch
+                    <span>⏳</span> Reverse Dutch
                   </button>
                   <button
                     type="button"
                     onClick={() => setChosenAuctionFormat('japanese')}
-                    className={`py-2 rounded-xl text-xs font-mono font-bold border transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                    className={`py-2.5 px-1.5 rounded-xl text-xs font-mono font-bold border transition cursor-pointer flex items-center justify-center gap-1 ${
                       chosenAuctionFormat === 'japanese'
-                        ? 'bg-violet-500/20 border-violet-400 text-violet-300 shadow-md'
+                        ? 'bg-violet-500/20 border-violet-400 text-violet-300 shadow-md ring-1 ring-violet-400'
                         : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
                     }`}
                   >
-                    <span>🇯🇵</span> Japanese
+                    <span>🇯🇵</span> Reverse Japanese
                   </button>
                 </div>
               </div>
