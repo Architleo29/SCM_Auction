@@ -27,10 +27,21 @@ import {
 interface UserManualModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialTab?: 'quickstart' | 'auctions' | 'forward' | 'strategy' | 'scoring';
 }
 
-export const UserManualModal: React.FC<UserManualModalProps> = ({ isOpen, onClose }) => {
-  const [activeTab, setActiveTab] = useState<'quickstart' | 'auctions' | 'forward' | 'strategy' | 'scoring'>('quickstart');
+export const UserManualModal: React.FC<UserManualModalProps> = ({ 
+  isOpen, 
+  onClose,
+  initialTab = 'quickstart' 
+}) => {
+  const [activeTab, setActiveTab] = useState<'quickstart' | 'auctions' | 'forward' | 'strategy' | 'scoring'>(initialTab);
+
+  React.useEffect(() => {
+    if (isOpen && initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [isOpen, initialTab]);
 
   if (!isOpen) return null;
 
@@ -174,10 +185,11 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({ isOpen, onClos
                     <div className="w-7 h-7 rounded-xl bg-cyan-600/20 text-cyan-400 border border-cyan-500/30 flex items-center justify-center font-bold font-mono text-xs">
                       3
                     </div>
-                    <h4 className="font-bold text-slate-100 text-sm">Live Reverse Auction Floor</h4>
+                    <h4 className="font-bold text-slate-100 text-sm">Dual Live Auction Formats</h4>
                   </div>
                   <p className="text-xs text-slate-400 leading-relaxed">
-                    Battle human and AI rivals in the <strong>Reverse English Auction</strong> — place progressively lower counter-bids to undercut competitors and win the contract at the best margin you can sustain.
+                    • <strong>Reverse English (Procurement):</strong> Suppliers submit lower bids to undercut competitors and win buyer contracts.<br />
+                    • <strong>Forward English (Asset Draft):</strong> 2–8 Buyers spend their ₹10L purse bidding upward across multi-lot supply chain assets.
                   </p>
                 </div>
 

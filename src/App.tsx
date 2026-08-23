@@ -111,7 +111,14 @@ export const App: React.FC = () => {
   const [isSupabaseModalOpen, setIsSupabaseModalOpen] = useState(false);
   const [isDashboardModalOpen, setIsDashboardModalOpen] = useState(false);
   const [isManualModalOpen, setIsManualModalOpen] = useState(false);
+  const [manualInitialTab, setManualInitialTab] = useState<'quickstart' | 'auctions' | 'forward' | 'strategy' | 'scoring'>('quickstart');
   const [isSupabaseLive, setIsSupabaseLive] = useState(false);
+
+  const handleOpenManual = (tab?: 'quickstart' | 'auctions' | 'forward' | 'strategy' | 'scoring') => {
+    const targetTab = tab || (isForwardMode ? 'forward' : 'quickstart');
+    setManualInitialTab(targetTab);
+    setIsManualModalOpen(true);
+  };
 
   // References to prevent stale closure in interval loops
   const playersRef = useRef<Record<string, PlayerState>>(players);
@@ -1637,7 +1644,7 @@ export const App: React.FC = () => {
         isSupabaseConnected={isSupabaseLive}
         onOpenSupabaseModal={() => setIsSupabaseModalOpen(true)}
         onOpenDashboardModal={() => setIsDashboardModalOpen(true)}
-        onOpenManualModal={() => setIsManualModalOpen(true)}
+        onOpenManualModal={() => handleOpenManual()}
         onReturnToMainScreen={handleReturnToMainScreen}
       />
 
@@ -1659,7 +1666,7 @@ export const App: React.FC = () => {
               setPhase('RFQ_BUILDER');
               broadcastSync({ phase: 'RFQ_BUILDER' });
             }}
-            onOpenManualModal={() => setIsManualModalOpen(true)}
+            onOpenManualModal={handleOpenManual}
             onUpdatePlayerProfile={handleUpdateMyProfile}
             onToggleReady={handleToggleReady}
             isSupabaseConnected={isSupabaseLive}
@@ -1830,6 +1837,7 @@ export const App: React.FC = () => {
             currentLotNumber={forwardLotIndex + 1}
             isAuctioneer={isHost}
             onPlaceBid={handlePlaceForwardBid}
+            onOpenManual={() => handleOpenManual('forward')}
             onSkipLot={isHost ? () => {
               if (forwardTimerRef.current) clearInterval(forwardTimerRef.current);
               resolveForwardLot(forwardAuctionStateRef.current!, forwardBuyersRef.current, forwardLotIndex, forwardCatalog, forwardValuationMode);
@@ -1939,6 +1947,7 @@ export const App: React.FC = () => {
       {/* Interactive Game Manual Modal */}
       <UserManualModal
         isOpen={isManualModalOpen}
+        initialTab={manualInitialTab}
         onClose={() => setIsManualModalOpen(false)}
       />
 

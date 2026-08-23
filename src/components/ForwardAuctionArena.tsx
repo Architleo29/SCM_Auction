@@ -11,7 +11,8 @@ import {
   AlertCircle, 
   Layers,
   Sparkles,
-  Info
+  Info,
+  BookOpen
 } from 'lucide-react';
 import { 
   ForwardItem, 
@@ -35,6 +36,7 @@ interface ForwardAuctionArenaProps {
   onPlaceBid: (amount: number) => void;
   onSkipLot?: () => void;
   isAuctioneer?: boolean;
+  onOpenManual?: () => void;
 }
 
 export const ForwardAuctionArena: React.FC<ForwardAuctionArenaProps> = ({
@@ -46,7 +48,8 @@ export const ForwardAuctionArena: React.FC<ForwardAuctionArenaProps> = ({
   currentLotNumber,
   onPlaceBid,
   onSkipLot,
-  isAuctioneer = false
+  isAuctioneer = false,
+  onOpenManual
 }) => {
   const valuationMode = auctionState.valuationMode;
   const valuationData = (buyer && buyer.valuations) ? (buyer.valuations[item.id] || {}) : {};
@@ -116,8 +119,19 @@ export const ForwardAuctionArena: React.FC<ForwardAuctionArenaProps> = ({
           </div>
         </div>
 
-        {/* Live Timer Banner */}
-        <div className="flex items-center gap-3 self-end sm:self-auto">
+        {/* Live Timer Banner & Manual */}
+        <div className="flex items-center gap-2 sm:gap-3 self-end sm:self-auto">
+          {onOpenManual && (
+            <button
+              onClick={onOpenManual}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-purple-950/60 hover:bg-purple-900/60 border border-purple-800 text-purple-300 text-xs font-mono font-semibold transition cursor-pointer active:scale-95"
+              title="Open Forward English Manual & Rules"
+            >
+              <BookOpen className="w-3.5 h-3.5" />
+              <span>Rules Guide</span>
+            </button>
+          )}
+
           <div className="flex items-center gap-2 bg-slate-950 px-4 py-2 rounded-xl border border-slate-800 text-slate-200 font-mono font-bold text-sm">
             <Clock className="w-4 h-4 text-amber-400 animate-pulse" />
             <span className={auctionState.timeRemaining < 10 ? 'text-rose-400' : 'text-amber-300'}>

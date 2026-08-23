@@ -46,7 +46,7 @@ interface LobbyProps {
   onRemovePlayer: (playerId: string) => void;
   onStartGame: () => void;
   onOpenRfqBuilder?: () => void;
-  onOpenManualModal?: () => void;
+  onOpenManualModal?: (tab?: 'quickstart' | 'auctions' | 'forward' | 'strategy' | 'scoring') => void;
   onUpdatePlayerProfile?: (stats: { qualityLevel: number; speedLevel: number; costEfficiency: number }) => void;
   onQuickPlayVsBots?: (format?: AuctionFormat) => void;
   onStartForwardGame?: (valuationMode: 'private' | 'common') => void;
@@ -781,14 +781,25 @@ export const Lobby: React.FC<LobbyProps> = ({
                     </div>
                   </div>
 
-                  {/* Information Card */}
-                  <div className="p-3.5 bg-slate-950 rounded-2xl border border-slate-800 text-xs text-slate-400 space-y-1">
+                  {/* Information Card & Manual Link */}
+                  <div className="p-3.5 bg-slate-950 rounded-2xl border border-slate-800 text-xs text-slate-400 space-y-2">
                     <p className="font-bold text-purple-300 flex items-center gap-1.5">
                       <span>📦</span> {selectedRounds}-Lot Asset Draft • ₹10,00,000 Purse
                     </p>
                     <p className="text-[11px] text-slate-400 leading-relaxed">
                       All connected players will enter the room as <strong>Buyers</strong> with a ₹10 Lakh starting purse. No AI bots required — human buyers compete directly across {selectedRounds} sequential lots.
                     </p>
+
+                    {onOpenManualModal && (
+                      <button
+                        type="button"
+                        onClick={() => onOpenManualModal('forward')}
+                        className="w-full py-2 px-3 rounded-xl bg-purple-950/60 hover:bg-purple-900/60 border border-purple-800/80 text-purple-300 text-xs font-mono font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer"
+                      >
+                        <BookOpen className="w-3.5 h-3.5 text-purple-400" />
+                        <span>📖 Read Forward English Rules & Strategy Guide</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               ) : (
