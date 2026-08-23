@@ -4,7 +4,7 @@ import { BuyerEvaluationResult, PlayerState, RFQ } from '../types/game';
 import confetti from 'canvas-confetti';
 import { sounds } from '../utils/soundEffects';
 
-import { formatINR } from '../utils/formatters';
+import { formatINR, isBuyerSpectator } from '../utils/formatters';
 
 interface EvaluationModalProps {
   evaluation: BuyerEvaluationResult;
@@ -35,7 +35,7 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
   }, [isWinner]);
 
   const rankedFilteredPlayers = evaluation.rankedPlayerIds
-    .filter(pId => players[pId] && (players[pId]?.isAi || pId === myPlayerId || (!players[pId]?.name.includes('Director') && !players[pId]?.name.includes('Procurement Authority') && !players[pId]?.name.includes('Spectator'))));
+    .filter(pId => players[pId] && !isBuyerSpectator(players[pId]));
 
   return (
     <div className="max-w-4xl mx-auto p-3.5 sm:p-6 space-y-4 sm:space-y-6 animate-fade-in">

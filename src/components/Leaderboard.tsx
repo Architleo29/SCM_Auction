@@ -14,7 +14,7 @@ import {
 import { PlayerState, RoomConfig } from '../types/game';
 import confetti from 'canvas-confetti';
 import { sounds } from '../utils/soundEffects';
-import { formatINR } from '../utils/formatters';
+import { formatINR, isBuyerSpectator } from '../utils/formatters';
 
 interface LeaderboardProps {
   players: Record<string, PlayerState>;
@@ -35,9 +35,9 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
 }) => {
   const isGameOver = isGameOverProp !== undefined ? isGameOverProp : (roomConfig.currentRound >= roomConfig.totalRounds);
   
-  // Include all competing vendors (Human vendor + AI bots), excluding only Buyer / Director spectators
+  // Strictly include competing vendors only (Exclude Buyer / Procurement Director)
   const sortedPlayers = Object.values(players)
-    .filter(p => p.isAi || p.id === myPlayerId || (!p.name.includes('Director') && !p.name.includes('Procurement Authority') && !p.name.includes('Spectator')))
+    .filter(p => !isBuyerSpectator(p))
     .sort((a, b) => (b.score || b.bankedProfit) - (a.score || a.bankedProfit));
 
   const isHost = roomConfig.hostId === myPlayerId;

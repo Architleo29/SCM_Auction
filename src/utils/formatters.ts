@@ -27,3 +27,17 @@ export function formatINRCompact(amount: number): string {
 
   return `${isNegative ? '-' : ''}₹${formatted}`;
 }
+
+
+export const isBuyerSpectator = (p: any): boolean => {
+  if (!p) return false;
+  if (p.isAi) return false;
+  const name = (p.name || '').toLowerCase();
+  return (
+    name.includes('director') ||
+    name.includes('buyer') ||
+    name.includes('procurement authority') ||
+    name.includes('procurement directorate') ||
+    name.includes('spectator')
+  );
+};

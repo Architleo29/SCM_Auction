@@ -664,7 +664,7 @@ export const App: React.FC = () => {
   // 3. 1-Click Quick Play (You vs 3 Bots - Opens RFQ Builder first)
   const handleQuickPlayVsBots = (format: AuctionFormat = 'english') => {
     const code = `SOLO-${Math.floor(10 + Math.random() * 90)}`;
-    const myProfile = generateCompanyProfile('Apex Procurement (You)', 0);
+    const myProfile = generateCompanyProfile('Apex Technologies (You)', 0);
 
     const config: RoomConfig = {
       code,
@@ -681,7 +681,7 @@ export const App: React.FC = () => {
     const initialPlayers: Record<string, PlayerState> = {
       [myPlayerId]: {
         id: myPlayerId,
-        name: 'Apex Procurement (You)',
+        name: 'Apex Technologies (You)',
         isHost: true,
         isAi: false,
         profile: myProfile,

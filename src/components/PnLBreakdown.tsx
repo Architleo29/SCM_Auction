@@ -17,7 +17,7 @@ import {
 import { PnLResult, PlayerState, RFQ } from '../types/game';
 import confetti from 'canvas-confetti';
 import { sounds } from '../utils/soundEffects';
-import { formatINR } from '../utils/formatters';
+import { formatINR, isBuyerSpectator } from '../utils/formatters';
 
 interface PnLBreakdownProps {
   pnl: PnLResult;
@@ -35,7 +35,7 @@ export const PnLBreakdown: React.FC<PnLBreakdownProps> = ({
   onProceedToLeaderboard
 }) => {
   const playerList = (allPlayers ? Object.values(allPlayers) : [player])
-    .filter(p => p.isAi || p.id === player.id || (!p.name.includes('Director') && !p.name.includes('Procurement Authority') && !p.name.includes('Spectator')));
+    .filter(p => !isBuyerSpectator(p));
 
   useEffect(() => {
     if (pnl.realizedProfit > 0) {
