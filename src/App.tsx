@@ -892,6 +892,30 @@ export const App: React.FC = () => {
 
       if (!activeRfq) return;
 
+      // 1. REVERSE DUTCH AUCTION (NO COUNTDOWN TIMER - Price ticks up until someone buzzes or host ends it)
+      if (state.format === 'dutch') {
+        state.dutchTickCount = (state.dutchTickCount || 0) + 1;
+
+        if (state.dutchTickCount % 2 === 0) {
+          state.currentPrice = Math.min(
+            Math.round(activeRfq.budgetCeiling * 1.50),
+            Math.round(state.currentPrice * 1.035)
+          );
+
+          for (const p of Object.values(currentActivePlayers)) {
+            if (p.isAi && shouldAiAcceptInDutchAuction(p, state.currentPrice, activeRfq)) {
+              clearInterval(auctionTimerRef.current!);
+              handleAuctionResolved(p.id, state.currentPrice);
+              return;
+            }
+          }
+        }
+
+        sounds.tick();
+        return;
+      }
+
+      // 2. TIMED AUCTIONS (English / Japanese)
       if (state.timeRemaining <= 1) {
         clearInterval(auctionTimerRef.current!);
         const winningId = state.currentLeaderId || state.activePlayerIds[0] || Object.keys(currentActivePlayers)[0];
@@ -901,22 +925,6 @@ export const App: React.FC = () => {
 
       state.timeRemaining -= 1;
       sounds.tick();
-
-      // 1. REVERSE DUTCH AUCTION (Price rises every 2 seconds, AI evaluates buzz)
-      if (state.format === 'dutch' && state.timeRemaining % 2 === 0) {
-        state.currentPrice = Math.min(
-          Math.round(activeRfq.budgetCeiling * 1.50),
-          Math.round(state.currentPrice * 1.035)
-        );
-
-        for (const p of Object.values(currentActivePlayers)) {
-          if (p.isAi && shouldAiAcceptInDutchAuction(p, state.currentPrice, activeRfq)) {
-            clearInterval(auctionTimerRef.current!);
-            handleAuctionResolved(p.id, state.currentPrice);
-            return;
-          }
-        }
-      }
 
       // 2. JAPANESE CLOCK AUCTION (Drops price every 2 seconds, bots exit below floor)
       if (state.format === 'japanese' && state.timeRemaining % 2 === 0) {

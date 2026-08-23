@@ -165,25 +165,46 @@ export const AuctionArena: React.FC<AuctionArenaProps> = ({
           </p>
         </div>
 
-        {/* Real-time Clock / Soft-close Timer */}
-        <div className={`px-4 sm:px-5 py-3 rounded-2xl border flex items-center justify-between sm:justify-start gap-4 shrink-0 font-mono transition-colors duration-200 ${
-          localTimeRemaining <= 5
-            ? 'bg-rose-950/70 text-rose-300 border-rose-500'
-            : localTimeRemaining <= 10
-            ? 'bg-amber-950/50 text-amber-300 border-amber-500 animate-pulse'
-            : 'bg-slate-950 text-slate-200 border-slate-800'
-        }`}>
-          <div className="flex items-center gap-3">
-            <Clock className={`w-6 h-6 ${localTimeRemaining <= 5 ? 'text-rose-400' : localTimeRemaining <= 10 ? 'text-amber-400' : 'text-slate-400'}`} />
-            <div>
-              <p className="text-[0.625rem] text-slate-500 uppercase">
-                {rfq.auctionFormat === 'english' ? 'Time Remaining' : 'Auction Clock'}
-              </p>
-              <p className="text-2xl font-bold">{localTimeRemaining}s</p>
+        {/* Real-time Clock / Speed Indicator */}
+        {rfq.auctionFormat === 'dutch' ? (
+          <div className="px-4 sm:px-5 py-3 rounded-2xl border border-teal-500/40 bg-teal-950/30 text-teal-300 flex items-center justify-between sm:justify-start gap-4 shrink-0 font-mono shadow-md">
+            <div className="flex items-center gap-3">
+              <Zap className="w-6 h-6 text-teal-400 animate-pulse" />
+              <div>
+                <p className="text-[0.625rem] text-teal-400 uppercase font-bold">Reverse Dutch Clock</p>
+                <p className="text-xl font-bold">Price Rising Continuously</p>
+              </div>
             </div>
+            {onSkipToEnd && (
+              <button
+                onClick={onSkipToEnd}
+                className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow transition cursor-pointer active:scale-95 ml-2"
+                title="End Dutch Auction as Host"
+              >
+                🛑 End Auction
+              </button>
+            )}
           </div>
-          <span className="text-[0.625rem] sm:hidden font-bold uppercase text-slate-500">Live</span>
-        </div>
+        ) : (
+          <div className={`px-4 sm:px-5 py-3 rounded-2xl border flex items-center justify-between sm:justify-start gap-4 shrink-0 font-mono transition-colors duration-200 ${
+            localTimeRemaining <= 5
+              ? 'bg-rose-950/70 text-rose-300 border-rose-500'
+              : localTimeRemaining <= 10
+              ? 'bg-amber-950/50 text-amber-300 border-amber-500 animate-pulse'
+              : 'bg-slate-950 text-slate-200 border-slate-800'
+          }`}>
+            <div className="flex items-center gap-3">
+              <Clock className={`w-6 h-6 ${localTimeRemaining <= 5 ? 'text-rose-400' : localTimeRemaining <= 10 ? 'text-amber-400' : 'text-slate-400'}`} />
+              <div>
+                <p className="text-[0.625rem] text-slate-500 uppercase">
+                  {rfq.auctionFormat === 'english' ? 'Time Remaining' : 'Auction Clock'}
+                </p>
+                <p className="text-2xl font-bold">{localTimeRemaining}s</p>
+              </div>
+            </div>
+            <span className="text-[0.625rem] sm:hidden font-bold uppercase text-slate-500">Live</span>
+          </div>
+        )}
       </div>
 
       {/* Main Auction Floor */}
