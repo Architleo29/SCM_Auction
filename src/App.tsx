@@ -44,7 +44,8 @@ import {
   ForwardValuationMode,
   FORWARD_CATALOG_PRESETS,
   generateBuyerValuations,
-  shouldAiBidInForwardAuction
+  shouldAiBidInForwardAuction,
+  getReserveRequirement
 } from './engine/forwardAuction';
 import { EvaluationModal } from './components/EvaluationModal';
 import { EventModal } from './components/EventModal';
@@ -154,6 +155,14 @@ export const App: React.FC = () => {
     isHostRef.current = isHost;
   }, [isHost]);
 
+  useEffect(() => {
+    forwardBuyersRef.current = forwardBuyers;
+  }, [forwardBuyers]);
+
+  useEffect(() => {
+    forwardAuctionStateRef.current = forwardAuctionState;
+  }, [forwardAuctionState]);
+
   // Check Supabase connection status on mount
   useEffect(() => {
     const cfg = getSavedSupabaseConfig();
@@ -169,6 +178,18 @@ export const App: React.FC = () => {
         case 'ROOM_STATE_SYNC':
           if (event.payload.roomConfig) setRoomConfig(event.payload.roomConfig);
           if (event.payload.phase) setPhase(event.payload.phase);
+          if (event.payload.isForwardMode !== undefined) setIsForwardMode(event.payload.isForwardMode);
+          if (event.payload.forwardValuationMode) setForwardValuationMode(event.payload.forwardValuationMode);
+          if (event.payload.forwardCatalog) setForwardCatalog(event.payload.forwardCatalog);
+          if (event.payload.forwardLotIndex !== undefined) setForwardLotIndex(event.payload.forwardLotIndex);
+          if (event.payload.forwardBuyers) {
+            setForwardBuyers(event.payload.forwardBuyers);
+            forwardBuyersRef.current = event.payload.forwardBuyers;
+          }
+          if (event.payload.forwardAuctionState) {
+            setForwardAuctionState(event.payload.forwardAuctionState);
+            forwardAuctionStateRef.current = event.payload.forwardAuctionState;
+          }
           if (event.payload.players) {
             setPlayers(prev => {
               const incoming = event.payload.players;
@@ -415,6 +436,12 @@ export const App: React.FC = () => {
           });
           break;
 
+        case 'FORWARD_AUCTION_BID':
+          if (isHostRef.current) {
+            handleProcessIncomingForwardBid(event.payload.playerId, event.payload.playerName, event.payload.amount);
+          }
+          break;
+
         case 'AUCTION_BUZZ':
           // Dutch format removed
           break;
@@ -447,7 +474,13 @@ export const App: React.FC = () => {
             players: playersRef.current,
             currentRfq: rfqRef.current,
             activeAuction: activeAuctionRef.current,
-            evaluationResult: evaluationResult
+            evaluationResult: evaluationResult,
+            isForwardMode: isForwardMode,
+            forwardValuationMode: forwardValuationMode,
+            forwardCatalog: forwardCatalog,
+            forwardLotIndex: forwardLotIndex,
+            forwardBuyers: forwardBuyersRef.current,
+            forwardAuctionState: forwardAuctionStateRef.current
           }
         }, roomConfig.code);
       } else {
@@ -475,7 +508,49 @@ export const App: React.FC = () => {
   };
 
 
-  // ===== FORWARD AUCTION HANDLERS per algo_forward_auction.md =====
+  // ===== FORWARD AUCTION MULTIPLAYER HANDLERS per algo_forward_auction.md =====
+  const handleProcessIncomingForwardBid = (playerId: string, playerName: string, amount: number) => {
+    const state = forwardAuctionStateRef.current;
+    if (!state || state.status !== 'BIDDING') return;
+    const buyer = forwardBuyersRef.current[playerId];
+    if (!buyer) return;
+
+    // Race condition / price check
+    if (amount <= state.currentHighestBid) return;
+
+    // Reserve check
+    const roundsRemaining = forwardCatalog.length - forwardLotIndex;
+    const reserveReq = getReserveRequirement(buyer.startingPurse, roundsRemaining);
+    const maxSpendable = buyer.remainingPurse - reserveReq;
+    if (amount > maxSpendable) return;
+
+    const updatedState: ForwardAuctionState = {
+      ...state,
+      currentHighestBid: amount,
+      currentLeaderId: playerId,
+      currentLeaderName: playerName,
+      timeRemaining: state.timeRemaining < 15 ? state.timeRemaining + 8 : state.timeRemaining,
+      bids: [
+        {
+          timestamp: Date.now(),
+          playerId,
+          playerName,
+          amount,
+          isAi: false
+        },
+        ...state.bids
+      ]
+    };
+
+    forwardAuctionStateRef.current = updatedState;
+    setForwardAuctionState(updatedState);
+    sounds.bid();
+
+    broadcastSync({
+      forwardAuctionState: updatedState
+    });
+  };
+
   const handleStartForwardSession = (mode: ForwardValuationMode) => {
     setIsForwardMode(true);
     setForwardValuationMode(mode);
@@ -483,51 +558,37 @@ export const App: React.FC = () => {
     setForwardLotIndex(0);
 
     const STARTING_PURSE = 1000000; // ₹10,00,000 starting purse
-    const myId = myPlayerId || 'buyer_human_you';
     const catalog = FORWARD_CATALOG_PRESETS;
+    const currentPlayers = { ...playersRef.current };
+    const initialBuyers: Record<string, ForwardBuyerState> = {};
 
-    const initialBuyers: Record<string, ForwardBuyerState> = {
-      [myId]: {
+    // In Forward English multiplayer mode: All connected room participants are human Buyers! No AI bots.
+    Object.values(currentPlayers).forEach(p => {
+      initialBuyers[p.id] = {
+        id: p.id,
+        name: p.name,
+        isAi: false,
+        startingPurse: STARTING_PURSE,
+        remainingPurse: STARTING_PURSE,
+        itemsWon: [],
+        totalSurplus: 0,
+        valuations: generateBuyerValuations(catalog, p.id, mode)
+      };
+    });
+
+    if (Object.keys(initialBuyers).length === 0) {
+      const myId = myPlayerId;
+      initialBuyers[myId] = {
         id: myId,
-        name: 'Apex Ventures (You)',
+        name: 'Apex Capital (Host)',
         isAi: false,
         startingPurse: STARTING_PURSE,
         remainingPurse: STARTING_PURSE,
         itemsWon: [],
         totalSurplus: 0,
         valuations: generateBuyerValuations(catalog, myId, mode)
-      },
-      'ai_buyer_vulcan': {
-        id: 'ai_buyer_vulcan',
-        name: 'Vulcan Capital',
-        isAi: true,
-        startingPurse: STARTING_PURSE,
-        remainingPurse: STARTING_PURSE,
-        itemsWon: [],
-        totalSurplus: 0,
-        valuations: generateBuyerValuations(catalog, 'ai_buyer_vulcan', mode)
-      },
-      'ai_buyer_matrix': {
-        id: 'ai_buyer_matrix',
-        name: 'Matrix Investments',
-        isAi: true,
-        startingPurse: STARTING_PURSE,
-        remainingPurse: STARTING_PURSE,
-        itemsWon: [],
-        totalSurplus: 0,
-        valuations: generateBuyerValuations(catalog, 'ai_buyer_matrix', mode)
-      },
-      'ai_buyer_echo': {
-        id: 'ai_buyer_echo',
-        name: 'Echo Asset Holdings',
-        isAi: true,
-        startingPurse: STARTING_PURSE,
-        remainingPurse: STARTING_PURSE,
-        itemsWon: [],
-        totalSurplus: 0,
-        valuations: generateBuyerValuations(catalog, 'ai_buyer_echo', mode)
-      }
-    };
+      };
+    }
 
     forwardBuyersRef.current = initialBuyers;
     setForwardBuyers(initialBuyers);
@@ -547,6 +608,12 @@ export const App: React.FC = () => {
     if (!item) {
       // Completed all lots -> Show Leaderboard
       setPhase('LEADERBOARD');
+      broadcastSync({
+        phase: 'LEADERBOARD',
+        isForwardMode: true,
+        forwardBuyers: buyers,
+        forwardValuationMode: mode
+      });
       return;
     }
 
@@ -567,86 +634,68 @@ export const App: React.FC = () => {
     setForwardAuctionState(initialAuction);
     setPhase('AUCTION');
 
-    // Run active forward auction interval
-    forwardTimerRef.current = setInterval(() => {
-      const state = { ...forwardAuctionStateRef.current! };
-      const currentBuyers = forwardBuyersRef.current;
-      if (!state || state.status !== 'BIDDING') return;
+    // Broadcast lot start snapshot to all connected clients
+    broadcastSync({
+      phase: 'AUCTION',
+      isForwardMode: true,
+      forwardValuationMode: mode,
+      forwardCatalog: catalog,
+      forwardLotIndex: lotIndex,
+      forwardBuyers: buyers,
+      forwardAuctionState: initialAuction
+    });
 
-      if (state.timeRemaining <= 1) {
-        clearInterval(forwardTimerRef.current!);
-        resolveForwardLot(state, currentBuyers, lotIndex, catalog, mode);
-        return;
-      }
+    // Run active forward auction interval on Host
+    if (isHostRef.current) {
+      forwardTimerRef.current = setInterval(() => {
+        const state = forwardAuctionStateRef.current;
+        const currentBuyers = forwardBuyersRef.current;
+        if (!state || state.status !== 'BIDDING') return;
 
-      state.timeRemaining -= 1;
-      sounds.tick();
-
-      // AI Buyers evaluate counter-bids
-      const aiBuyers = Object.values(currentBuyers).filter(b => b.isAi && b.id !== state.currentLeaderId);
-      if (aiBuyers.length > 0) {
-        const candidate = aiBuyers[Math.floor(Math.random() * aiBuyers.length)];
-        const roundsRemaining = catalog.length - lotIndex;
-        const aiDecision = shouldAiBidInForwardAuction(
-          candidate,
-          item,
-          state.currentHighestBid,
-          roundsRemaining,
-          mode,
-          Object.keys(currentBuyers).length
-        );
-
-        if (aiDecision.shouldBid && aiDecision.nextBidAmount > state.currentHighestBid) {
-          state.currentHighestBid = aiDecision.nextBidAmount;
-          state.currentLeaderId = candidate.id;
-          state.currentLeaderName = candidate.name;
-          state.timeRemaining = state.timeRemaining < 15 ? state.timeRemaining + 8 : state.timeRemaining;
-          state.bids = [
-            {
-              timestamp: Date.now(),
-              playerId: candidate.id,
-              playerName: candidate.name,
-              amount: aiDecision.nextBidAmount,
-              isAi: true
-            },
-            ...state.bids
-          ];
-          sounds.bid();
+        if (state.timeRemaining <= 1) {
+          clearInterval(forwardTimerRef.current!);
+          resolveForwardLot(state, currentBuyers, lotIndex, catalog, mode);
+          return;
         }
-      }
 
-      forwardAuctionStateRef.current = state;
-      setForwardAuctionState(state);
-    }, 1000);
+        const nextTime = state.timeRemaining - 1;
+        const updatedState: ForwardAuctionState = {
+          ...state,
+          timeRemaining: nextTime
+        };
+
+        sounds.tick();
+        forwardAuctionStateRef.current = updatedState;
+        setForwardAuctionState(updatedState);
+
+        // Sync heartbeat every 2 seconds or when time remaining is low
+        if (nextTime % 2 === 0 || nextTime <= 10) {
+          broadcastSync({
+            forwardAuctionState: updatedState
+          });
+        }
+      }, 1000);
+    }
   };
 
   const handlePlaceForwardBid = (amount: number) => {
-    const state = forwardAuctionStateRef.current;
-    if (!state) return;
-    const myId = myPlayerId || 'buyer_human_you';
+    const myId = myPlayerId;
     const myBuyer = forwardBuyersRef.current[myId];
     if (!myBuyer) return;
 
-    const updatedState: ForwardAuctionState = {
-      ...state,
-      currentHighestBid: amount,
-      currentLeaderId: myId,
-      currentLeaderName: myBuyer.name,
-      timeRemaining: state.timeRemaining < 15 ? state.timeRemaining + 8 : state.timeRemaining,
-      bids: [
-        {
-          timestamp: Date.now(),
+    if (isHostRef.current) {
+      handleProcessIncomingForwardBid(myId, myBuyer.name, amount);
+    } else {
+      sounds.bid();
+      roomSync.broadcast({
+        type: 'FORWARD_AUCTION_BID',
+        payload: {
           playerId: myId,
           playerName: myBuyer.name,
-          amount,
-          isAi: false
-        },
-        ...state.bids
-      ]
-    };
-
-    forwardAuctionStateRef.current = updatedState;
-    setForwardAuctionState(updatedState);
+          amount
+        }
+      }, roomConfigRef.current?.code || roomConfig?.code);
+    }
   };
 
   const resolveForwardLot = (
@@ -688,13 +737,22 @@ export const App: React.FC = () => {
 
     const nextLot = lotIndex + 1;
     if (nextLot < catalog.length) {
+      broadcastSync({
+        forwardBuyers: updatedBuyers
+      });
       setTimeout(() => {
         startForwardLot(nextLot, updatedBuyers, catalog, mode);
-      }, 1500);
+      }, 2000);
     } else {
       setTimeout(() => {
         setPhase('LEADERBOARD');
-      }, 1000);
+        broadcastSync({
+          phase: 'LEADERBOARD',
+          isForwardMode: true,
+          forwardBuyers: updatedBuyers,
+          forwardValuationMode: mode
+        });
+      }, 1500);
     }
   };
 
@@ -705,22 +763,30 @@ export const App: React.FC = () => {
     difficulty: GameDifficulty,
     hostName: string,
     maxPlayers: number = 4,
-    auctionFormat: AuctionFormat = 'english'
+    auctionFormat: AuctionFormat = 'english',
+    forwardValuationMode: ForwardValuationMode = 'private'
   ) => {
     const code = `AUCT-${Math.floor(10 + Math.random() * 90)}`;
     const myProfile = generateCompanyProfile(hostName, 0);
 
+    const isForward = auctionFormat === 'forward';
     const config: RoomConfig = {
       code,
       hostId: myPlayerId,
       scenarioId,
-      totalRounds,
+      totalRounds: isForward ? 6 : totalRounds,
       currentRound: 1,
       difficulty,
-      auctionFormatSequence: Array(totalRounds).fill(auctionFormat),
+      auctionFormatSequence: Array(isForward ? 6 : totalRounds).fill(auctionFormat),
+      forwardValuationMode: isForward ? forwardValuationMode : undefined,
       maxPlayers,
       createdAt: Date.now()
     };
+
+    setIsForwardMode(isForward);
+    if (isForward) {
+      setForwardValuationMode(forwardValuationMode);
+    }
 
     const initialPlayer: PlayerState = {
       id: myPlayerId,
@@ -734,7 +800,7 @@ export const App: React.FC = () => {
       reputation: myProfile.reputationScore,
       intelPoints: 2,
       disciplineWalkaways: 0,
-      ready: false,
+      ready: true,
       submittedQuote: null,
       history: []
     };
@@ -750,6 +816,8 @@ export const App: React.FC = () => {
         payload: {
           roomConfig: config,
           phase: 'LOBBY',
+          isForwardMode: isForward,
+          forwardValuationMode: forwardValuationMode,
           players: { [myPlayerId]: initialPlayer }
         }
       }, code);
@@ -970,7 +1038,14 @@ export const App: React.FC = () => {
   const handleStartGame = () => {
     if (!roomConfig) return;
 
-    // Ensure at least 2 competing vendors exist (auto-fill if needed)
+    // Handle Forward English multiplayer room launch
+    if (roomConfig.auctionFormatSequence[0] === 'forward') {
+      const mode = roomConfig.forwardValuationMode || forwardValuationMode || 'private';
+      handleStartForwardSession(mode);
+      return;
+    }
+
+    // Ensure at least 2 competing vendors exist (auto-fill if needed for Reverse English)
     let currentPlayers = { ...playersRef.current };
     const vendors = Object.values(currentPlayers).filter(p => !p.isHost);
     if (vendors.length < 2) {
@@ -1450,7 +1525,15 @@ export const App: React.FC = () => {
     if (quotingTimerRef.current) {
       clearInterval(quotingTimerRef.current);
     }
+    if (forwardTimerRef.current) {
+      clearInterval(forwardTimerRef.current);
+    }
     
+    setIsForwardMode(false);
+    setForwardAuctionState(null);
+    setForwardBuyers({});
+    forwardAuctionStateRef.current = null;
+    forwardBuyersRef.current = {};
     setPhase('LOBBY');
     setRoomConfig(null);
     setPlayers({});
@@ -1717,16 +1800,16 @@ export const App: React.FC = () => {
         {isForwardMode && phase === 'AUCTION' && forwardAuctionState && (
           <ForwardAuctionArena
             item={forwardAuctionState.currentItem}
-            buyer={forwardBuyers[myPlayerId || 'buyer_human_you'] || Object.values(forwardBuyers)[0]}
+            buyer={forwardBuyers[myPlayerId] || Object.values(forwardBuyers)[0]}
             allBuyers={forwardBuyers}
             auctionState={forwardAuctionState}
             totalLots={forwardCatalog.length}
             currentLotNumber={forwardLotIndex + 1}
             onPlaceBid={handlePlaceForwardBid}
-            onSkipLot={() => {
+            onSkipLot={isHost ? () => {
               if (forwardTimerRef.current) clearInterval(forwardTimerRef.current);
               resolveForwardLot(forwardAuctionStateRef.current!, forwardBuyersRef.current, forwardLotIndex, forwardCatalog, forwardValuationMode);
-            }}
+            } : undefined}
           />
         )}
 
@@ -1734,10 +1817,16 @@ export const App: React.FC = () => {
           <ForwardLeaderboard
             buyers={forwardBuyers}
             valuationMode={forwardValuationMode}
-            myBuyerId={myPlayerId || 'buyer_human_you'}
+            myBuyerId={myPlayerId}
             onPlayAgain={() => {
               setIsForwardMode(false);
               setPhase('LOBBY');
+              if (isHostRef.current) {
+                broadcastSync({
+                  phase: 'LOBBY',
+                  isForwardMode: false
+                });
+              }
             }}
           />
         )}

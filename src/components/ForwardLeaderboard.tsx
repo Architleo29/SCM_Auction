@@ -142,11 +142,11 @@ export const ForwardLeaderboard: React.FC<ForwardLeaderboardProps> = ({
           <span>Your Acquired Asset Portfolio</span>
         </h3>
 
-        {buyers[myBuyerId]?.itemsWon.length === 0 ? (
+        {(!buyers[myBuyerId] || (buyers[myBuyerId]?.itemsWon?.length || 0) === 0) ? (
           <p className="text-xs text-slate-500 italic py-2">You did not acquire any lots during this auction.</p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {buyers[myBuyerId]?.itemsWon.map((won, idx) => (
+            {buyers[myBuyerId]?.itemsWon?.map((won, idx) => (
               <div key={idx} className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-1.5 font-mono text-xs">
                 <div className="flex justify-between items-start">
                   <strong className="text-slate-100">{won.item.name}</strong>

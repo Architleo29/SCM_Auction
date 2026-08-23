@@ -10,7 +10,7 @@ export type IndustryScenarioId =
   | 'energy'
   | 'government';
 
-export type AuctionFormat = 'english';
+export type AuctionFormat = 'english' | 'forward';
 
 export type AIPersonality = 'aggressive' | 'conservative' | 'opportunist' | 'copycat';
 
@@ -256,6 +256,7 @@ export interface RoomConfig {
   currentRound: number;
   difficulty: GameDifficulty;
   auctionFormatSequence: AuctionFormat[];
+  forwardValuationMode?: 'private' | 'common';
   maxPlayers: number;
   createdAt: number;
 }

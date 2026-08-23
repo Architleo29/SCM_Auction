@@ -47,16 +47,19 @@ export const ForwardAuctionArena: React.FC<ForwardAuctionArenaProps> = ({
   onSkipLot
 }) => {
   const valuationMode = auctionState.valuationMode;
-  const valuationData = buyer.valuations[item.id] || {};
+  const valuationData = (buyer && buyer.valuations) ? (buyer.valuations[item.id] || {}) : {};
   const myValuation = valuationMode === 'private' ? valuationData.privateValue || item.baseMarketValue : valuationData.estimate || item.baseMarketValue;
   
-  const activeBiddersCount = Object.keys(allBuyers).length;
+  const activeBiddersCount = Object.keys(allBuyers || {}).length || 2;
   const shadingFactor = getShadingFactor(activeBiddersCount);
-  const myCeiling = getBuyerBidCeiling(buyer, item, valuationMode, activeBiddersCount);
+  const myCeiling = buyer ? getBuyerBidCeiling(buyer, item, valuationMode, activeBiddersCount) : item.baseMarketValue;
   
   const roundsRemaining = totalLots - currentLotNumber;
-  const reserveReq = getReserveRequirement(buyer.startingPurse, roundsRemaining);
-  const spendablePurse = Math.max(0, buyer.remainingPurse - reserveReq);
+  const startingPurse = buyer?.startingPurse || 1000000;
+  const remainingPurse = buyer?.remainingPurse ?? 1000000;
+  const itemsWon = buyer?.itemsWon || [];
+  const reserveReq = getReserveRequirement(startingPurse, roundsRemaining);
+  const spendablePurse = Math.max(0, remainingPurse - reserveReq);
 
   const step1 = item.bidIncrement;
   const step2 = item.bidIncrement * 2;
@@ -72,7 +75,7 @@ export const ForwardAuctionArena: React.FC<ForwardAuctionArenaProps> = ({
     setCustomBid(minNextBid.toString());
   }, [auctionState.currentHighestBid, minNextBid]);
 
-  const isLeading = auctionState.currentLeaderId === buyer.id;
+  const isLeading = auctionState.currentLeaderId === buyer?.id;
   const canAffordMin = minNextBid <= spendablePurse;
 
   const handleCustomSubmit = () => {
@@ -300,11 +303,11 @@ export const ForwardAuctionArena: React.FC<ForwardAuctionArenaProps> = ({
             <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2.5">
               <div className="flex justify-between items-center text-xs">
                 <span className="text-slate-400">Starting Purse:</span>
-                <span className="font-mono font-bold text-slate-300">{formatINR(buyer.startingPurse)}</span>
+                <span className="font-mono font-bold text-slate-300">{formatINR(startingPurse)}</span>
               </div>
               <div className="flex justify-between items-center text-xs">
                 <span className="text-slate-400">Remaining Purse:</span>
-                <span className="font-mono font-bold text-emerald-400">{formatINR(buyer.remainingPurse)}</span>
+                <span className="font-mono font-bold text-emerald-400">{formatINR(remainingPurse)}</span>
               </div>
               <div className="flex justify-between items-center text-xs pt-1 border-t border-slate-800/80">
                 <span className="text-slate-400">Reserve Lock (10%):</span>
@@ -319,13 +322,13 @@ export const ForwardAuctionArena: React.FC<ForwardAuctionArenaProps> = ({
             {/* Items Won So Far */}
             <div className="space-y-2">
               <span className="text-xs font-semibold text-slate-300 block">
-                Assets Won in Portfolio ({buyer.itemsWon.length})
+                Assets Won in Portfolio ({itemsWon.length})
               </span>
-              {buyer.itemsWon.length === 0 ? (
+              {itemsWon.length === 0 ? (
                 <p className="text-xs text-slate-500 italic">No lots won yet. Bid strategically!</p>
               ) : (
                 <div className="space-y-1.5 max-h-36 overflow-y-auto">
-                  {buyer.itemsWon.map((won, idx) => (
+                  {itemsWon.map((won, idx) => (
                     <div key={idx} className="bg-slate-950 p-2 rounded-xl border border-slate-800 text-[11px] flex justify-between items-center">
                       <span className="truncate max-w-[140px] text-slate-300">{won.item.name}</span>
                       <span className="font-mono text-emerald-400 font-bold">{formatINR(won.pricePaid)}</span>

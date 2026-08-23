@@ -66,7 +66,7 @@ export const RfqBoard: React.FC<RfqBoardProps> = ({
             <Gavel className="w-4 h-4 text-indigo-400 shrink-0" />
             <div>
               <span className="text-[0.625rem] text-slate-500 uppercase block">Live Auction Format</span>
-              <strong className="text-indigo-300">{rfq.auctionFormat === 'english' ? 'Reverse English' : rfq.auctionFormat === 'dutch' ? 'Reverse English' : 'Reverse English'}</strong>
+              <strong className="text-indigo-300">{rfq.auctionFormat === 'forward' ? 'Forward English' : 'Reverse English'}</strong>
             </div>
           </div>
         </div>

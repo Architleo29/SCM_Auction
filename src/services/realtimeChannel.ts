@@ -11,6 +11,7 @@ export type MultiplayerEvent =
   | { type: 'ROOM_STATE_SYNC'; payload: any }
   | { type: 'QUOTE_SUBMITTED'; payload: { playerId: string; quote: any } }
   | { type: 'AUCTION_BID'; payload: { playerId: string; playerName: string; amount: number; isAi: boolean } }
+  | { type: 'FORWARD_AUCTION_BID'; payload: { playerId: string; playerName: string; amount: number } }
   | { type: 'AUCTION_BUZZ'; payload: { playerId: string; playerName: string; price: number } }
   | { type: 'AUCTION_EXIT'; payload: { playerId: string; playerName: string; exitPrice: number } }
   | { type: 'DYNAMIC_EVENT_TRIGGERED'; payload: any }
