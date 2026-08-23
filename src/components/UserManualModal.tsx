@@ -299,10 +299,10 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({ isOpen, onClos
                 <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
                   <div className="flex items-center gap-1.5 text-cyan-400 font-bold text-xs">
                     <ShieldCheck className="w-4 h-4" />
-                    <span>2. QCBS Scoring Power</span>
+                    <span>2. QCBS (Quality & Cost) Scoring Power</span>
                   </div>
                   <p className="text-xs text-slate-400 leading-relaxed">
-                    Buyers score both Quality and Delivery Speed. High-quality vendors can win contracts even when quoting a slightly higher price.
+                    <strong>QCBS</strong> stands for <em>Quality- and Cost-Based Selection</em>. The buyer awards contracts based on the highest total score (Price + Quality + Speed + Trust), not just lowest price!
                   </p>
                 </div>
 
@@ -325,11 +325,11 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({ isOpen, onClos
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
                   <div className="bg-slate-900 p-3 rounded-xl border border-slate-800 space-y-1">
                     <strong className="text-amber-400 block">📊 1. Cost Accounting</strong>
-                    <span className="text-slate-400">Total Cost = Variable Direct Costs (Labor + Materials + Logistics) + Fixed Factory Rent.</span>
+                    <span className="text-slate-400">Total Breakeven Cost = Variable Production (Labor + Materials + Shipping) + Fixed Factory Overhead.</span>
                   </div>
                   <div className="bg-slate-900 p-3 rounded-xl border border-slate-800 space-y-1">
-                    <strong className="text-indigo-400 block">⚖️ 2. Multi-Criteria QCBS</strong>
-                    <span className="text-slate-400">Total Bid Score = Price (1-5) + Quality (1-5★) + Speed (T1-T5) + Vendor Trust Score.</span>
+                    <strong className="text-indigo-400 block">⚖️ 2. QCBS Scoring Formula</strong>
+                    <span className="text-slate-400">Total Score = (Price × Wp) + (Quality × Wq) + (Speed × Ws) + (Trust × Wt). Quality beats price when buyer weights quality!</span>
                   </div>
                   <div className="bg-slate-900 p-3 rounded-xl border border-slate-800 space-y-1">
                     <strong className="text-emerald-400 block">🔨 3. Game Theory & Auctions</strong>
