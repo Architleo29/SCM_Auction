@@ -117,6 +117,15 @@ export const Lobby: React.FC<LobbyProps> = ({
   // If already inside a room lobby
   if (roomConfig) {
     const scenario = SCENARIOS[roomConfig.scenarioId] || SCENARIOS.manufacturing;
+    const isForwardFormat = roomConfig.auctionFormatSequence[0] === 'forward';
+    const playerList = Object.values(players);
+    const hostPlayer = playerList.find(p => p.isHost);
+    // In both formats, Host is the Organizer/Authority/Auctioneer; Guests are the participating competitors (Vendors or Buyers)
+    const guestParticipants = playerList.filter(p => !p.isHost);
+    const readyCount = guestParticipants.filter(p => p.ready).length;
+    const maxPlayers = roomConfig.maxPlayers || 4;
+    const isLobbyFull = guestParticipants.length >= maxPlayers;
+    const me = players[myPlayerId];
 
     return (
       <div className="max-w-5xl mx-auto p-3.5 sm:p-6 space-y-6 animate-fade-in">
@@ -155,17 +164,21 @@ export const Lobby: React.FC<LobbyProps> = ({
                 {isForwardFormat ? 'Industrial & Logistics Asset Draft' : scenario.name}
               </h2>
               
-              {/* Host / Buyer Info */}
+              {/* Host / Auctioneer Info */}
               <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-800/60">
-                <Building2 className="w-4 h-4 text-indigo-400" />
+                <Building2 className={`w-4 h-4 ${isForwardFormat ? 'text-purple-400' : 'text-indigo-400'}`} />
                 <span className="text-xs text-slate-400">
-                  {isForwardFormat ? 'Lead Buyer / Room Host:' : 'Buyer / Tender Authority:'}
+                  {isForwardFormat ? 'Auctioneer / Room Host:' : 'Buyer / Tender Authority:'}
                 </span>
-                <strong className="text-xs font-mono text-indigo-300">
-                  {hostPlayer ? hostPlayer.name : 'Procurement Host'}
+                <strong className={`text-xs font-mono ${isForwardFormat ? 'text-purple-300' : 'text-indigo-300'}`}>
+                  {hostPlayer ? hostPlayer.name : (isForwardFormat ? 'Apex Auctioneer' : 'Procurement Host')}
                 </strong>
-                <span className="text-[0.625rem] bg-indigo-500/20 text-indigo-300 px-1.5 py-0.5 rounded font-mono font-bold">
-                  {isHost ? (isForwardFormat ? 'YOU (LEAD BUYER)' : 'YOU (BUYER)') : (isForwardFormat ? 'HOST BUYER' : 'BUYER')}
+                <span className={`text-[0.625rem] px-1.5 py-0.5 rounded font-mono font-bold ${
+                  isForwardFormat 
+                    ? 'bg-purple-500/20 text-purple-300 border border-purple-800/60' 
+                    : 'bg-indigo-500/20 text-indigo-300'
+                }`}>
+                  {isHost ? (isForwardFormat ? 'YOU (AUCTIONEER)' : 'YOU (BUYER)') : (isForwardFormat ? 'AUCTIONEER' : 'BUYER')}
                 </span>
               </div>
             </div>
@@ -174,7 +187,7 @@ export const Lobby: React.FC<LobbyProps> = ({
             <div className="flex items-center gap-3 bg-slate-950 border border-slate-800 rounded-2xl p-3.5 shrink-0 shadow-lg">
               <div>
                 <p className="text-[0.625rem] text-slate-500 font-mono uppercase tracking-wider font-bold">Room Code</p>
-                <p className="text-2xl font-mono font-bold text-indigo-400 tracking-wider">
+                <p className={`text-2xl font-mono font-bold tracking-wider ${isForwardFormat ? 'text-purple-400' : 'text-indigo-400'}`}>
                   {roomConfig.code}
                 </p>
               </div>
@@ -197,44 +210,50 @@ export const Lobby: React.FC<LobbyProps> = ({
             <div>
               <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
                 <div className="flex items-center gap-2">
-                  <Users className="w-5 h-5 text-indigo-400" />
+                  <Users className={`w-5 h-5 ${isForwardFormat ? 'text-purple-400' : 'text-indigo-400'}`} />
                   <h3 className="font-bold text-slate-100 text-sm sm:text-base">
                     {isForwardFormat 
-                      ? `Connected Buyers (${playerList.length}/${maxPlayers})`
-                      : `Connected Vendor Competitors (${vendorList.length}/${maxPlayers})`}
+                      ? `Connected Buyers (${guestParticipants.length}/${maxPlayers})`
+                      : `Connected Vendor Competitors (${guestParticipants.length}/${maxPlayers})`}
                   </h3>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-[0.6875rem] font-mono px-2.5 py-0.5 rounded-full bg-emerald-950/80 text-emerald-300 border border-emerald-800">
-                    {readyCount}/{isForwardFormat ? playerList.length : vendorList.length} Ready
+                    {readyCount}/{guestParticipants.length} Ready
                   </span>
                   <span className={`text-[0.6875rem] font-mono px-2.5 py-0.5 rounded-full ${isLobbyFull ? 'bg-indigo-950 text-indigo-300 border border-indigo-800' : 'bg-slate-950 text-slate-400 border border-slate-800'}`}>
-                    {isLobbyFull ? 'Room Full' : `${maxPlayers - (isForwardFormat ? playerList.length : vendorList.length)} open`}
+                    {isLobbyFull ? 'Room Full' : `${maxPlayers - guestParticipants.length} open`}
                   </span>
                 </div>
               </div>
 
               {/* Roster display */}
-              {(isForwardFormat ? playerList : vendorList).length === 0 ? (
+              {guestParticipants.length === 0 ? (
                 <div className="p-8 bg-slate-950/80 border border-dashed border-slate-800 rounded-2xl text-center space-y-3">
-                  <div className="w-12 h-12 rounded-2xl bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center mx-auto text-indigo-400">
+                  <div className={`w-12 h-12 rounded-2xl border flex items-center justify-center mx-auto ${
+                    isForwardFormat 
+                      ? 'bg-purple-600/10 border-purple-500/20 text-purple-400' 
+                      : 'bg-indigo-600/10 border-indigo-500/20 text-indigo-400'
+                  }`}>
                     <Users className="w-6 h-6" />
                   </div>
                   <h4 className="font-bold text-slate-200 text-sm">
-                    {isForwardFormat ? 'No Other Buyers Connected Yet' : 'No Vendor Competitors Connected Yet'}
+                    {isForwardFormat ? 'No Guest Buyers Connected Yet' : 'No Vendor Competitors Connected Yet'}
                   </h4>
                   <p className="text-xs text-slate-400 max-w-md mx-auto">
-                    Share the room code <strong className="text-indigo-400 font-mono">{roomConfig.code}</strong> with players on mobile or other devices to join.
+                    Share the room code <strong className={`font-mono ${isForwardFormat ? 'text-purple-400' : 'text-indigo-400'}`}>{roomConfig.code}</strong> with players on other devices to join as {isForwardFormat ? 'Asset Buyers' : 'Vendors'}.
                   </p>
                 </div>
               ) : (
                 <div className="space-y-2.5">
-                  {(isForwardFormat ? playerList : vendorList).map((player) => (
+                  {guestParticipants.map((player) => (
                     <div
                       key={player.id}
                       className={`p-3.5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition ${
                         player.id === myPlayerId
-                          ? 'bg-indigo-950/30 border-indigo-700/60 shadow-md shadow-indigo-950/50'
+                          ? isForwardFormat 
+                            ? 'bg-purple-950/30 border-purple-700/60 shadow-md shadow-purple-950/50' 
+                            : 'bg-indigo-950/30 border-indigo-700/60 shadow-md shadow-indigo-950/50'
                           : player.isAi
                           ? 'bg-slate-950/60 border-slate-800/80'
                           : 'bg-slate-950 border-slate-800'
@@ -254,16 +273,15 @@ export const Lobby: React.FC<LobbyProps> = ({
                           <div className="flex items-center gap-2">
                             <span className="font-semibold text-sm text-slate-100">{player.name}</span>
                             {player.id === myPlayerId && (
-                              <span className="text-[0.625rem] bg-indigo-500/20 text-indigo-300 px-1.5 py-0.5 rounded font-mono font-bold">
+                              <span className={`text-[0.625rem] px-1.5 py-0.5 rounded font-mono font-bold ${
+                                isForwardFormat 
+                                  ? 'bg-purple-500/20 text-purple-300' 
+                                  : 'bg-indigo-500/20 text-indigo-300'
+                              }`}>
                                 {isForwardFormat ? 'YOU (BUYER)' : 'YOU (VENDOR)'}
                               </span>
                             )}
-                            {player.isHost && (
-                              <span className="text-[0.625rem] bg-purple-950 text-purple-300 border border-purple-800 px-1.5 py-0.5 rounded font-mono font-bold">
-                                HOST
-                              </span>
-                            )}
-                            {(player.ready || player.isHost) ? (
+                            {player.ready ? (
                               <span className="text-[0.625rem] bg-emerald-950 text-emerald-300 border border-emerald-800 px-1.5 py-0.5 rounded font-mono font-bold flex items-center gap-1">
                                 <Check className="w-3 h-3 text-emerald-400" /> READY
                               </span>
@@ -308,13 +326,13 @@ export const Lobby: React.FC<LobbyProps> = ({
               <div className="mt-6 pt-4 border-t border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
                 <p className="text-xs text-slate-400 font-mono">
                   {isForwardFormat ? (
-                    playerList.length >= 2
-                      ? `Ready to launch asset draft! (${readyCount}/${playerList.length} buyers connected & ready)`
-                      : `Waiting for at least ${2 - playerList.length} more buyer(s) to join via room code ${roomConfig.code}.`
+                    guestParticipants.length >= 2
+                      ? `Ready to launch asset draft! (${readyCount}/${guestParticipants.length} buyers connected & ready)`
+                      : `Waiting for at least ${2 - guestParticipants.length} more buyer(s) to join via room code ${roomConfig.code}.`
                   ) : (
-                    vendorList.length >= 2 
-                      ? `Ready to launch! (${readyCount}/${vendorList.length} vendors ready)` 
-                      : `Add at least ${2 - vendorList.length} more vendor(s) (invite players or auto-fill AI) to start.`
+                    guestParticipants.length >= 2 
+                      ? `Ready to launch! (${readyCount}/${guestParticipants.length} vendors ready)` 
+                      : `Add at least ${2 - guestParticipants.length} more vendor(s) (invite players or auto-fill AI) to start.`
                   )}
                 </p>
                 <div className="flex items-center gap-2.5">
@@ -322,9 +340,9 @@ export const Lobby: React.FC<LobbyProps> = ({
                     <button
                       type="button"
                       onClick={onOpenRfqBuilder}
-                      disabled={vendorList.length < 2}
+                      disabled={guestParticipants.length < 2}
                       className={`px-4 py-3 rounded-2xl font-mono text-xs font-bold border flex items-center justify-center gap-2 transition cursor-pointer ${
-                        vendorList.length >= 2
+                        guestParticipants.length >= 2
                           ? 'bg-indigo-600/20 hover:bg-indigo-600/30 border-indigo-500/40 text-indigo-300 hover:text-white shadow-lg shadow-indigo-950/50'
                           : 'bg-slate-950 border-slate-800 text-slate-600 cursor-not-allowed opacity-50'
                       }`}
@@ -336,9 +354,9 @@ export const Lobby: React.FC<LobbyProps> = ({
 
                   <button
                     type="button"
-                    disabled={isForwardFormat ? playerList.length < 2 : false}
+                    disabled={guestParticipants.length < 2}
                     onClick={() => {
-                      if (!isForwardFormat && vendorList.length < 2) {
+                      if (!isForwardFormat && guestParticipants.length < 2) {
                         handleAutoFillAi();
                       }
                       setTimeout(() => {
@@ -664,13 +682,13 @@ export const Lobby: React.FC<LobbyProps> = ({
               {/* Host Player Name */}
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  {chosenAuctionFormat === 'forward' ? 'Your Buyer / Firm Name' : 'Buyer / Procurement Authority Name'}
+                  {chosenAuctionFormat === 'forward' ? 'Auctioneer / Host Name' : 'Buyer / Procurement Authority Name'}
                 </label>
                 <input
                   type="text"
                   value={hostName}
                   onChange={(e) => setHostName(e.target.value)}
-                  placeholder={chosenAuctionFormat === 'forward' ? 'e.g. Apex Capital (Host)' : 'e.g. Apex Procurement Authority'}
+                  placeholder={chosenAuctionFormat === 'forward' ? 'e.g. Apex Auctioneer (Host)' : 'e.g. Apex Procurement Authority'}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
                 />
               </div>

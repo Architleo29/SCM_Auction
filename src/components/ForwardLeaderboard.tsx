@@ -23,13 +23,15 @@ interface ForwardLeaderboardProps {
   valuationMode: ForwardValuationMode;
   myBuyerId: string;
   onPlayAgain: () => void;
+  isAuctioneer?: boolean;
 }
 
 export const ForwardLeaderboard: React.FC<ForwardLeaderboardProps> = ({
   buyers,
   valuationMode,
   myBuyerId,
-  onPlayAgain
+  onPlayAgain,
+  isAuctioneer = false
 }) => {
   const rankedBuyers = Object.values(buyers).map(buyer => {
     const scoreBreakdown = calculateForwardPortfolioScore(buyer, valuationMode);
@@ -39,7 +41,7 @@ export const ForwardLeaderboard: React.FC<ForwardLeaderboardProps> = ({
     };
   }).sort((a, b) => b.netSurplus - a.netSurplus);
 
-  const isWinner = rankedBuyers[0]?.id === myBuyerId;
+  const isWinner = !isAuctioneer && rankedBuyers[0]?.id === myBuyerId;
 
   useEffect(() => {
     confetti({
@@ -59,10 +61,12 @@ export const ForwardLeaderboard: React.FC<ForwardLeaderboardProps> = ({
         </div>
         <div>
           <span className="text-xs font-mono uppercase tracking-widest text-slate-400 font-semibold block">
-            Forward English Auction • Portfolio Championship
+            {isAuctioneer ? '👑 Official Auctioneer Results' : 'Forward English Auction • Portfolio Championship'}
           </span>
           <h2 className="text-2xl sm:text-3xl font-bold text-slate-100 mt-1">
-            {isWinner ? '🎉 Congratulations, You Won the Portfolio Championship!' : `🏆 ${rankedBuyers[0]?.name || 'Top Buyer'} Wins!`}
+            {isWinner 
+              ? '🎉 Congratulations, You Won the Portfolio Championship!' 
+              : `🏆 ${rankedBuyers[0]?.name || 'Top Buyer'} Wins the Championship!`}
           </h2>
           <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
             {valuationMode === 'private'
@@ -79,53 +83,58 @@ export const ForwardLeaderboard: React.FC<ForwardLeaderboardProps> = ({
             <Award className="w-4 h-4 text-indigo-400" />
             <span>Final Buyer Standings</span>
           </h3>
-          <span className="text-xs font-mono text-slate-400">
-            {valuationMode === 'private' ? '🎯 Private Value Mode' : '🎲 Common Value Mode'}
+          <span className="text-xs text-slate-400 font-mono">
+            {rankedBuyers.length} Competing Buyers
           </span>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left font-mono text-xs">
+          <table className="w-full text-left text-xs font-mono">
             <thead>
               <tr className="border-b border-slate-800 text-slate-400">
-                <th className="pb-3 px-2 font-semibold">Rank</th>
-                <th className="pb-3 px-2 font-semibold">Buyer Name</th>
-                <th className="pb-3 px-2 font-semibold text-center">Lots Won</th>
-                <th className="pb-3 px-2 font-semibold text-right">Value Captured</th>
-                <th className="pb-3 px-2 font-semibold text-right">Total Paid</th>
-                <th className="pb-3 px-2 font-semibold text-right">Remaining Purse</th>
-                <th className="pb-3 px-2 font-semibold text-right">Net Surplus (Score)</th>
+                <th className="pb-3 px-3">Rank</th>
+                <th className="pb-3 px-3">Buyer Name</th>
+                <th className="pb-3 px-3 text-center">Lots Won</th>
+                <th className="pb-3 px-3 text-right">Total Paid</th>
+                <th className="pb-3 px-3 text-right">Portfolio Value</th>
+                <th className="pb-3 px-3 text-right">Remaining Purse</th>
+                <th className="pb-3 px-3 text-right">Net Surplus</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60">
-              {rankedBuyers.map((b, idx) => {
-                const isMe = b.id === myBuyerId;
+              {rankedBuyers.map((buyer, idx) => {
+                const isMe = !isAuctioneer && buyer.id === myBuyerId;
+                const isTop1 = idx === 0;
                 return (
-                  <tr key={b.id} className={isMe ? 'bg-indigo-950/30' : ''}>
-                    <td className="py-3.5 px-2 font-bold text-slate-300">
-                      {idx === 0 ? '🥇 #1' : idx === 1 ? '🥈 #2' : idx === 2 ? '🥉 #3' : `#${idx + 1}`}
+                  <tr 
+                    key={buyer.id} 
+                    className={`transition ${isMe ? 'bg-indigo-950/40 font-bold' : isTop1 ? 'bg-amber-950/20' : 'hover:bg-slate-950/40'}`}
+                  >
+                    <td className="py-3 px-3">
+                      {isTop1 ? (
+                        <span className="text-base">🥇</span>
+                      ) : idx === 1 ? (
+                        <span className="text-base">🥈</span>
+                      ) : idx === 2 ? (
+                        <span className="text-base">🥉</span>
+                      ) : (
+                        <span className="text-slate-500">#{idx + 1}</span>
+                      )}
                     </td>
-                    <td className="py-3.5 px-2">
-                      <span className={isMe ? 'text-indigo-300 font-bold' : 'text-slate-200'}>
-                        {b.name} {isMe && '(You)'}
-                      </span>
+                    <td className="py-3 px-3 font-sans">
+                      <div className="flex items-center gap-1.5">
+                        <span className={isMe ? 'text-indigo-300 font-bold' : 'text-slate-200'}>{buyer.name}</span>
+                        {isMe && <span className="text-[10px] bg-indigo-500/20 text-indigo-300 px-1.5 py-0.5 rounded font-mono font-bold">YOU</span>}
+                      </div>
                     </td>
-                    <td className="py-3.5 px-2 text-center text-slate-300 font-semibold">
-                      {b.itemsWon.length} lots
-                    </td>
-                    <td className="py-3.5 px-2 text-right text-indigo-300 font-semibold">
-                      {formatINR(b.totalValueCaptured)}
-                    </td>
-                    <td className="py-3.5 px-2 text-right text-slate-400">
-                      {formatINR(b.totalPricePaid)}
-                    </td>
-                    <td className="py-3.5 px-2 text-right text-slate-300">
-                      {formatINR(b.remainingPurse)}
-                    </td>
-                    <td className="py-3.5 px-2 text-right">
-                      <span className={`font-bold ${b.netSurplus >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                        {formatINR(b.netSurplus)}
-                      </span>
+                    <td className="py-3 px-3 text-center text-slate-300">{buyer.itemsWon.length}</td>
+                    <td className="py-3 px-3 text-right text-rose-400">{formatINR(buyer.totalPricePaid)}</td>
+                    <td className="py-3 px-3 text-right text-slate-300">{formatINR(buyer.totalValueCaptured)}</td>
+                    <td className="py-3 px-3 text-right text-slate-400">{formatINR(buyer.remainingPurse)}</td>
+                    <td className="py-3 px-3 text-right">
+                      <strong className={`font-bold ${buyer.netSurplus >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                        {buyer.netSurplus >= 0 ? '+' : ''}{formatINR(buyer.netSurplus)}
+                      </strong>
                     </td>
                   </tr>
                 );
@@ -135,32 +144,34 @@ export const ForwardLeaderboard: React.FC<ForwardLeaderboardProps> = ({
         </div>
       </div>
 
-      {/* Portfolio Haul Details */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 shadow-xl space-y-4">
-        <h3 className="font-bold text-slate-100 text-sm flex items-center gap-2">
-          <ShoppingBag className="w-4 h-4 text-emerald-400" />
-          <span>Your Acquired Asset Portfolio</span>
-        </h3>
+      {/* Portfolio Haul Details (Only for participating buyers) */}
+      {!isAuctioneer && (
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 shadow-xl space-y-4">
+          <h3 className="font-bold text-slate-100 text-sm flex items-center gap-2">
+            <ShoppingBag className="w-4 h-4 text-emerald-400" />
+            <span>Your Acquired Asset Portfolio</span>
+          </h3>
 
-        {(!buyers[myBuyerId] || (buyers[myBuyerId]?.itemsWon?.length || 0) === 0) ? (
-          <p className="text-xs text-slate-500 italic py-2">You did not acquire any lots during this auction.</p>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {buyers[myBuyerId]?.itemsWon?.map((won, idx) => (
-              <div key={idx} className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-1.5 font-mono text-xs">
-                <div className="flex justify-between items-start">
-                  <strong className="text-slate-100">{won.item.name}</strong>
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-sans">{won.item.category}</span>
+          {(!buyers[myBuyerId] || (buyers[myBuyerId]?.itemsWon?.length || 0) === 0) ? (
+            <p className="text-xs text-slate-500 italic py-2">You did not acquire any lots during this auction.</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {buyers[myBuyerId]?.itemsWon?.map((won, idx) => (
+                <div key={idx} className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-1.5 font-mono text-xs">
+                  <div className="flex justify-between items-start">
+                    <strong className="text-slate-100">{won.item.name}</strong>
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-sans">{won.item.category}</span>
+                  </div>
+                  <div className="flex justify-between text-slate-400 text-[11px] pt-1">
+                    <span>Price Paid: <strong className="text-rose-400">{formatINR(won.pricePaid)}</strong></span>
+                    <span>Value: <strong className="text-emerald-400">{formatINR(valuationMode === 'private' ? won.valuation : won.item.baseMarketValue)}</strong></span>
+                  </div>
                 </div>
-                <div className="flex justify-between text-slate-400 text-[11px] pt-1">
-                  <span>Price Paid: <strong className="text-rose-400">{formatINR(won.pricePaid)}</strong></span>
-                  <span>Value: <strong className="text-emerald-400">{formatINR(valuationMode === 'private' ? won.valuation : won.item.baseMarketValue)}</strong></span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Actions */}
       <div className="flex justify-center pt-2">
@@ -169,7 +180,7 @@ export const ForwardLeaderboard: React.FC<ForwardLeaderboardProps> = ({
           className="px-8 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-xl shadow-indigo-600/30 transition flex items-center gap-2 cursor-pointer active:scale-95"
         >
           <RotateCcw className="w-4 h-4" />
-          <span>Play Another Session</span>
+          <span>{isAuctioneer ? 'Host Another Session' : 'Play Another Session'}</span>
         </button>
       </div>
 

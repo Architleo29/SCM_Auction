@@ -27,13 +27,14 @@ import { sounds } from '../utils/soundEffects';
 
 interface ForwardAuctionArenaProps {
   item: ForwardItem;
-  buyer: ForwardBuyerState;
+  buyer?: ForwardBuyerState;
   allBuyers: Record<string, ForwardBuyerState>;
   auctionState: ForwardAuctionState;
   totalLots: number;
   currentLotNumber: number;
   onPlaceBid: (amount: number) => void;
   onSkipLot?: () => void;
+  isAuctioneer?: boolean;
 }
 
 export const ForwardAuctionArena: React.FC<ForwardAuctionArenaProps> = ({
@@ -44,7 +45,8 @@ export const ForwardAuctionArena: React.FC<ForwardAuctionArenaProps> = ({
   totalLots,
   currentLotNumber,
   onPlaceBid,
-  onSkipLot
+  onSkipLot,
+  isAuctioneer = false
 }) => {
   const valuationMode = auctionState.valuationMode;
   const valuationData = (buyer && buyer.valuations) ? (buyer.valuations[item.id] || {}) : {};
@@ -75,7 +77,7 @@ export const ForwardAuctionArena: React.FC<ForwardAuctionArenaProps> = ({
     setCustomBid(minNextBid.toString());
   }, [auctionState.currentHighestBid, minNextBid]);
 
-  const isLeading = auctionState.currentLeaderId === buyer?.id;
+  const isLeading = Boolean(buyer && auctionState.currentLeaderId === buyer.id);
   const canAffordMin = minNextBid <= spendablePurse;
 
   const handleCustomSubmit = () => {
@@ -107,7 +109,7 @@ export const ForwardAuctionArena: React.FC<ForwardAuctionArenaProps> = ({
                 Lot {currentLotNumber} of {totalLots} • Forward English Auction
               </span>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-purple-950 text-purple-300 border border-purple-800 font-bold">
-                {valuationMode === 'private' ? '🎯 Private Value Mode' : '🎲 Common Value Mode'}
+                {isAuctioneer ? '👑 Auctioneer Console' : valuationMode === 'private' ? '🎯 Private Value Mode' : '🎲 Common Value Mode'}
               </span>
             </div>
             <h2 className="text-base sm:text-lg font-bold text-slate-100">{item.name}</h2>
@@ -126,18 +128,18 @@ export const ForwardAuctionArena: React.FC<ForwardAuctionArenaProps> = ({
           {onSkipLot && (
             <button
               onClick={onSkipLot}
-              className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono font-semibold transition"
+              className="px-3 py-2 rounded-xl bg-purple-600/30 hover:bg-purple-600/50 border border-purple-500/40 text-purple-200 text-xs font-mono font-semibold transition cursor-pointer active:scale-95"
             >
-              Skip Lot ⏭️
+              Skip / Next Lot ⏭️
             </button>
           )}
         </div>
       </div>
 
-      {/* Main Grid: Asset Card & Buyer Purse Overview */}
+      {/* Main Grid: Asset Card & Buyer Overview */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         
-        {/* Left Column: Asset Details & Valuation Card */}
+        {/* Left Column: Asset Details */}
         <div className="lg:col-span-2 space-y-4 sm:space-y-6">
           
           {/* Asset Spotlight Card */}
@@ -162,27 +164,51 @@ export const ForwardAuctionArena: React.FC<ForwardAuctionArenaProps> = ({
                 </strong>
               </div>
 
-              <div className="bg-slate-950 p-3.5 rounded-2xl border border-indigo-500/30">
-                <span className="text-[11px] font-mono text-indigo-300 block">
-                  {valuationMode === 'private' ? '🎯 Your Private Valuation' : '🎲 Your Value Estimate'}
-                </span>
-                <strong className="text-base font-bold font-mono text-indigo-400 mt-0.5 block">
-                  {formatINR(myValuation)}
-                </strong>
-              </div>
+              {isAuctioneer ? (
+                <>
+                  <div className="bg-slate-950 p-3.5 rounded-2xl border border-purple-500/30">
+                    <span className="text-[11px] font-mono text-purple-300 block">
+                      Opening Starting Price
+                    </span>
+                    <strong className="text-base font-bold font-mono text-purple-400 mt-0.5 block">
+                      {formatINR(item.startingPrice)}
+                    </strong>
+                  </div>
 
-              <div className="bg-slate-950 p-3.5 rounded-2xl border border-emerald-500/30">
-                <span className="text-[11px] font-mono text-emerald-400 block">
-                  {valuationMode === 'private' ? 'Recommended Ceiling' : 'Shaded Ceiling (Anti-Curse)'}
-                </span>
-                <strong className="text-base font-bold font-mono text-emerald-400 mt-0.5 block">
-                  {formatINR(myCeiling)}
-                </strong>
-              </div>
+                  <div className="bg-slate-950 p-3.5 rounded-2xl border border-emerald-500/30">
+                    <span className="text-[11px] font-mono text-emerald-400 block">
+                      Minimum Bid Increment
+                    </span>
+                    <strong className="text-base font-bold font-mono text-emerald-400 mt-0.5 block">
+                      +{formatINR(item.bidIncrement)}
+                    </strong>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="bg-slate-950 p-3.5 rounded-2xl border border-indigo-500/30">
+                    <span className="text-[11px] font-mono text-indigo-300 block">
+                      {valuationMode === 'private' ? '🎯 Your Private Valuation' : '🎲 Your Value Estimate'}
+                    </span>
+                    <strong className="text-base font-bold font-mono text-indigo-400 mt-0.5 block">
+                      {formatINR(myValuation)}
+                    </strong>
+                  </div>
+
+                  <div className="bg-slate-950 p-3.5 rounded-2xl border border-emerald-500/30">
+                    <span className="text-[11px] font-mono text-emerald-400 block">
+                      {valuationMode === 'private' ? 'Recommended Ceiling' : 'Shaded Ceiling (Anti-Curse)'}
+                    </span>
+                    <strong className="text-base font-bold font-mono text-emerald-400 mt-0.5 block">
+                      {formatINR(myCeiling)}
+                    </strong>
+                  </div>
+                </>
+              )}
             </div>
 
-            {/* Common Value Winner's Curse Warning */}
-            {valuationMode === 'common' && (
+            {/* Common Value Winner's Curse Warning (for buyers) */}
+            {!isAuctioneer && valuationMode === 'common' && (
               <div className="p-3.5 rounded-2xl bg-amber-950/40 border border-amber-500/30 flex items-start gap-2.5 text-xs text-amber-200">
                 <Info className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                 <span>
@@ -199,7 +225,7 @@ export const ForwardAuctionArena: React.FC<ForwardAuctionArenaProps> = ({
               <div className="text-4xl sm:text-5xl font-bold font-mono text-emerald-400 tracking-tight">
                 {auctionState.currentHighestBid > 0 ? formatINR(auctionState.currentHighestBid) : formatINR(item.startingPrice) + ' (Opening)'}
               </div>
-              {auctionState.currentLeaderName && (
+              {auctionState.currentLeaderName ? (
                 <div className="text-xs font-mono text-slate-300 pt-1">
                   Current Leader: <strong className="text-indigo-400">{auctionState.currentLeaderName}</strong>
                   {isLeading && (
@@ -208,136 +234,206 @@ export const ForwardAuctionArena: React.FC<ForwardAuctionArenaProps> = ({
                     </span>
                   )}
                 </div>
+              ) : (
+                <div className="text-xs font-mono text-slate-500 pt-1">
+                  Awaiting first ascending bid from competing buyers...
+                </div>
               )}
             </div>
 
-            {/* Interactive Bidding Panel */}
-            <div className="space-y-3 pt-2">
-              <div className="flex items-center justify-between text-xs font-semibold text-slate-300">
-                <span>⚡ Place an Ascending Counter-Bid (+8s anti-sniping)</span>
-                <span className="text-slate-400 font-mono">Min Step: +{formatINR(step1)}</span>
-              </div>
-
-              {/* Step Buttons */}
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  onClick={() => {
-                    sounds.bid();
-                    onPlaceBid(auctionState.currentHighestBid > 0 ? auctionState.currentHighestBid + step1 : item.startingPrice);
-                  }}
-                  disabled={!canAffordMin || (auctionState.currentHighestBid > 0 ? auctionState.currentHighestBid + step1 : item.startingPrice) > spendablePurse}
-                  className="py-3 px-2 rounded-2xl bg-slate-950 border border-slate-700 hover:border-indigo-500 text-slate-100 font-mono text-xs font-bold transition hover:bg-slate-800 disabled:opacity-40 cursor-pointer active:scale-95 text-center"
-                >
-                  <span className="text-indigo-400">+{formatINR(step1)}</span>
-                  <span className="block text-[10px] text-slate-400 font-normal mt-0.5">
-                    ({formatINR(auctionState.currentHighestBid > 0 ? auctionState.currentHighestBid + step1 : item.startingPrice)})
+            {/* Auctioneer Monitoring vs Interactive Buyer Bidding Panel */}
+            {isAuctioneer ? (
+              <div className="p-4 rounded-2xl bg-purple-950/30 border border-purple-800/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-purple-200">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-purple-400 shrink-0" />
+                  <span>
+                    <strong>Auctioneer Live Monitor:</strong> Connected guest buyers are placing real-time bids with anti-sniping protection (+8s).
                   </span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    sounds.bid();
-                    onPlaceBid(auctionState.currentHighestBid > 0 ? auctionState.currentHighestBid + step2 : item.startingPrice + step2);
-                  }}
-                  disabled={(auctionState.currentHighestBid > 0 ? auctionState.currentHighestBid + step2 : item.startingPrice + step2) > spendablePurse}
-                  className="py-3 px-2 rounded-2xl bg-slate-950 border border-slate-700 hover:border-indigo-500 text-slate-100 font-mono text-xs font-bold transition hover:bg-slate-800 disabled:opacity-40 cursor-pointer active:scale-95 text-center"
-                >
-                  <span className="text-indigo-400">+{formatINR(step2)}</span>
-                  <span className="block text-[10px] text-slate-400 font-normal mt-0.5">
-                    ({formatINR(auctionState.currentHighestBid > 0 ? auctionState.currentHighestBid + step2 : item.startingPrice + step2)})
-                  </span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    sounds.bid();
-                    onPlaceBid(auctionState.currentHighestBid > 0 ? auctionState.currentHighestBid + step3 : item.startingPrice + step3);
-                  }}
-                  disabled={(auctionState.currentHighestBid > 0 ? auctionState.currentHighestBid + step3 : item.startingPrice + step3) > spendablePurse}
-                  className="py-3 px-2 rounded-2xl bg-slate-950 border border-slate-700 hover:border-indigo-500 text-slate-100 font-mono text-xs font-bold transition hover:bg-slate-800 disabled:opacity-40 cursor-pointer active:scale-95 text-center"
-                >
-                  <span className="text-indigo-400">+{formatINR(step3)}</span>
-                  <span className="block text-[10px] text-slate-400 font-normal mt-0.5">
-                    ({formatINR(auctionState.currentHighestBid > 0 ? auctionState.currentHighestBid + step3 : item.startingPrice + step3)})
-                  </span>
-                </button>
-              </div>
-
-              {/* Custom Bid Input */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1">
-                <div className="relative flex-1">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-mono font-bold">₹</span>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={customBid}
-                    onChange={(e) => setCustomBid(e.target.value)}
-                    placeholder="Enter custom ascending bid"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-2xl pl-8 pr-4 py-2.5 text-sm font-mono font-bold text-slate-100 focus:outline-none focus:border-indigo-500"
-                  />
                 </div>
-                <button
-                  onClick={handleCustomSubmit}
-                  disabled={!customBid || Number(customBid.replace(/[^0-9]/g, '')) < minNextBid || Number(customBid.replace(/[^0-9]/g, '')) > spendablePurse}
-                  className="px-6 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs sm:text-sm shadow-lg shadow-indigo-600/30 transition disabled:opacity-40 cursor-pointer active:scale-95"
-                >
-                  Raise Bid
-                </button>
+                {onSkipLot && (
+                  <button
+                    onClick={onSkipLot}
+                    className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-md transition active:scale-95 shrink-0 cursor-pointer"
+                  >
+                    Award / Next Lot 🔨
+                  </button>
+                )}
               </div>
-            </div>
+            ) : (
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center justify-between text-xs font-semibold text-slate-300">
+                  <span>⚡ Place an Ascending Counter-Bid (+8s anti-sniping)</span>
+                  <span className="text-slate-400 font-mono">Min Step: +{formatINR(step1)}</span>
+                </div>
+
+                {/* Step Buttons */}
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    onClick={() => {
+                      sounds.bid();
+                      onPlaceBid(auctionState.currentHighestBid > 0 ? auctionState.currentHighestBid + step1 : item.startingPrice);
+                    }}
+                    disabled={!canAffordMin || (auctionState.currentHighestBid > 0 ? auctionState.currentHighestBid + step1 : item.startingPrice) > spendablePurse}
+                    className="py-3 px-2 rounded-2xl bg-slate-950 border border-slate-700 hover:border-indigo-500 text-slate-100 font-mono text-xs font-bold transition hover:bg-slate-800 disabled:opacity-40 cursor-pointer active:scale-95 text-center"
+                  >
+                    <span className="text-indigo-400">+{formatINR(step1)}</span>
+                    <span className="block text-[10px] text-slate-400 font-normal mt-0.5">
+                      ({formatINR(auctionState.currentHighestBid > 0 ? auctionState.currentHighestBid + step1 : item.startingPrice)})
+                    </span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      sounds.bid();
+                      onPlaceBid(auctionState.currentHighestBid > 0 ? auctionState.currentHighestBid + step2 : item.startingPrice + step2);
+                    }}
+                    disabled={(auctionState.currentHighestBid > 0 ? auctionState.currentHighestBid + step2 : item.startingPrice + step2) > spendablePurse}
+                    className="py-3 px-2 rounded-2xl bg-slate-950 border border-slate-700 hover:border-indigo-500 text-slate-100 font-mono text-xs font-bold transition hover:bg-slate-800 disabled:opacity-40 cursor-pointer active:scale-95 text-center"
+                  >
+                    <span className="text-indigo-400">+{formatINR(step2)}</span>
+                    <span className="block text-[10px] text-slate-400 font-normal mt-0.5">
+                      ({formatINR(auctionState.currentHighestBid > 0 ? auctionState.currentHighestBid + step2 : item.startingPrice + step2)})
+                    </span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      sounds.bid();
+                      onPlaceBid(auctionState.currentHighestBid > 0 ? auctionState.currentHighestBid + step3 : item.startingPrice + step3);
+                    }}
+                    disabled={(auctionState.currentHighestBid > 0 ? auctionState.currentHighestBid + step3 : item.startingPrice + step3) > spendablePurse}
+                    className="py-3 px-2 rounded-2xl bg-slate-950 border border-slate-700 hover:border-indigo-500 text-slate-100 font-mono text-xs font-bold transition hover:bg-slate-800 disabled:opacity-40 cursor-pointer active:scale-95 text-center"
+                  >
+                    <span className="text-indigo-400">+{formatINR(step3)}</span>
+                    <span className="block text-[10px] text-slate-400 font-normal mt-0.5">
+                      ({formatINR(auctionState.currentHighestBid > 0 ? auctionState.currentHighestBid + step3 : item.startingPrice + step3)})
+                    </span>
+                  </button>
+                </div>
+
+                {/* Custom Bid Input */}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1">
+                  <div className="relative flex-1">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-mono font-bold">₹</span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={customBid}
+                      onChange={(e) => setCustomBid(e.target.value)}
+                      placeholder="Enter custom ascending bid"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-2xl pl-8 pr-4 py-2.5 text-sm font-mono font-bold text-slate-100 focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                  <button
+                    onClick={handleCustomSubmit}
+                    disabled={!customBid || Number(customBid.replace(/[^0-9]/g, '')) < minNextBid || Number(customBid.replace(/[^0-9]/g, '')) > spendablePurse}
+                    className="px-6 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs sm:text-sm shadow-lg shadow-indigo-600/30 transition disabled:opacity-40 cursor-pointer active:scale-95"
+                  >
+                    Raise Bid
+                  </button>
+                </div>
+              </div>
+            )}
 
           </div>
 
         </div>
 
-        {/* Right Column: Buyer Purse & Live Bid Feed */}
+        {/* Right Column: Buyer Purses & Live Bid Feed */}
         <div className="space-y-4 sm:space-y-6">
           
-          {/* Buyer Purse Card */}
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl space-y-4">
-            <div className="flex items-center gap-2 text-slate-200 font-bold text-sm">
-              <DollarSign className="w-4 h-4 text-emerald-400" />
-              <span>Your Buyer Purse Balance</span>
-            </div>
-
-            <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2.5">
-              <div className="flex justify-between items-center text-xs">
-                <span className="text-slate-400">Starting Purse:</span>
-                <span className="font-mono font-bold text-slate-300">{formatINR(startingPurse)}</span>
-              </div>
-              <div className="flex justify-between items-center text-xs">
-                <span className="text-slate-400">Remaining Purse:</span>
-                <span className="font-mono font-bold text-emerald-400">{formatINR(remainingPurse)}</span>
-              </div>
-              <div className="flex justify-between items-center text-xs pt-1 border-t border-slate-800/80">
-                <span className="text-slate-400">Reserve Lock (10%):</span>
-                <span className="font-mono text-amber-400 font-semibold">{formatINR(reserveReq)}</span>
-              </div>
-              <div className="flex justify-between items-center text-xs">
-                <span className="text-slate-200 font-bold">Max Spendable Now:</span>
-                <span className="font-mono font-bold text-indigo-300">{formatINR(spendablePurse)}</span>
-              </div>
-            </div>
-
-            {/* Items Won So Far */}
-            <div className="space-y-2">
-              <span className="text-xs font-semibold text-slate-300 block">
-                Assets Won in Portfolio ({itemsWon.length})
-              </span>
-              {itemsWon.length === 0 ? (
-                <p className="text-xs text-slate-500 italic">No lots won yet. Bid strategically!</p>
-              ) : (
-                <div className="space-y-1.5 max-h-36 overflow-y-auto">
-                  {itemsWon.map((won, idx) => (
-                    <div key={idx} className="bg-slate-950 p-2 rounded-xl border border-slate-800 text-[11px] flex justify-between items-center">
-                      <span className="truncate max-w-[140px] text-slate-300">{won.item.name}</span>
-                      <span className="font-mono text-emerald-400 font-bold">{formatINR(won.pricePaid)}</span>
-                    </div>
-                  ))}
+          {isAuctioneer ? (
+            /* Connected Buyers Roster with Purses */
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl space-y-3">
+              <div className="flex items-center justify-between text-xs font-bold text-slate-200 pb-2 border-b border-slate-800">
+                <div className="flex items-center gap-1.5">
+                  <Users className="w-4 h-4 text-purple-400" />
+                  <span>Competing Buyers ({Object.keys(allBuyers).length})</span>
                 </div>
-              )}
+                <span className="text-purple-300 font-mono text-[10px]">₹10L Starting</span>
+              </div>
+
+              <div className="space-y-2 max-h-56 overflow-y-auto">
+                {Object.values(allBuyers).map((b) => {
+                  const isLeader = auctionState.currentLeaderId === b.id;
+                  return (
+                    <div
+                      key={b.id}
+                      className={`p-3 rounded-2xl border flex items-center justify-between text-xs transition ${
+                        isLeader 
+                          ? 'bg-purple-950/40 border-purple-600/60 shadow-md' 
+                          : 'bg-slate-950 border-slate-800'
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-center gap-1.5 font-semibold text-slate-100">
+                          <span>{b.name}</span>
+                          {isLeader && (
+                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-purple-900 text-purple-300 border border-purple-700 font-mono font-bold">
+                              👑 Leading
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[10px] text-slate-400 font-mono">
+                          Lots Won: {b.itemsWon.length}
+                        </span>
+                      </div>
+                      <div className="text-right font-mono">
+                        <span className="text-[10px] text-slate-500 block">Remaining Purse</span>
+                        <strong className="text-emerald-400 font-bold">{formatINR(b.remainingPurse)}</strong>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          ) : (
+            /* Buyer Purse Card */
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl space-y-4">
+              <div className="flex items-center gap-2 text-slate-200 font-bold text-sm">
+                <DollarSign className="w-4 h-4 text-emerald-400" />
+                <span>Your Buyer Purse Balance</span>
+              </div>
+
+              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2.5">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-slate-400">Starting Purse:</span>
+                  <span className="font-mono font-bold text-slate-300">{formatINR(startingPurse)}</span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-slate-400">Remaining Purse:</span>
+                  <span className="font-mono font-bold text-emerald-400">{formatINR(remainingPurse)}</span>
+                </div>
+                <div className="flex justify-between items-center text-xs pt-1 border-t border-slate-800/80">
+                  <span className="text-slate-400">Reserve Lock (10%):</span>
+                  <span className="font-mono text-amber-400 font-semibold">{formatINR(reserveReq)}</span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-slate-200 font-bold">Max Spendable Now:</span>
+                  <span className="font-mono font-bold text-indigo-300">{formatINR(spendablePurse)}</span>
+                </div>
+              </div>
+
+              {/* Items Won So Far */}
+              <div className="space-y-2">
+                <span className="text-xs font-semibold text-slate-300 block">
+                  Assets Won in Portfolio ({itemsWon.length})
+                </span>
+                {itemsWon.length === 0 ? (
+                  <p className="text-xs text-slate-500 italic">No lots won yet. Bid strategically!</p>
+                ) : (
+                  <div className="space-y-1.5 max-h-36 overflow-y-auto">
+                    {itemsWon.map((won, idx) => (
+                      <div key={idx} className="bg-slate-950 p-2 rounded-xl border border-slate-800 text-[11px] flex justify-between items-center">
+                        <span className="truncate max-w-[140px] text-slate-300">{won.item.name}</span>
+                        <span className="font-mono text-emerald-400 font-bold">{formatINR(won.pricePaid)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Live Feed of Bids */}
           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl space-y-3">
@@ -351,7 +447,7 @@ export const ForwardAuctionArena: React.FC<ForwardAuctionArenaProps> = ({
 
             <div className="space-y-1.5 max-h-48 overflow-y-auto font-mono text-xs">
               {auctionState.bids.length === 0 ? (
-                <p className="text-xs text-slate-500 italic py-2 text-center">No bids placed yet. Be the first!</p>
+                <p className="text-xs text-slate-500 italic py-2 text-center">No bids placed yet.</p>
               ) : (
                 auctionState.bids.slice(0, 10).map((b, idx) => (
                   <div key={idx} className="bg-slate-950/80 px-3 py-1.5 rounded-xl border border-slate-800/80 flex items-center justify-between">

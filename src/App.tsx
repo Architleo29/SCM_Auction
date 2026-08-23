@@ -562,8 +562,9 @@ export const App: React.FC = () => {
     const currentPlayers = { ...playersRef.current };
     const initialBuyers: Record<string, ForwardBuyerState> = {};
 
-    // In Forward English multiplayer mode: All connected room participants are human Buyers! No AI bots.
-    Object.values(currentPlayers).forEach(p => {
+    // In Option A: Only connected guests are competing Buyers (Host is the Auctioneer / Organizer)
+    const guestPlayers = Object.values(currentPlayers).filter(p => !p.isHost);
+    guestPlayers.forEach(p => {
       initialBuyers[p.id] = {
         id: p.id,
         name: p.name,
@@ -576,17 +577,17 @@ export const App: React.FC = () => {
       };
     });
 
+    // Fallback if tested with no guests
     if (Object.keys(initialBuyers).length === 0) {
-      const myId = myPlayerId;
-      initialBuyers[myId] = {
-        id: myId,
-        name: 'Apex Capital (Host)',
+      initialBuyers['test_buyer_1'] = {
+        id: 'test_buyer_1',
+        name: 'Guest Buyer 1',
         isAi: false,
         startingPurse: STARTING_PURSE,
         remainingPurse: STARTING_PURSE,
         itemsWon: [],
         totalSurplus: 0,
-        valuations: generateBuyerValuations(catalog, myId, mode)
+        valuations: generateBuyerValuations(catalog, 'test_buyer_1', mode)
       };
     }
 
@@ -1800,11 +1801,12 @@ export const App: React.FC = () => {
         {isForwardMode && phase === 'AUCTION' && forwardAuctionState && (
           <ForwardAuctionArena
             item={forwardAuctionState.currentItem}
-            buyer={forwardBuyers[myPlayerId] || Object.values(forwardBuyers)[0]}
+            buyer={isHost ? undefined : forwardBuyers[myPlayerId]}
             allBuyers={forwardBuyers}
             auctionState={forwardAuctionState}
             totalLots={forwardCatalog.length}
             currentLotNumber={forwardLotIndex + 1}
+            isAuctioneer={isHost}
             onPlaceBid={handlePlaceForwardBid}
             onSkipLot={isHost ? () => {
               if (forwardTimerRef.current) clearInterval(forwardTimerRef.current);
@@ -1818,6 +1820,7 @@ export const App: React.FC = () => {
             buyers={forwardBuyers}
             valuationMode={forwardValuationMode}
             myBuyerId={myPlayerId}
+            isAuctioneer={isHost}
             onPlayAgain={() => {
               setIsForwardMode(false);
               setPhase('LOBBY');
