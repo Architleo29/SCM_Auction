@@ -3,7 +3,6 @@ import {
   Calculator, 
   DollarSign, 
   Clock, 
-  ShieldAlert, 
   ShieldCheck, 
   TrendingUp, 
   Percent, 
@@ -11,12 +10,16 @@ import {
   Lock, 
   Send, 
   CheckCircle2, 
-  HelpCircle,
   BarChart2,
   Sparkles,
   Zap,
   Star,
-  Activity
+  Activity,
+  Layers,
+  Building2,
+  FileSpreadsheet,
+  HelpCircle,
+  Sliders
 } from 'lucide-react';
 import { RFQ, PlayerState, Quote, PaymentTerms, SLATier, SustainabilityLevel, WarrantyPeriod } from '../types/game';
 import { calculateCostBreakdown, estimateWinProbability, calculateExpectedValue } from '../engine/costCalculator';
@@ -37,14 +40,27 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
 }) => {
   const profile = player.profile;
 
-  // 1. Three Independent Parameters (Scale of 1 to 5)
-  const [priceTier, setPriceTier] = useState<number>(3); // 1 = High/Defensive, 3 = Target, 5 = Aggressive/Low
+  // 1. Vendor Strategy Controls (1 to 5 Scale)
   const [qualityTier, setQualityTier] = useState<number>(profile.qualityLevel || 3); // 1 to 5 Stars
   const [timelineTier, setTimelineTier] = useState<number>(profile.speedLevel || 3); // 1 = Slow, 3 = Target, 5 = Rush
+  const [costEfficiencyTier, setCostEfficiencyTier] = useState<number>(profile.costEfficiency || 3); // 1 = High Cost, 5 = Lean
+  const [priceTier, setPriceTier] = useState<number>(3); // 1 = Defensive, 3 = Target, 5 = Aggressive
 
-  // Price in INR (₹)
-  const initialBaseline = useMemo(() => calculateCostBreakdown(profile, rfq), [profile, rfq]);
-  const [price, setPrice] = useState<number>(initialBaseline.targetBidPrice);
+  // Turnaround days from timelineTier (1 = +10d, 2 = +5d, 3 = base, 4 = -5d, 5 = -10d)
+  const deliveryDays = useMemo(() => {
+    const deltaDays = (3 - timelineTier) * 5;
+    return Math.max(5, rfq.requiredDeliveryDays + deltaDays);
+  }, [timelineTier, rfq.requiredDeliveryDays]);
+
+  // Dynamic effective profile updated by user's strategy selections
+  const effectiveProfile = useMemo(() => {
+    return {
+      ...profile,
+      qualityLevel: qualityTier,
+      speedLevel: timelineTier,
+      costEfficiency: costEfficiencyTier
+    };
+  }, [profile, qualityTier, timelineTier, costEfficiencyTier]);
 
   // Additional commercial parameters
   const [paymentTerms, setPaymentTerms] = useState<PaymentTerms>('net_30');
@@ -55,22 +71,11 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
   const [riskContingencyRate, setRiskContingencyRate] = useState<number>(profile.riskContingencyNeed);
   const [hasSubmitted, setHasSubmitted] = useState<boolean>(false);
 
-  // Delivery days calculated from timelineTier (1 = +10d, 2 = +5d, 3 = base, 4 = -5d, 5 = -10d)
-  const deliveryDays = useMemo(() => {
-    const deltaDays = (3 - timelineTier) * 5;
-    return Math.max(5, rfq.requiredDeliveryDays + deltaDays);
-  }, [timelineTier, rfq.requiredDeliveryDays]);
+  // Initial baseline calculation
+  const initialBaseline = useMemo(() => calculateCostBreakdown(effectiveProfile, rfq), [effectiveProfile, rfq]);
+  const [price, setPrice] = useState<number>(initialBaseline.targetBidPrice);
 
-  // Dynamic effective profile updated by qualityTier & timelineTier
-  const effectiveProfile = useMemo(() => {
-    return {
-      ...profile,
-      qualityLevel: qualityTier,
-      speedLevel: timelineTier
-    };
-  }, [profile, qualityTier, timelineTier]);
-
-  // Live Recalculation of Fully Loaded Cost (FLC) with user overrides
+  // Live Recalculation of Cost Breakdown & Fixed/Variable Costs
   const breakdown = useMemo(() => {
     return calculateCostBreakdown(effectiveProfile, rfq, price, riskContingencyRate);
   }, [effectiveProfile, rfq, price, riskContingencyRate]);
@@ -81,12 +86,6 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
     const flc = breakdown.fullyLoadedCost;
     const ceiling = rfq.budgetCeiling;
     
-    // Map tier to price:
-    // Tier 1: Ceiling / Defensive (~30-35% margin)
-    // Tier 2: Conservative (~22% margin)
-    // Tier 3: Balanced (~15% margin)
-    // Tier 4: Competitive (~8% margin)
-    // Tier 5: Rock-Bottom (~3% margin / Near FLC)
     let targetP = flc * 1.15;
     if (newTier === 1) targetP = Math.min(ceiling * 0.98, flc * 1.35);
     else if (newTier === 2) targetP = Math.min(ceiling * 0.94, flc * 1.22);
@@ -113,29 +112,26 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
 
   // 2. Merged Dependent Parameter: Risk & Reputation Index
   const riskReputationAnalysis = useMemo(() => {
-    const baseRep = player.reputation || profile.reputationScore || 70;
+    const baseRep = player.reputation || profile.reputationScore || 75;
     const flc = breakdown.fullyLoadedCost;
     const marginPct = price > 0 ? (price - flc) / price : 0;
     
-    // Margin Health Factor (0 - 100)
     let marginHealth = 70;
     if (marginPct >= 0.20) marginHealth = 100;
     else if (marginPct >= 0.12) marginHealth = 90;
     else if (marginPct >= 0.05) marginHealth = 75;
     else if (marginPct >= 0.0) marginHealth = 55;
-    else marginHealth = 20; // Loss leader
+    else marginHealth = 20;
 
-    // Iron Triangle Feasibility Stress:
-    // Demanding high quality (4-5) & rush turnaround (4-5) at rock-bottom price (tier 4-5) spikes execution risk
-    const demandLoad = (qualityTier * 0.5) + (timelineTier * 0.5); // 1.0 to 5.0
-    const priceCompensation = (6 - priceTier); // 1 (cheapest) to 5 (most revenue)
-    const stressGap = demandLoad - priceCompensation; // -4 to +4
+    const demandLoad = (qualityTier * 0.5) + (timelineTier * 0.5);
+    const priceCompensation = (6 - priceTier);
+    const stressGap = demandLoad - priceCompensation;
     
     let stressPenalty = 0;
     if (stressGap > 2.0) stressPenalty = 25;
     else if (stressGap > 1.0) stressPenalty = 15;
     else if (stressGap > 0) stressPenalty = 5;
-    else stressPenalty = -5; // Buffer bonus
+    else stressPenalty = -5;
 
     const contingencyBonus = (riskContingencyRate >= profile.riskContingencyNeed ? 8 : 0);
     const rawScore = (baseRep * 0.40) + (marginHealth * 0.45) - stressPenalty + contingencyBonus;
@@ -155,7 +151,7 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
       statusColor = 'amber';
       statusLabel = 'Tight Margin Strain';
     } else if (finalScore >= 80) {
-      statusText = '✅ Prime Supplier Standing: Healthy margins comfortably finance your quality and turnaround schedule.';
+      statusText = '✅ Prime Supplier Standing: Healthy margins comfortably finance your quality and turnaround commitments.';
       statusColor = 'emerald';
       statusLabel = 'Low Risk • Prime Trust';
     } else {
@@ -173,7 +169,7 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
     };
   }, [player.reputation, profile.reputationScore, breakdown.fullyLoadedCost, price, qualityTier, timelineTier, priceTier, riskContingencyRate, breakdown.isLossLeader, profile.riskContingencyNeed]);
 
-  // Local smooth ticking countdown timer
+  // Local countdown timer
   const [localTimeRemaining, setLocalTimeRemaining] = useState<number>(timeRemainingSeconds || 45);
 
   useEffect(() => {
@@ -195,6 +191,23 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
     }, 1000);
     return () => clearInterval(timer);
   }, [hasSubmitted]);
+
+  // Live P&L Calculations based on Quoted Selling Price
+  const grossQuotedRevenue = price;
+  const variableDirectCosts = breakdown.directCostSubtotal; // Direct Labor + Materials + Logistics
+  const grossContributionMargin = grossQuotedRevenue - variableDirectCosts;
+  const grossContributionMarginPct = grossQuotedRevenue > 0 ? (grossContributionMargin / grossQuotedRevenue) * 100 : 0;
+  
+  const overheadAndFinancing = breakdown.overheadAllocation + breakdown.financingCost + breakdown.riskContingencyAmount;
+  const fixedCostsAbsorption = breakdown.fixedCostAbsorption;
+  const fullyLoadedCost = breakdown.fullyLoadedCost;
+  
+  const projectedOperatingProfit = grossQuotedRevenue - fullyLoadedCost;
+  const projectedOperatingMarginPct = grossQuotedRevenue > 0 ? (projectedOperatingProfit / grossQuotedRevenue) * 100 : 0;
+  
+  const taxRate = profile.taxRate || 0.25;
+  const projectedTax = projectedOperatingProfit > 0 ? Math.round(projectedOperatingProfit * taxRate) : 0;
+  const projectedNetProfit = projectedOperatingProfit - projectedTax;
 
   // Win Probability & EV Estimate
   const winProb = useMemo(() => {
@@ -230,8 +243,7 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
     return estimateWinProbability(estWeightedScore, 0.65);
   }, [price, qualityTier, deliveryDays, riskReputationAnalysis.score, paymentTerms, slaTier, sustainability, rfq]);
 
-  const projectedProfit = price - breakdown.fullyLoadedCost;
-  const expectedValue = calculateExpectedValue(winProb, projectedProfit);
+  const expectedValue = calculateExpectedValue(winProb, projectedOperatingProfit);
 
   const handleToggleCompliance = (cert: string) => {
     setComplianceChecked(prev => 
@@ -265,19 +277,19 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-3.5 sm:p-6 space-y-4 sm:space-y-6 animate-fade-in">
+    <div className="max-w-7xl mx-auto p-3.5 sm:p-6 space-y-5 animate-fade-in">
       
       {/* Header & Synchronized Timer */}
       <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="text-[0.625rem] sm:text-xs font-mono uppercase text-indigo-400 font-bold tracking-wider">
-              RFQ Phase 3 • Multi-Parameter Commercial Quoting
+              RFQ Phase 3 • Commercial Quotation & Strategy Engine
             </span>
           </div>
           <h2 className="text-xl sm:text-2xl font-bold text-slate-100">{rfq.title}</h2>
           <p className="text-xs text-slate-400 mt-0.5">
-            Set your 3 core independent parameters (Price, Quality, Timeline) on a scale of 1 to 5. Your Risk & Reputation index updates dynamically.
+            Adjust your strategy parameters below. Review your fixed & variable costs, type your quotation price, and evaluate your live P&L in real time.
           </p>
         </div>
 
@@ -295,29 +307,207 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         
-        {/* Left Column: 3 Independent Controls + 1 Merged Dependent Card */}
-        <form onSubmit={handleSubmit} className="lg:col-span-7 space-y-4 sm:space-y-5">
+        {/* Left Column: Strategy Sliders & Cost Structure (7 Cols) */}
+        <div className="lg:col-span-7 space-y-4">
           
-          {/* PARAMETER 1: COMMERCIAL PRICE (Scale 1 to 5) */}
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 sm:p-5 shadow-md space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-lg bg-emerald-600/20 text-emerald-400 flex items-center justify-center font-bold text-xs">
-                  1
-                </div>
-                <label className="text-xs font-semibold text-slate-200 uppercase font-mono flex items-center gap-1.5">
-                  <DollarSign className="w-4 h-4 text-emerald-400" />
-                  Commercial Price Level (1 – 5)
-                </label>
-              </div>
-              <span className="text-xs font-mono text-emerald-400 font-bold">
-                Level {priceTier} / 5
+          {/* SECTION 1: VENDOR OPERATIONAL STRATEGY ADJUSTMENT */}
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <span className="text-xs font-mono font-bold uppercase text-indigo-400 flex items-center gap-1.5">
+                <Sliders className="w-4 h-4" />
+                1. Adjust Vendor Strategy (1 – 5 Scale)
+              </span>
+              <span className="text-[0.6875rem] font-mono text-slate-400">
+                Independent Parameters
               </span>
             </div>
 
-            {/* 1-5 Scale Buttons */}
+            {/* Quality Strategy Slider */}
+            <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
+              <div className="flex justify-between items-center text-xs font-mono">
+                <span className="text-slate-300 font-semibold flex items-center gap-1.5">
+                  <Star className="w-4 h-4 text-amber-400" /> Technical Quality Tier
+                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-amber-400 font-bold">{qualityTier}★ / 5★</span>
+                  <span className="text-[0.625rem] text-slate-500 font-mono">
+                    ({qualityTier === 1 ? 'Economy' : qualityTier === 2 ? 'Commercial' : qualityTier === 3 ? 'Industrial' : qualityTier === 4 ? 'ISO Cert' : 'Aerospace'})
+                  </span>
+                </div>
+              </div>
+              <div className="grid grid-cols-5 gap-1.5 pt-1">
+                {[1, 2, 3, 4, 5].map(q => (
+                  <button
+                    key={q}
+                    type="button"
+                    onClick={() => setQualityTier(q)}
+                    className={`py-2 rounded-xl text-xs font-mono font-bold border transition cursor-pointer flex flex-col items-center justify-center ${
+                      qualityTier === q
+                        ? 'bg-amber-600/30 border-amber-400 text-amber-300 shadow-md shadow-amber-600/20'
+                        : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <span>{q}★</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Timeline Speed Strategy Slider */}
+            <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
+              <div className="flex justify-between items-center text-xs font-mono">
+                <span className="text-slate-300 font-semibold flex items-center gap-1.5">
+                  <Clock className="w-4 h-4 text-cyan-400" /> Delivery Turnaround Speed
+                </span>
+                <span className="text-cyan-400 font-bold">{deliveryDays} Days (Level {timelineTier}/5)</span>
+              </div>
+              <div className="grid grid-cols-5 gap-1.5 pt-1">
+                {[1, 2, 3, 4, 5].map(t => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setTimelineTier(t)}
+                    className={`py-2 rounded-xl text-xs font-mono font-bold border transition cursor-pointer flex flex-col items-center justify-center ${
+                      timelineTier === t
+                        ? 'bg-cyan-600/30 border-cyan-400 text-cyan-300 shadow-md shadow-cyan-600/20'
+                        : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <span>T{t}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Cost Efficiency Strategy */}
+            <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
+              <div className="flex justify-between items-center text-xs font-mono">
+                <span className="text-slate-300 font-semibold flex items-center gap-1.5">
+                  <Activity className="w-4 h-4 text-emerald-400" /> Operational Cost Efficiency
+                </span>
+                <span className="text-emerald-400 font-bold">Level {costEfficiencyTier}/5</span>
+              </div>
+              <div className="grid grid-cols-5 gap-1.5 pt-1">
+                {[1, 2, 3, 4, 5].map(e => (
+                  <button
+                    key={e}
+                    type="button"
+                    onClick={() => setCostEfficiencyTier(e)}
+                    className={`py-2 rounded-xl text-xs font-mono font-bold border transition cursor-pointer flex flex-col items-center justify-center ${
+                      costEfficiencyTier === e
+                        ? 'bg-emerald-600/30 border-emerald-400 text-emerald-300 shadow-md shadow-emerald-600/20'
+                        : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <span>Eff {e}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Merged Risk & Reputation Index Card */}
+            <div className={`p-4 rounded-2xl border shadow-md space-y-2.5 transition-all ${
+              riskReputationAnalysis.statusColor === 'emerald'
+                ? 'bg-emerald-950/40 border-emerald-500/40'
+                : riskReputationAnalysis.statusColor === 'amber'
+                ? 'bg-amber-950/40 border-amber-500/40'
+                : 'bg-rose-950/40 border-rose-500/40'
+            }`}>
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-purple-400" />
+                  <span className="text-xs font-bold text-slate-100 font-mono">🛡️ Risk & Reputation Index</span>
+                  <span className="text-[0.625rem] font-mono px-2 py-0.5 rounded bg-slate-950 text-purple-300 border border-slate-800">
+                    Dependent Feasibility
+                  </span>
+                </div>
+                <div className="text-right">
+                  <span className="text-sm font-mono font-bold text-indigo-300">★ {riskReputationAnalysis.scaleOf5} / 5.0</span>
+                </div>
+              </div>
+              <p className="text-[0.6875rem] text-slate-300 font-mono leading-relaxed bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
+                {riskReputationAnalysis.statusText}
+              </p>
+            </div>
+
+          </div>
+
+          {/* SECTION 2: FIXED & VARIABLE COST BREAKDOWN */}
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <span className="text-xs font-mono font-bold uppercase text-cyan-400 flex items-center gap-1.5">
+                <Layers className="w-4 h-4" />
+                2. Transparent Cost Structure (Fixed vs Variable)
+              </span>
+              <span className="text-xs font-mono font-bold text-emerald-400">
+                FLC: {formatINR(breakdown.fullyLoadedCost)}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs font-mono">
+              
+              {/* Variable Costs Card */}
+              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2.5">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                  <span className="text-indigo-300 font-bold uppercase text-[0.6875rem]">📦 Variable Direct Costs</span>
+                  <span className="text-indigo-400 font-bold">{formatINR(breakdown.directCostSubtotal)}</span>
+                </div>
+                <div className="space-y-1.5 text-[0.6875rem] text-slate-400">
+                  <div className="flex justify-between">
+                    <span>• Direct Labor ({rfq.baseLaborHours}h @ {formatINR(rfq.laborRate)}/h):</span>
+                    <span className="text-slate-200">{formatINR(breakdown.directLaborCost)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>• Direct Materials ({rfq.baseMaterialsQty}u @ {formatINR(rfq.unitMaterialCost)}/u):</span>
+                    <span className="text-slate-200">{formatINR(breakdown.directMaterialsCost)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>• Logistics Freight ({rfq.baseLogisticsUnits} runs):</span>
+                    <span className="text-slate-200">{formatINR(breakdown.directLogisticsCost)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Fixed Costs & Overhead Card */}
+              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2.5">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                  <span className="text-amber-300 font-bold uppercase text-[0.6875rem]">🏛️ Fixed Overhead & Carrying</span>
+                  <span className="text-amber-400 font-bold">{formatINR(breakdown.fixedCostAbsorption + breakdown.overheadAllocation + breakdown.financingCost)}</span>
+                </div>
+                <div className="space-y-1.5 text-[0.6875rem] text-slate-400">
+                  <div className="flex justify-between">
+                    <span>• Fixed Cost Absorption (Capacity Slot):</span>
+                    <span className="text-slate-200">{formatINR(breakdown.fixedCostAbsorption)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>• Operating Overhead ({(profile.overheadRate * 100).toFixed(0)}%):</span>
+                    <span className="text-slate-200">{formatINR(breakdown.overheadAllocation)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>• Financing Cost ({rfq.paymentDelayDays}d delay):</span>
+                    <span className="text-slate-200">{formatINR(breakdown.financingCost)}</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          {/* SECTION 3: COMMERCIAL PRICE SELECTION & INPUT */}
+          <form onSubmit={handleSubmit} className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <span className="text-xs font-mono font-bold uppercase text-emerald-400 flex items-center gap-1.5">
+                <DollarSign className="w-4 h-4" />
+                3. Enter Commercial Quoted Price
+              </span>
+              <span className="text-xs font-mono text-slate-400">
+                Budget Ceiling: <strong className="text-slate-200">{formatINR(rfq.budgetCeiling)}</strong>
+              </span>
+            </div>
+
+            {/* 1-5 Price Scale Buttons */}
             <div className="grid grid-cols-5 gap-1.5">
               {[1, 2, 3, 4, 5].map(lvl => (
                 <button
@@ -330,7 +520,7 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
                       : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
                   }`}
                 >
-                  <span>L{lvl}</span>
+                  <span>Level {lvl}</span>
                   <span className="text-[9px] font-normal opacity-80">
                     {lvl === 1 ? 'Defensive' : lvl === 2 ? 'Conservative' : lvl === 3 ? 'Target' : lvl === 4 ? 'Competitive' : 'Floor'}
                   </span>
@@ -338,369 +528,187 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
               ))}
             </div>
 
-            {/* Price Input & Ceiling Indicator */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 pt-1">
-              <div className="relative flex-1">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-mono font-bold">₹</span>
+            {/* Direct Number Input */}
+            <div className="space-y-1.5">
+              <label className="text-[0.6875rem] font-mono text-slate-400 uppercase">
+                Custom Quotation Amount in ₹ (Type below or use levels above)
+              </label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-mono font-bold text-xl">₹</span>
                 <input
                   type="number"
                   value={price}
                   onChange={(e) => handleDirectPriceChange(Number(e.target.value))}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-2xl pl-8 pr-4 py-2.5 text-lg font-mono font-bold text-emerald-400 focus:outline-none focus:border-indigo-500 min-h-[44px]"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-2xl pl-9 pr-4 py-3 text-2xl font-mono font-bold text-emerald-400 focus:outline-none focus:border-indigo-500"
+                  placeholder="Enter custom quotation price"
                 />
-              </div>
-
-              <div className="px-3.5 py-2 rounded-2xl bg-slate-950 border border-slate-800 text-xs font-mono text-right shrink-0">
-                <p className="text-[0.625rem] text-slate-500 uppercase">Budget Ceiling</p>
-                <p className="font-bold text-slate-200">{formatINR(rfq.budgetCeiling)}</p>
               </div>
             </div>
 
             {breakdown.isLossLeader && (
-              <div className="p-2.5 bg-rose-950/60 border border-rose-800/80 rounded-2xl text-xs text-rose-300 flex items-start gap-2 animate-bounce-subtle">
+              <div className="p-3 bg-rose-950/60 border border-rose-800/80 rounded-2xl text-xs text-rose-300 flex items-start gap-2 animate-bounce-subtle">
                 <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
                 <div>
-                  <strong>Loss-Leader Warning!</strong> Quoting below 70% of FLC ({formatINR(breakdown.fullyLoadedCost * 0.7)}) triggers severe buyer risk penalties.
+                  <strong>Loss-Leader Flag Triggered!</strong> Price is below 70% of Fully Loaded Cost ({formatINR(breakdown.fullyLoadedCost * 0.7)}).
                 </div>
               </div>
             )}
-          </div>
 
-          {/* PARAMETER 2: TECHNICAL QUALITY (Scale 1 to 5) */}
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 sm:p-5 shadow-md space-y-3">
-            <div className="flex items-center justify-between">
+            {/* Submit Quote Button */}
+            <button
+              type="submit"
+              disabled={hasSubmitted || complianceChecked.length < rfq.requiredCompliance.length}
+              className={`w-full py-4 rounded-2xl font-bold text-sm shadow-xl transition flex items-center justify-center gap-2 cursor-pointer active:scale-95 ${
+                hasSubmitted
+                  ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                  : complianceChecked.length < rfq.requiredCompliance.length
+                  ? 'bg-rose-950 border border-rose-800 text-rose-300 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-indigo-600/30'
+              }`}
+            >
+              {hasSubmitted ? (
+                <>
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                  <span>Quote Locked & Submitted</span>
+                </>
+              ) : (
+                <>
+                  <Send className="w-5 h-5" />
+                  <span>Submit Commercial Quote ({formatINR(price)})</span>
+                </>
+              )}
+            </button>
+          </form>
+
+        </div>
+
+        {/* Right Column: LIVE VENDOR P&L STATEMENT (5 Cols) */}
+        <div className="lg:col-span-5 space-y-4">
+          
+          {/* Real-time Generated Income Statement */}
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4 sticky top-4">
+            
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-lg bg-amber-600/20 text-amber-400 flex items-center justify-center font-bold text-xs">
-                  2
-                </div>
-                <label className="text-xs font-semibold text-slate-200 uppercase font-mono flex items-center gap-1.5">
-                  <Star className="w-4 h-4 text-amber-400" />
-                  Technical Quality Tier (1 – 5 Stars)
-                </label>
-              </div>
-              <div className="flex text-amber-400 text-sm">
-                {'★'.repeat(qualityTier)}
-                <span className="text-slate-700">{'★'.repeat(5 - qualityTier)}</span>
-              </div>
-            </div>
-
-            {/* 1-5 Quality Buttons */}
-            <div className="grid grid-cols-5 gap-1.5">
-              {[1, 2, 3, 4, 5].map(q => (
-                <button
-                  key={q}
-                  type="button"
-                  onClick={() => setQualityTier(q)}
-                  className={`py-2.5 rounded-xl text-xs font-mono font-bold border transition cursor-pointer flex flex-col items-center justify-center ${
-                    qualityTier === q
-                      ? 'bg-amber-600/30 border-amber-400 text-amber-300 shadow-md shadow-amber-600/20'
-                      : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  <span>{q}★</span>
-                  <span className="text-[8px] font-normal opacity-80 truncate max-w-full px-1">
-                    {q === 1 ? 'Economy' : q === 2 ? 'Commercial' : q === 3 ? 'Industrial' : q === 4 ? 'ISO Cert' : 'Aerospace'}
-                  </span>
-                </button>
-              ))}
-            </div>
-            <p className="text-[0.6875rem] text-slate-400 font-mono">
-              Higher quality increases your QCBS Technical Score, with realistic production adjustment in your baseline FLC.
-            </p>
-          </div>
-
-          {/* PARAMETER 3: DELIVERY TIMELINE (Scale 1 to 5) */}
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 sm:p-5 shadow-md space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-lg bg-cyan-600/20 text-cyan-400 flex items-center justify-center font-bold text-xs">
-                  3
-                </div>
-                <label className="text-xs font-semibold text-slate-200 uppercase font-mono flex items-center gap-1.5">
-                  <Clock className="w-4 h-4 text-cyan-400" />
-                  Delivery Timeline Speed (1 – 5 Level)
-                </label>
-              </div>
-              <span className="text-xs font-mono text-cyan-400 font-bold">
-                {deliveryDays} Days Turnaround
-              </span>
-            </div>
-
-            {/* 1-5 Timeline Buttons */}
-            <div className="grid grid-cols-5 gap-1.5">
-              {[1, 2, 3, 4, 5].map(t => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => setTimelineTier(t)}
-                  className={`py-2.5 rounded-xl text-xs font-mono font-bold border transition cursor-pointer flex flex-col items-center justify-center ${
-                    timelineTier === t
-                      ? 'bg-cyan-600/30 border-cyan-400 text-cyan-300 shadow-md shadow-cyan-600/20'
-                      : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  <span>T{t}</span>
-                  <span className="text-[8px] font-normal opacity-80 truncate max-w-full px-1">
-                    {t === 1 ? 'Extended' : t === 2 ? 'Relaxed' : t === 3 ? 'Required' : t === 4 ? 'Expedited' : 'Rush'}
-                  </span>
-                </button>
-              ))}
-            </div>
-            <p className="text-[0.6875rem] text-slate-400 font-mono">
-              Required by RFQ: <strong>{rfq.requiredDeliveryDays} Days</strong>. Faster turnaround satisfies tight procurement schedules.
-            </p>
-          </div>
-
-          {/* MERGED DEPENDENT PARAMETER: RISK & REPUTATION INDEX */}
-          <div className={`p-4 sm:p-5 rounded-3xl border shadow-xl space-y-3 transition-all ${
-            riskReputationAnalysis.statusColor === 'emerald'
-              ? 'bg-gradient-to-r from-emerald-950/60 via-slate-900 to-indigo-950/60 border-emerald-500/40'
-              : riskReputationAnalysis.statusColor === 'amber'
-              ? 'bg-gradient-to-r from-amber-950/60 via-slate-900 to-indigo-950/60 border-amber-500/40'
-              : 'bg-gradient-to-r from-rose-950/60 via-slate-900 to-indigo-950/60 border-rose-500/40'
-          }`}>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-purple-600/20 border border-purple-500/40 text-purple-400 flex items-center justify-center shrink-0">
-                  <ShieldCheck className="w-4 h-4" />
-                </div>
+                <FileSpreadsheet className="w-5 h-5 text-emerald-400" />
                 <div>
-                  <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
-                    <span>🛡️ Risk & Reputation Index</span>
-                    <span className="text-[0.625rem] font-mono px-2 py-0.5 rounded-full bg-slate-950 border border-slate-800 text-slate-400 font-normal">
-                      Dependent Metric
-                    </span>
+                  <h3 className="text-sm font-bold text-slate-100 uppercase font-mono">
+                    Live Vendor P&L Statement
                   </h3>
-                  <p className="text-[0.6875rem] text-slate-400 font-mono">
-                    Auto-calculated from Price (L{priceTier}), Quality ({qualityTier}★) & Timeline (T{timelineTier})
+                  <p className="text-[0.625rem] text-slate-400 font-mono">
+                    Real-time financial simulation of your quote
                   </p>
                 </div>
               </div>
 
-              <div className="text-right">
-                <p className="text-lg font-mono font-bold text-indigo-300">
-                  ★ {riskReputationAnalysis.scaleOf5} <span className="text-xs text-slate-500 font-normal">/ 5.0</span>
-                </p>
-                <span className={`text-[0.625rem] font-mono font-bold px-2 py-0.5 rounded ${
-                  riskReputationAnalysis.statusColor === 'emerald'
-                    ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
-                    : riskReputationAnalysis.statusColor === 'amber'
-                    ? 'bg-amber-950 text-amber-300 border border-amber-800'
-                    : 'bg-rose-950 text-rose-300 border border-rose-800'
-                }`}>
-                  {riskReputationAnalysis.statusLabel}
-                </span>
-              </div>
-            </div>
-
-            {/* Dynamic Progress Bar */}
-            <div className="space-y-1">
-              <div className="h-2 w-full bg-slate-950 rounded-full overflow-hidden border border-slate-800/80">
-                <div 
-                  className={`h-full transition-all duration-300 ${
-                    riskReputationAnalysis.statusColor === 'emerald'
-                      ? 'bg-gradient-to-r from-emerald-500 to-indigo-500'
-                      : riskReputationAnalysis.statusColor === 'amber'
-                      ? 'bg-gradient-to-r from-amber-500 to-orange-500'
-                      : 'bg-gradient-to-r from-rose-500 to-red-600'
-                  }`}
-                  style={{ width: `${riskReputationAnalysis.score}%` }}
-                />
-              </div>
-              <div className="flex justify-between text-[0.625rem] font-mono text-slate-500">
-                <span>1.0 (High Risk)</span>
-                <span>3.0 (Standard)</span>
-                <span>5.0 (Prime Trust)</span>
-              </div>
-            </div>
-
-            {/* Diagnostic Message */}
-            <p className="text-xs text-slate-300 leading-relaxed bg-slate-950/70 p-3 rounded-2xl border border-slate-800/60 font-mono">
-              {riskReputationAnalysis.statusText}
-            </p>
-          </div>
-
-          {/* Advanced Details Collapsible (Payment Terms, Warranty, SLA) */}
-          <details className="group border border-slate-800 rounded-3xl bg-slate-900/60 overflow-hidden">
-            <summary className="p-4 cursor-pointer text-xs font-semibold font-mono text-slate-300 hover:text-white flex items-center justify-between outline-none">
-              <span>⚙️ Optional Commercial Terms (Payment, SLA, Warranty)</span>
-              <span className="text-[10px] bg-slate-800 px-2 py-1 rounded-full text-slate-400 group-open:hidden">Expand</span>
-            </summary>
-            <div className="p-4 pt-2 border-t border-slate-800/80 space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                
-                <div>
-                  <label className="text-xs font-semibold text-slate-300 font-mono block mb-1">Payment Terms</label>
-                  <select
-                    value={paymentTerms}
-                    onChange={(e) => setPaymentTerms(e.target.value as PaymentTerms)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
-                  >
-                    <option value="net_30">Net-30 (Standard)</option>
-                    <option value="net_60">Net-60 (+Buyer Score)</option>
-                    <option value="milestone">Milestone Billing (50/50)</option>
-                    <option value="upfront_20">20% Advance</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold text-slate-300 font-mono block mb-1">SLA Tier</label>
-                  <select
-                    value={slaTier}
-                    onChange={(e) => setSlaTier(e.target.value as SLATier)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
-                  >
-                    <option value="basic">Basic SLA</option>
-                    <option value="standard">Standard SLA</option>
-                    <option value="premium">Premium 24/7 SLA</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold text-slate-300 font-mono block mb-1">Warranty Period</label>
-                  <select
-                    value={warrantyMonths}
-                    onChange={(e) => setWarrantyMonths(Number(e.target.value) as WarrantyPeriod)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
-                  >
-                    <option value={0}>0 Months</option>
-                    <option value={6}>6 Months</option>
-                    <option value={12}>12 Months</option>
-                    <option value={24}>24 Months (+Score)</option>
-                  </select>
-                </div>
-
-              </div>
-
-              {/* Compliance Checklist */}
-              {rfq.requiredCompliance.length > 0 && (
-                <div className="pt-2 border-t border-slate-800">
-                  <label className="text-xs font-semibold text-slate-300 font-mono block mb-1.5">Mandatory Compliance Check</label>
-                  <div className="flex flex-wrap gap-2">
-                    {rfq.requiredCompliance.map(cert => (
-                      <button
-                        key={cert}
-                        type="button"
-                        onClick={() => handleToggleCompliance(cert)}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-mono font-semibold border transition cursor-pointer flex items-center gap-1.5 ${
-                          complianceChecked.includes(cert)
-                            ? 'bg-emerald-950 border-emerald-700 text-emerald-300'
-                            : 'bg-rose-950/60 border-rose-800 text-rose-400'
-                        }`}
-                      >
-                        {complianceChecked.includes(cert) ? <CheckCircle2 className="w-3.5 h-3.5" /> : <AlertTriangle className="w-3.5 h-3.5" />}
-                        <span>{cert}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </details>
-
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={hasSubmitted || complianceChecked.length < rfq.requiredCompliance.length}
-            className={`w-full py-4 rounded-2xl font-bold text-sm shadow-xl transition flex items-center justify-center gap-2 cursor-pointer active:scale-95 ${
-              hasSubmitted
-                ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
-                : complianceChecked.length < rfq.requiredCompliance.length
-                ? 'bg-rose-950 border border-rose-800 text-rose-300 cursor-not-allowed'
-                : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-indigo-600/30'
-            }`}
-          >
-            {hasSubmitted ? (
-              <>
-                <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-                <span>Quote Locked & Submitted</span>
-              </>
-            ) : (
-              <>
-                <Send className="w-5 h-5" />
-                <span>Submit Commercial Quote ({formatINR(price)})</span>
-              </>
-            )}
-          </button>
-        </form>
-
-        {/* Right Column: Economics Waterfall & Win Probability */}
-        <div className="lg:col-span-5 space-y-4 sm:space-y-5">
-          
-          {/* Financial Overview Card */}
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <span className="text-xs font-mono font-bold uppercase text-indigo-400 flex items-center gap-1.5">
-                <Calculator className="w-4 h-4" />
-                Quote Economics Waterfall
-              </span>
-              <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded ${
-                breakdown.quotedMarginPct >= 10
-                  ? 'bg-emerald-950 text-emerald-400 border border-emerald-800/80'
-                  : 'bg-amber-950 text-amber-400 border border-amber-800/80'
+              <span className={`text-xs font-mono font-bold px-2.5 py-1 rounded-xl border ${
+                projectedOperatingProfit >= 0
+                  ? 'bg-emerald-950 text-emerald-400 border-emerald-800'
+                  : 'bg-rose-950 text-rose-400 border-rose-800'
               }`}>
-                {breakdown.quotedMarginPct}% Margin
+                {projectedOperatingMarginPct.toFixed(1)}% Margin
               </span>
             </div>
 
+            {/* Income Statement Table */}
             <div className="space-y-2 text-xs font-mono">
-              <div className="flex justify-between py-1 border-b border-slate-800/60">
-                <span className="text-slate-400">Direct Manufacturing Cost:</span>
-                <span className="text-slate-200 font-bold">{formatINR(breakdown.directCostSubtotal)}</span>
+              
+              {/* Quoted Revenue */}
+              <div className="flex justify-between py-2 border-b border-slate-800 font-semibold">
+                <span className="text-slate-200">(+) Quoted Selling Price (Revenue):</span>
+                <span className="text-emerald-400 font-bold text-sm">{formatINR(grossQuotedRevenue)}</span>
               </div>
-              <div className="flex justify-between py-1 border-b border-slate-800/60">
-                <span className="text-slate-400">Overhead & Financing:</span>
-                <span className="text-slate-300">{formatINR(breakdown.overheadAllocation + breakdown.financingCost)}</span>
+
+              {/* Less Variable Costs */}
+              <div className="space-y-1 py-1.5 border-b border-slate-800/60 text-slate-400 text-[0.6875rem]">
+                <div className="flex justify-between">
+                  <span>(-) Direct Labor Cost:</span>
+                  <span className="text-slate-300">{formatINR(breakdown.directLaborCost)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>(-) Direct Materials Cost:</span>
+                  <span className="text-slate-300">{formatINR(breakdown.directMaterialsCost)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>(-) Freight Logistics Cost:</span>
+                  <span className="text-slate-300">{formatINR(breakdown.directLogisticsCost)}</span>
+                </div>
+                <div className="flex justify-between pt-1 font-semibold text-slate-200 text-xs">
+                  <span>(=) Total Direct Variable Costs:</span>
+                  <span className="text-rose-400">-{formatINR(variableDirectCosts)}</span>
+                </div>
               </div>
-              <div className="flex justify-between py-1 border-b border-slate-800/60">
-                <span className="text-slate-400">Fixed Cost Absorption:</span>
-                <span className="text-slate-300">{formatINR(breakdown.fixedCostAbsorption)}</span>
-              </div>
+
+              {/* Gross Contribution Margin */}
               <div className="flex justify-between py-1.5 bg-slate-950 px-3 rounded-xl border border-slate-800">
-                <span className="text-indigo-300 font-bold">Fully Loaded Cost (FLC):</span>
-                <span className="text-emerald-400 font-bold text-sm">{formatINR(breakdown.fullyLoadedCost)}</span>
-              </div>
-              <div className="flex justify-between py-1.5 bg-slate-950 px-3 rounded-xl border border-slate-800">
-                <span className="text-slate-300 font-bold">Quoted Selling Price:</span>
-                <span className="text-indigo-400 font-bold text-sm">{formatINR(price)}</span>
-              </div>
-              <div className="flex justify-between py-1.5 bg-slate-950 px-3 rounded-xl border border-slate-800">
-                <span className="text-slate-300 font-bold">Projected Net Profit:</span>
-                <span className={`font-bold text-sm ${projectedProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                  {formatINR(projectedProfit)}
+                <span className="text-indigo-300 font-bold">Gross Contribution Margin:</span>
+                <span className={`font-bold ${grossContributionMargin >= 0 ? 'text-indigo-300' : 'text-rose-400'}`}>
+                  {formatINR(grossContributionMargin)} ({grossContributionMarginPct.toFixed(1)}%)
                 </span>
               </div>
-            </div>
-          </div>
 
-          {/* Win Probability & Expected Value Gauge */}
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <span className="text-xs font-mono font-bold uppercase text-cyan-400 flex items-center gap-1.5">
-                <BarChart2 className="w-4 h-4" />
-                Predictive Bid Intelligence
-              </span>
-              <span className="text-xs font-mono text-slate-400">QCBS Forecast</span>
+              {/* Less Fixed & Overhead */}
+              <div className="space-y-1 py-1.5 border-b border-slate-800/60 text-slate-400 text-[0.6875rem]">
+                <div className="flex justify-between">
+                  <span>(-) Operating Overhead & Financing:</span>
+                  <span className="text-slate-300">-{formatINR(overheadAndFinancing)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>(-) Fixed Cost Absorption:</span>
+                  <span className="text-slate-300">-{formatINR(fixedCostsAbsorption)}</span>
+                </div>
+              </div>
+
+              {/* Total Fully Loaded Cost */}
+              <div className="flex justify-between py-1.5 bg-slate-950 px-3 rounded-xl border border-slate-800">
+                <span className="text-slate-400 font-bold">Fully Loaded Cost (FLC):</span>
+                <span className="text-slate-200 font-bold">{formatINR(fullyLoadedCost)}</span>
+              </div>
+
+              {/* Projected Operating Profit (EBIT) */}
+              <div className={`flex justify-between py-2.5 px-3.5 rounded-2xl border text-sm font-bold ${
+                projectedOperatingProfit >= 0
+                  ? 'bg-emerald-950/60 border-emerald-700/80 text-emerald-300'
+                  : 'bg-rose-950/60 border-rose-700/80 text-rose-300'
+              }`}>
+                <span>Projected Operating Profit:</span>
+                <span className="font-mono text-base">
+                  {projectedOperatingProfit >= 0 ? '+' : ''}{formatINR(projectedOperatingProfit)}
+                </span>
+              </div>
+
+              {/* Estimated Corporate Tax */}
+              <div className="flex justify-between py-1 text-slate-400 text-[0.6875rem]">
+                <span>(-) Corporate Tax Allocation ({(taxRate * 100).toFixed(0)}%):</span>
+                <span className="text-slate-300">-{formatINR(projectedTax)}</span>
+              </div>
+
+              {/* Projected Realized Net Profit */}
+              <div className="flex justify-between py-2 bg-slate-950 px-3.5 rounded-2xl border border-slate-800 text-xs font-bold">
+                <span className="text-slate-300">Projected Realized Net Profit:</span>
+                <span className={`font-mono ${projectedNetProfit >= 0 ? 'text-emerald-400 text-sm' : 'text-rose-400 text-sm'}`}>
+                  {projectedNetProfit >= 0 ? '+' : ''}{formatINR(projectedNetProfit)}
+                </span>
+              </div>
+
             </div>
 
-            <div className="grid grid-cols-2 gap-3 text-center">
-              <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800">
-                <span className="text-[0.625rem] text-slate-500 font-mono uppercase block mb-0.5">Est. Win Probability</span>
-                <span className="text-2xl font-mono font-bold text-cyan-400">
+            {/* QCBS Win Probability & Expected Value Summary */}
+            <div className="grid grid-cols-2 gap-2.5 pt-2 border-t border-slate-800 text-center">
+              <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                <span className="text-[0.5625rem] text-slate-500 font-mono uppercase block">Win Probability</span>
+                <span className="text-xl font-mono font-bold text-cyan-400">
                   {(winProb * 100).toFixed(0)}%
                 </span>
               </div>
-              <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800">
-                <span className="text-[0.625rem] text-slate-500 font-mono uppercase block mb-0.5">Expected Value (EV)</span>
-                <span className={`text-2xl font-mono font-bold ${expectedValue >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+              <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                <span className="text-[0.5625rem] text-slate-500 font-mono uppercase block">Expected Value (EV)</span>
+                <span className={`text-xl font-mono font-bold ${expectedValue >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                   {formatINR(expectedValue)}
                 </span>
               </div>
             </div>
 
-            <p className="text-[0.6875rem] text-slate-400 font-mono leading-relaxed bg-slate-950 p-3 rounded-2xl border border-slate-800">
-              💡 <strong>QCBS Intelligence:</strong> Evaluates your Price ({priceTier}/5), Quality ({qualityTier}/5), Timeline ({timelineTier}/5), and Merged Risk/Reputation index ({riskReputationAnalysis.scaleOf5}/5) against standard competition.
-            </p>
           </div>
 
         </div>

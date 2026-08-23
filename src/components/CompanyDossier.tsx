@@ -181,39 +181,15 @@ export const CompanyDossier: React.FC<CompanyDossierProps> = ({
       </div>
 
       {/* Action Buttons */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
-        {onUpdateProfile && (
-          <button
-            type="button"
-            onClick={() => setIsSetupModalOpen(true)}
-            className="w-full sm:w-auto px-5 py-3 rounded-xl bg-slate-900 border border-slate-700 hover:border-indigo-500 text-slate-200 font-semibold text-xs transition flex items-center justify-center gap-2 cursor-pointer shadow-md"
-          >
-            <Sliders className="w-4 h-4 text-indigo-400" />
-            <span>Customize Strategy (10 Points)</span>
-            <span className="text-[0.625rem] bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded font-mono">
-              Q:{profile.qualityLevel} • S:{profile.speedLevel || 3} • C:{profile.costEfficiency || 4}
-            </span>
-          </button>
-        )}
-
+      <div className="flex justify-end pt-2">
         <button
           onClick={onProceed}
-          className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-lg shadow-indigo-600/30 transition flex items-center justify-center gap-2 cursor-pointer min-h-12 ml-auto"
+          className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-xl shadow-indigo-600/30 transition flex items-center justify-center gap-2 cursor-pointer active:scale-95"
         >
-          Proceed to RFQ Notice Board
-          <ArrowRight className="w-4 h-4" />
+          <span>Proceed to RFQ Tender Notice & Quoting</span>
+          <ArrowRight className="w-5 h-5" />
         </button>
       </div>
-
-      {/* Company Setup Modal */}
-      {onUpdateProfile && (
-        <CompanySetupModal
-          isOpen={isSetupModalOpen}
-          onClose={() => setIsSetupModalOpen(false)}
-          profile={profile}
-          onSave={onUpdateProfile}
-        />
-      )}
 
     </div>
   );

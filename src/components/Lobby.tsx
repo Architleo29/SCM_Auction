@@ -231,34 +231,17 @@ export const Lobby: React.FC<LobbyProps> = ({
                             )}
                           </div>
                           <p className="text-xs font-mono mt-1 flex flex-wrap items-center gap-1.5">
-                            <span className="bg-slate-900 px-2 py-0.5 rounded text-amber-300 font-semibold border border-slate-800 text-[0.6875rem]">
-                              ⭐ Quality: {player.profile?.qualityLevel || 3}/5
+                            <span className="bg-slate-900 px-2.5 py-0.5 rounded-full text-indigo-300 font-semibold border border-slate-800 text-[0.6875rem]">
+                              🏢 Supplier Firm
                             </span>
-                            <span className="bg-slate-900 px-2 py-0.5 rounded text-indigo-300 font-semibold border border-slate-800 text-[0.6875rem]">
-                              ⚡ Speed: {player.profile?.speedLevel || 3}/5
-                            </span>
-                            <span className="bg-slate-900 px-2 py-0.5 rounded text-emerald-300 font-semibold border border-slate-800 text-[0.6875rem]">
-                              📉 Eff: {player.profile?.costEfficiency || 4}/5
-                            </span>
-                            <span className="text-[0.6875rem] text-slate-500">
-                              (Rep: {player.reputation})
+                            <span className="bg-slate-900 px-2.5 py-0.5 rounded-full text-emerald-300 font-semibold border border-slate-800 text-[0.6875rem]">
+                              Market Reputation: {player.reputation || player.profile?.reputationScore || 75}/100
                             </span>
                           </p>
                         </div>
                       </div>
 
                       <div className="flex items-center gap-2 self-end sm:self-auto">
-                        {player.id === myPlayerId && !isHost && onUpdatePlayerProfile && (
-                          <button
-                            type="button"
-                            onClick={() => setIsSetupModalOpen(true)}
-                            className="px-3 py-1.5 rounded-xl bg-indigo-600/30 hover:bg-indigo-600/50 border border-indigo-500/40 text-indigo-200 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer shadow-sm"
-                          >
-                            <Sliders className="w-3.5 h-3.5" />
-                            <span>Strategy (10 Pts)</span>
-                          </button>
-                        )}
-
                         {isHost && (
                           <button
                             onClick={() => onRemovePlayer(player.id)}
@@ -316,7 +299,7 @@ export const Lobby: React.FC<LobbyProps> = ({
                 </div>
               </div>
             ) : (
-              /* Dedicated Vendor Ready & Strategy Action Panel */
+              /* Dedicated Vendor Ready Action Panel */
               <div className="mt-6 pt-4 border-t border-slate-800 space-y-3">
                 <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
@@ -330,42 +313,31 @@ export const Lobby: React.FC<LobbyProps> = ({
                           </span>
                         ) : (
                           <span className="text-xs font-mono font-bold text-amber-400 flex items-center gap-1 bg-amber-950/60 px-2 py-0.5 rounded border border-amber-800/60">
-                            <Clock className="w-3.5 h-3.5" /> NOT READY (CONFIGURE STRATEGY)
+                            <Clock className="w-3.5 h-3.5" /> NOT READY (CLICK TO READY UP)
                           </span>
                         )}
                       </div>
                       <p className="text-[0.6875rem] text-slate-400 font-mono mt-0.5">
                         {me?.ready 
-                          ? 'Your firm is ready! The Buyer can launch the procurement round at any moment.'
-                          : 'Configure your 10 strategy points and click "I Am Ready" to signal the Buyer.'}
+                          ? 'Your firm is ready! Once the Buyer publishes the RFQ tender, you will adjust strategy & submit your commercial quotation.'
+                          : 'Click "I Am Ready" to signal the Buyer that you are prepared for the tender.'}
                       </p>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2.5 shrink-0 self-stretch sm:self-auto">
-                    {onUpdatePlayerProfile && (
-                      <button
-                        type="button"
-                        onClick={() => setIsSetupModalOpen(true)}
-                        className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700 hover:border-indigo-500 text-indigo-300 font-semibold text-xs transition flex items-center justify-center gap-1.5 cursor-pointer shadow-md"
-                      >
-                        <Sliders className="w-3.5 h-3.5 text-indigo-400" />
-                        <span>Strategy (10 Pts)</span>
-                      </button>
-                    )}
-
                     {onToggleReady && (
                       <button
                         type="button"
                         onClick={() => onToggleReady(!me?.ready)}
-                        className={`flex-1 sm:flex-none px-5 py-2.5 rounded-xl font-bold text-xs shadow-xl flex items-center justify-center gap-1.5 transition cursor-pointer active:scale-95 ${
+                        className={`w-full sm:w-auto px-6 py-3 rounded-xl font-bold text-xs shadow-xl flex items-center justify-center gap-2 transition cursor-pointer active:scale-95 ${
                           me?.ready
                             ? 'bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-600/80 text-emerald-300'
                             : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30'
                         }`}
                       >
                         <CheckCircle2 className="w-4 h-4" />
-                        <span>{me?.ready ? 'Ready (Click to Edit)' : 'I Am Ready!'}</span>
+                        <span>{me?.ready ? 'Ready (Click to un-ready)' : '✅ I Am Ready!'}</span>
                       </button>
                     )}
                   </div>
