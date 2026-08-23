@@ -1319,7 +1319,7 @@ export const App: React.FC = () => {
                 Procurement Authority is Customizing Tender
               </h3>
               <p className="text-xs text-slate-400 leading-relaxed max-w-md mx-auto">
-                The Buyer is currently setting the scope, baseline labor & material requirements, budget ceiling, and QCBS evaluation criteria for Round {roomConfig?.currentRound || 1}.
+                The Buyer is currently setting the scope, baseline labor & material requirements, auction starting price, and QCBS evaluation criteria for Round {roomConfig?.currentRound || 1}.
               </p>
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-950 border border-slate-800 text-xs font-mono text-indigo-400">
                 <Clock className="w-4 h-4 animate-spin text-amber-400" />
@@ -1346,7 +1346,7 @@ export const App: React.FC = () => {
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
                 <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800">
-                  <span className="text-slate-500 uppercase block text-[0.625rem]">Budget Ceiling</span>
+                  <span className="text-slate-500 uppercase block text-[0.625rem]">Auction Starting Price</span>
                   <strong className="text-emerald-400 text-sm">{formatINR(currentRfq.budgetCeiling)}</strong>
                 </div>
                 <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800">

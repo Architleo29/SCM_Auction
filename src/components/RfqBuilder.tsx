@@ -288,7 +288,7 @@ export const RfqBuilder: React.FC<RfqBuilderProps> = ({
           </div>
           <h2 className="text-xl sm:text-2xl font-bold text-slate-100">Architect Contract & Tender Parameters</h2>
           <p className="text-xs text-slate-400 mt-1">
-            Customize commercial terms, budget ceiling in INR (₹), direct drivers, and auto-balanced evaluation weights (100%).
+            Customize commercial terms, auction starting price in INR (₹), direct drivers, and auto-balanced evaluation weights (100%).
           </p>
         </div>
 
@@ -509,7 +509,7 @@ export const RfqBuilder: React.FC<RfqBuilderProps> = ({
               <strong className="text-slate-100">{formatINR(estBaselineFlc)}</strong>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-slate-400">Implied Ceiling Margin:</span>
+              <span className="text-slate-400">Implied Starting Price Margin:</span>
               <span className={`px-2 py-0.5 rounded font-bold ${
                 impliedMarginPct >= 15 ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-amber-950 text-amber-400 border border-amber-800'
               }`}>
