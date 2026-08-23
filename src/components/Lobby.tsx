@@ -506,7 +506,7 @@ export const Lobby: React.FC<LobbyProps> = ({
           </div>
 
           <button
-            onClick={() => onQuickPlayVsBots('english')}
+            onClick={() => onQuickPlayVsBots && onQuickPlayVsBots('english')}
             className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white font-bold text-sm shadow-xl shadow-orange-600/30 transition flex items-center justify-center gap-2 cursor-pointer active:scale-95 shrink-0"
           >
             <Play className="w-4 h-4 fill-current" />
