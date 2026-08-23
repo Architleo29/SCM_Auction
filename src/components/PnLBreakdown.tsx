@@ -340,15 +340,27 @@ export const PnLBreakdown: React.FC<PnLBreakdownProps> = ({
         {isHost ? (
           <button
             onClick={onProceedToNextRound}
-            className="w-full sm:w-auto px-7 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-xl shadow-indigo-600/30 transition flex items-center justify-center gap-2 cursor-pointer min-h-[3.125rem] active:scale-95"
+            className={`w-full sm:w-auto px-7 py-3.5 rounded-2xl text-white font-semibold text-sm shadow-xl transition flex items-center justify-center gap-2 cursor-pointer min-h-[3.125rem] active:scale-95 ${
+              currentRound < totalRounds 
+                ? 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-600/30' 
+                : 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/30'
+            }`}
           >
-            <span>{currentRound < totalRounds ? `Proceed to Next Round (Round ${currentRound + 1})` : 'View Final Championship 🏆'}</span>
+            <span>
+              {currentRound < totalRounds 
+                ? `Proceed to Next Round (Round ${currentRound + 1} of ${totalRounds})` 
+                : 'Complete Tournament & View Final Review 🏆'}
+            </span>
             <ArrowRight className="w-4 h-4" />
           </button>
         ) : (
           <div className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-slate-900 border border-slate-800 text-slate-300 text-xs font-mono">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-            <span>Waiting for Host to begin {currentRound < totalRounds ? `Round ${currentRound + 1}` : 'Championship'}...</span>
+            <span>
+              {currentRound < totalRounds 
+                ? `Waiting for Host to begin Round ${currentRound + 1}...` 
+                : 'Tournament Finished — Waiting for Host to show Final Review 🏆...'}
+            </span>
           </div>
         )}
       </div>
