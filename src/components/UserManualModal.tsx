@@ -5,6 +5,7 @@ import {
   X, 
   Gavel, 
   TrendingDown, 
+  TrendingUp,
   Percent, 
   Award, 
   Zap, 
@@ -16,7 +17,11 @@ import {
   ShieldCheck,
   Star,
   DollarSign,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Users,
+  Trophy,
+  Crown,
+  Target
 } from 'lucide-react';
 
 interface UserManualModalProps {
@@ -82,7 +87,7 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({ isOpen, onClos
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
-            <span>🔨</span> 2. Reverse English Mechanics
+            <span>🔨</span> 2. Reverse English (Procurement)
           </button>
 
           <button
@@ -93,7 +98,7 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({ isOpen, onClos
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
-            <span>📦</span> 3. Forward English (Buyer Purse Mode)
+            <span>📦</span> 3. Forward English (Asset Draft)
           </button>
 
           <button
@@ -104,7 +109,7 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({ isOpen, onClos
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
-            <span>💡</span> 3. Quality vs Price Economics
+            <span>💡</span> 4. Quality vs Price Economics
           </button>
 
           <button
@@ -115,7 +120,7 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({ isOpen, onClos
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
-            <span>🏆</span> 4. Executive Leaderboard
+            <span>🏆</span> 5. Executive Leaderboard
           </button>
         </div>
 
@@ -319,7 +324,117 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({ isOpen, onClos
             </div>
           )}
 
-          {/* TAB 3: QUALITY VS PRICE STRATEGY */}
+          {/* TAB 3: FORWARD ENGLISH ASSET DRAFT (BUYER PURSE MODE) */}
+          {activeTab === 'forward' && (
+            <div className="space-y-4 animate-fade-in">
+              
+              {/* Main Banner */}
+              <div className="bg-slate-950 p-5 rounded-2xl border border-purple-500/40 space-y-3 shadow-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-purple-400 font-bold text-sm">
+                    <ShoppingBag className="w-5 h-5 text-purple-400" />
+                    <span>📦 Forward English Multi-Buyer Asset Draft</span>
+                  </div>
+                  <span className="text-[0.625rem] font-mono uppercase bg-purple-950 text-purple-300 border border-purple-800 px-2.5 py-0.5 rounded-full font-bold">
+                    Asset Draft Protocol
+                  </span>
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  In a <strong>Forward English Asset Draft</strong>, the room <strong>Host acts as the Auctioneer</strong> overseeing 6 high-value supply chain assets (e.g. Cold Storage Warehouses, Automated Port Terminals, Fleet Depots). <strong>2 to 8 joined guest players compete as Buyers</strong>, each equipped with a <strong>₹10,00,000 Starting Purse</strong>.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs pt-1 font-mono">
+                  <div className="bg-slate-900/90 p-3 rounded-xl border border-slate-800 space-y-1">
+                    <strong className="text-purple-300 block">👑 Auctioneer (Host)</strong>
+                    <span className="text-slate-400">
+                      Monitors all live buyer purses and controls lot progression without bidding.
+                    </span>
+                  </div>
+                  <div className="bg-slate-900/90 p-3 rounded-xl border border-slate-800 space-y-1">
+                    <strong className="text-emerald-400 block">💰 ₹10L Starting Purse</strong>
+                    <span className="text-slate-400">
+                      Spendable capital allocated across 6 sequential lots. Winning prices are deducted upon award.
+                    </span>
+                  </div>
+                  <div className="bg-slate-900/90 p-3 rounded-xl border border-slate-800 space-y-1">
+                    <strong className="text-amber-400 block">📈 Ascending Bidding</strong>
+                    <span className="text-slate-400">
+                      Bidders raise the price upwards with +8s anti-sniping protection until the hammer falls!
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Valuation Models: Private vs Common Value */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                
+                {/* Mode A: Private Valuation */}
+                <div className="bg-slate-950 p-4 rounded-2xl border border-indigo-500/30 space-y-2">
+                  <div className="flex items-center gap-2 text-indigo-300 font-bold text-xs">
+                    <Target className="w-4 h-4 text-indigo-400" />
+                    <span>🎯 Mode A: Private Value Synergies</span>
+                  </div>
+                  <p className="text-xs text-slate-300 leading-relaxed">
+                    Each buyer receives a unique, private operational valuation for the lot based on their firm's existing network synergies.
+                  </p>
+                  <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-[11px] font-mono text-slate-400 space-y-1">
+                    <div>• <strong>Ceiling Rule:</strong> Bid up to your private valuation.</div>
+                    <div>• <strong>Surplus:</strong> (Private Value − Winning Price).</div>
+                    <div>• <strong>Risk:</strong> Low — no estimation error.</div>
+                  </div>
+                </div>
+
+                {/* Mode B: Common Value & Winner's Curse */}
+                <div className="bg-slate-950 p-4 rounded-2xl border border-purple-500/30 space-y-2">
+                  <div className="flex items-center gap-2 text-purple-300 font-bold text-xs">
+                    <AlertTriangle className="w-4 h-4 text-amber-400" />
+                    <span>🎲 Mode B: Common Value & Winner's Curse</span>
+                  </div>
+                  <p className="text-xs text-slate-300 leading-relaxed">
+                    The true market value of the asset is identical for all buyers, but every buyer receives an imperfect, noisy estimate.
+                  </p>
+                  <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-[11px] font-mono text-slate-400 space-y-1">
+                    <div>• <strong>Winner's Curse:</strong> Aggressive bidders who bid their raw estimate overpay and lose surplus!</div>
+                    <div>• <strong>Anti-Curse Shading:</strong> Ceiling is discounted by ~15% to 35% based on bidder count ($N$).</div>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Purse Capital & Reserve Rules */}
+              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
+                <div className="flex items-center gap-2 text-slate-200 font-bold text-xs">
+                  <DollarSign className="w-4 h-4 text-emerald-400" />
+                  <span>Purse Management & 10% Reserve Constraint</span>
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  To prevent reckless buyers from spending their entire ₹10,00,000 on early lots, the simulator enforces a <strong>10% Reserve Lock</strong> for remaining lots:
+                </p>
+                <div className="bg-slate-900 p-3 rounded-xl border border-slate-800 font-mono text-xs text-center text-emerald-300 font-bold">
+                  Max Spendable Bid = Remaining Purse − (10% × Starting Purse × Remaining Rounds Ratio)
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  While holding the top bid on a live lot, your active bid is committed. When the lot closes, the winning bid is deducted and the asset is stored in your permanent portfolio haul!
+                </p>
+              </div>
+
+              {/* Championship Leaderboard Formula */}
+              <div className="bg-slate-950 p-4 rounded-2xl border border-purple-500/40 space-y-2">
+                <div className="flex items-center gap-2 text-purple-300 font-bold text-xs">
+                  <Trophy className="w-4 h-4 text-amber-400" />
+                  <span>Portfolio Championship Scoring</span>
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  At the end of all 6 lots, the championship winner is ranked by <strong>Net Portfolio Surplus</strong>:
+                </p>
+                <div className="bg-slate-900 p-3 rounded-xl border border-slate-800 font-mono text-xs text-center text-purple-300 font-bold">
+                  Net Surplus = Total Value of Acquired Assets Captured − Total Price Paid
+                </div>
+              </div>
+
+            </div>
+          )}
+
+          {/* TAB 4: QUALITY VS PRICE STRATEGY */}
           {activeTab === 'strategy' && (
             <div className="space-y-4 animate-fade-in">
               
