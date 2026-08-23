@@ -48,9 +48,9 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
   }, [profile, rfq]);
 
   // Initial Price (e.g. 90% of ceiling or 1.12x FLC)
-  const [price, setPrice] = useState<number>(() => {
-    return Math.min(Math.round(rfq.budgetCeiling * 0.90), Math.round(initialFlc * 1.15));
-  });
+  const initialCalculatedPrice = Math.min(Math.round(rfq.budgetCeiling * 0.90), Math.round(initialFlc * 1.15));
+  const [price, setPrice] = useState<number>(initialCalculatedPrice);
+  const [priceInput, setPriceInput] = useState<string>(initialCalculatedPrice.toString());
 
   // Recompute cost breakdown live whenever qualityTier or price changes
   const breakdown = useMemo(() => {
@@ -75,21 +75,38 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
   // When price tier changes
   const handlePriceTierChange = (newTier: number) => {
     setPriceTier(newTier);
-    setPrice(calculatedPriceForTier(newTier, breakdown.fullyLoadedCost, rfq.budgetCeiling));
+    const calculated = calculatedPriceForTier(newTier, breakdown.fullyLoadedCost, rfq.budgetCeiling);
+    setPrice(calculated);
+    setPriceInput(calculated.toString());
   };
 
-  // Direct custom price input
-  const handleDirectPriceChange = (val: number) => {
-    const p = Math.max(1000, val);
-    setPrice(p);
-    const flc = breakdown.fullyLoadedCost;
-    const marginPct = flc > 0 ? (p - flc) / p : 0.15;
-    
-    if (marginPct >= 0.25) setPriceTier(1);
-    else if (marginPct >= 0.16) setPriceTier(2);
-    else if (marginPct >= 0.10) setPriceTier(3);
-    else if (marginPct >= 0.04) setPriceTier(4);
-    else setPriceTier(5);
+  // Direct custom price input - allows typing ANY number without clamping during typing
+  const handleDirectPriceChange = (textVal: string) => {
+    setPriceInput(textVal);
+    const cleaned = textVal.replace(/[^0-9]/g, '');
+    if (cleaned === '') {
+      return;
+    }
+    const p = Number(cleaned);
+    if (!isNaN(p) && p > 0) {
+      setPrice(p);
+      const flc = breakdown.fullyLoadedCost;
+      const marginPct = flc > 0 ? (p - flc) / p : 0.15;
+      
+      if (marginPct >= 0.25) setPriceTier(1);
+      else if (marginPct >= 0.16) setPriceTier(2);
+      else if (marginPct >= 0.10) setPriceTier(3);
+      else if (marginPct >= 0.04) setPriceTier(4);
+      else setPriceTier(5);
+    }
+  };
+
+  const handlePriceBlur = () => {
+    if (priceInput.trim() === '' || Number(priceInput) <= 0) {
+      setPriceInput(price.toString());
+    } else {
+      setPriceInput(price.toString());
+    }
   };
 
   // Local countdown timer
@@ -280,9 +297,12 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
               <div className="relative flex-1">
                 <span className="absolute left-3.5 top-2.5 text-slate-500 font-mono text-sm">₹</span>
                 <input
-                  type="number"
-                  value={price}
-                  onChange={(e) => handleDirectPriceChange(Number(e.target.value))}
+                  type="text"
+                  inputMode="numeric"
+                  value={priceInput}
+                  onChange={(e) => handleDirectPriceChange(e.target.value)}
+                  onBlur={handlePriceBlur}
+                  placeholder="Enter custom bid price"
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-8 pr-3.5 py-2 text-base font-mono font-bold text-emerald-400 focus:outline-none focus:border-emerald-500"
                 />
               </div>

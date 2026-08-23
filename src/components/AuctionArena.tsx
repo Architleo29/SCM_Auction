@@ -49,8 +49,8 @@ export const AuctionArena: React.FC<AuctionArenaProps> = ({
   const step2 = Math.max(2500, Math.round(rfq.budgetCeiling * 0.025));
   const step3 = Math.max(5000, Math.round(rfq.budgetCeiling * 0.05));
 
-  // Custom bid input for English mode
-  const [customBid, setCustomBid] = useState<number>(auctionState.currentPrice - step1);
+  // Custom bid input for English mode (Allows freely typing any price)
+  const [customBidInput, setCustomBidInput] = useState<string>((auctionState.currentPrice - step1).toString());
   const [isHoldingJapanese, setIsHoldingJapanese] = useState<boolean>(true);
 
   // Local smooth ticking auction countdown clock (Guarantees ticking on guest devices)
@@ -69,7 +69,7 @@ export const AuctionArena: React.FC<AuctionArenaProps> = ({
 
   // Sync custom bid whenever currentPrice decreases
   useEffect(() => {
-    setCustomBid(auctionState.currentPrice - step1);
+    setCustomBidInput(Math.max(1000, auctionState.currentPrice - step1).toString());
   }, [auctionState.currentPrice, step1]);
 
   const currentMarginAtPrice = auctionState.currentPrice > 0 
@@ -77,8 +77,12 @@ export const AuctionArena: React.FC<AuctionArenaProps> = ({
     : 0;
 
   const handlePlaceBid = (amount: number) => {
-    if (amount < flc * 0.7) {
-      alert(`Cannot bid below 70% of FLC (${formatINR(flc * 0.7)})`);
+    if (amount <= 0) {
+      alert('Please enter a valid positive bid amount.');
+      return;
+    }
+    if (amount >= auctionState.currentPrice) {
+      alert(`Your counter-bid must be lower than the current leading price (${formatINR(auctionState.currentPrice)})`);
       return;
     }
     sounds.bid();
@@ -315,15 +319,20 @@ export const AuctionArena: React.FC<AuctionArenaProps> = ({
                 <div className="relative flex-1">
                   <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-mono font-bold">₹</span>
                   <input
-                    type="number"
-                    value={customBid}
-                    onChange={(e) => setCustomBid(Number(e.target.value))}
+                    type="text"
+                    inputMode="numeric"
+                    value={customBidInput}
+                    onChange={(e) => setCustomBidInput(e.target.value)}
+                    placeholder="Enter any counter-bid"
                     className="w-full bg-slate-950 border border-slate-800 rounded-2xl pl-8 pr-4 py-2.5 text-sm font-mono font-bold text-slate-100 focus:outline-none focus:border-indigo-500 min-h-[44px]"
                   />
                 </div>
                 <button
-                  onClick={() => handlePlaceBid(customBid)}
-                  disabled={customBid >= auctionState.currentPrice || customBid < flc * 0.7}
+                  onClick={() => {
+                    const parsed = Number(customBidInput.replace(/[^0-9]/g, ''));
+                    handlePlaceBid(parsed);
+                  }}
+                  disabled={!customBidInput || Number(customBidInput.replace(/[^0-9]/g, '')) >= auctionState.currentPrice}
                   className="px-6 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs sm:text-sm shadow-lg shadow-indigo-600/30 transition disabled:opacity-40 min-h-[44px] flex items-center justify-center cursor-pointer active:scale-95"
                 >
                   Submit Counter-Bid
