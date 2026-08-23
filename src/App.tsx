@@ -607,69 +607,14 @@ export const App: React.FC = () => {
   // 3d. Publish Custom RFQ & Begin Quoting / Bidding
   const handlePublishCustomRfq = (rfq: RFQ) => {
     setCurrentRfq(rfq);
+    setSubmittedQuotes([]);
+    setPhase('DOSSIER');
 
-    const isSpectating = me?.name.includes('Director') || me?.name.includes('Spectator');
-
-    if (isSpectating) {
-      // AI-Only Mode: Auto-generate quotes for all 4 AI bots and enter Live Auction
-      const currentPlayers = { ...playersRef.current };
-      const quotes: Quote[] = [];
-
-      Object.values(currentPlayers).forEach(p => {
-        if (p.isAi) {
-          const q = generateAiQuote(p, rfq, currentPlayers);
-          quotes.push(q);
-          currentPlayers[p.id].submittedQuote = q;
-        } else {
-          currentPlayers[p.id].submittedQuote = null;
-        }
-      });
-
-      setPlayers(currentPlayers);
-      setSubmittedQuotes(quotes);
-
-      // Launch into Live Auction Arena
-      const initPrice = rfq.auctionFormat === 'dutch'
-        ? Math.round(rfq.budgetCeiling * 1.25)
-        : Math.round(rfq.budgetCeiling * 0.98);
-
-      const initialAuction: AuctionState = {
-        format: rfq.auctionFormat,
-        status: 'BIDDING',
-        currentPrice: initPrice,
-        budgetCeiling: rfq.budgetCeiling,
-        timeRemaining: rfq.auctionFormat === 'dutch' ? 30 : 25,
-        currentLeaderId: quotes[0]?.playerId || null,
-        currentLeaderName: quotes[0]?.playerName || null,
-        bids: [
-          {
-            timestamp: Date.now(),
-            playerId: quotes[0]?.playerId || 'bot_0',
-            playerName: quotes[0]?.playerName || 'Opening Bid',
-            amount: initPrice,
-            isAi: true
-          }
-        ],
-        activePlayerIds: Object.keys(currentPlayers).filter(id => id !== myPlayerId),
-        exits: [],
-        winnerId: null,
-        finalPrice: initPrice,
-        dutchTickCount: 0
-      };
-
-      setActiveAuction(initialAuction);
-      setPhase('AUCTION');
-      startAuctionLoop(initialAuction);
-    } else {
-      // Solo / Multiplayer: Player moves to Quoting
-      setSubmittedQuotes([]);
-      setPhase('DOSSIER');
-      broadcastSync({
-        phase: 'DOSSIER',
-        currentRfq: rfq,
-        roomConfig: roomConfigRef.current
-      });
-    }
+    broadcastSync({
+      phase: 'DOSSIER',
+      currentRfq: rfq,
+      roomConfig: roomConfigRef.current || roomConfig
+    });
   };
 
   // 4. Remove Player / Bot
@@ -1235,8 +1180,7 @@ export const App: React.FC = () => {
     });
   };
 
-  const isSpectating = me?.name.includes('Director') || me?.name.includes('Spectator');
-  const pnlDisplayPlayer = (!isSpectating && me?.lastPnL) ? me : (winnerPlayer || Object.values(players).find(p => p.isAi && p.lastPnL) || Object.values(players)[0]);
+  const pnlDisplayPlayer = (!isHost && me?.lastPnL) ? me : (winnerPlayer || Object.values(players).find(p => p.isAi && p.lastPnL) || Object.values(players)[0]);
 
   return (
     <ErrorBoundary>
@@ -1268,7 +1212,10 @@ export const App: React.FC = () => {
             onAddAiBot={handleAddAiBot}
             onRemovePlayer={handleRemovePlayer}
             onStartGame={handleStartGame}
-            onOpenRfqBuilder={() => setPhase('RFQ_BUILDER')}
+            onOpenRfqBuilder={() => {
+              setPhase('RFQ_BUILDER');
+              broadcastSync({ phase: 'RFQ_BUILDER' });
+            }}
             onOpenManualModal={() => setIsManualModalOpen(true)}
             onUpdatePlayerProfile={handleUpdateMyProfile}
             onToggleReady={handleToggleReady}
@@ -1278,14 +1225,32 @@ export const App: React.FC = () => {
         )}
 
         {phase === 'RFQ_BUILDER' && (
-          <RfqBuilder
-            key={`rfq_builder_round_${roomConfig?.currentRound || 1}`}
-            initialScenarioId={roomConfig?.scenarioId || 'manufacturing'}
-            selectedAuctionFormat={roomConfig?.auctionFormatSequence[((roomConfig.currentRound || 1) - 1) % roomConfig.auctionFormatSequence.length] || 'english'}
-            roundNumber={roomConfig?.currentRound || 1}
-            onPublishRfq={handlePublishCustomRfq}
-            onBackToMainScreen={handleReturnToMainScreen}
-          />
+          isHost ? (
+            <RfqBuilder
+              key={`rfq_builder_round_${roomConfig?.currentRound || 1}`}
+              initialScenarioId={roomConfig?.scenarioId || 'manufacturing'}
+              selectedAuctionFormat={roomConfig?.auctionFormatSequence[((roomConfig.currentRound || 1) - 1) % roomConfig.auctionFormatSequence.length] || 'english'}
+              roundNumber={roomConfig?.currentRound || 1}
+              onPublishRfq={handlePublishCustomRfq}
+              onBackToMainScreen={handleReturnToMainScreen}
+            />
+          ) : (
+            <div className="max-w-xl mx-auto p-6 text-center space-y-4 bg-slate-900 border border-slate-800 rounded-3xl shadow-xl animate-fade-in my-8">
+              <div className="w-14 h-14 rounded-2xl bg-indigo-600/20 border border-indigo-500/40 text-indigo-400 flex items-center justify-center mx-auto animate-pulse">
+                <Sliders className="w-7 h-7" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-100">
+                Procurement Authority is Customizing Tender
+              </h3>
+              <p className="text-xs text-slate-400 leading-relaxed max-w-md mx-auto">
+                The Buyer is currently setting the scope, baseline labor & material requirements, budget ceiling, and QCBS evaluation criteria for Round {roomConfig?.currentRound || 1}.
+              </p>
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-950 border border-slate-800 text-xs font-mono text-indigo-400">
+                <Clock className="w-4 h-4 animate-spin text-amber-400" />
+                <span>Waiting for tender publication...</span>
+              </div>
+            </div>
+          )
         )}
 
         {phase === 'DOSSIER' && isHost && currentRfq && (
