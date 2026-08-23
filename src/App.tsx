@@ -1078,11 +1078,8 @@ export const App: React.FC = () => {
     const sortedInitialQuotes = [...finalQuotePool].sort((a, b) => a.price - b.price);
     const lowestInitialQuote = sortedInitialQuotes[0];
 
-    const initPrice = rfq.auctionFormat === 'english' 
-      ? Math.round(rfq.budgetCeiling * 0.65) // Starts low and ticks UP
-      : rfq.auctionFormat === 'english'
-      ? Math.round(rfq.budgetCeiling * 1.25) // Starts high and ticks DOWN
-      : (lowestInitialQuote ? lowestInitialQuote.price : Math.round(rfq.budgetCeiling * 0.98));
+    // Reverse English Opening Floor Price = lowest submitted quote from vendors, or 98% of budget ceiling
+    const initPrice = lowestInitialQuote ? lowestInitialQuote.price : Math.round(rfq.budgetCeiling * 0.98);
 
     const initialAuction: AuctionState = {
       format: rfq.auctionFormat,

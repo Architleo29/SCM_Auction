@@ -558,7 +558,21 @@ export const Lobby: React.FC<LobbyProps> = ({
                 />
               </div>
 
-
+              {/* Industry Scenario Selector */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">Industry Sector</label>
+                <select
+                  value={selectedScenario}
+                  onChange={(e) => setSelectedScenario(e.target.value as IndustryScenarioId)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 cursor-pointer capitalize font-medium"
+                >
+                  {Object.values(SCENARIOS).map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} ({s.category})
+                    </option>
+                  ))}
+                </select>
+              </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -612,25 +626,39 @@ export const Lobby: React.FC<LobbyProps> = ({
                 </div>
               </div>
 
-              {/* Auction Format */}
+              {/* Auction Format Selector */}
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center justify-between">
-                  <span>Auction Format</span>
-                  <span className="text-xs font-mono text-orange-400 font-semibold">🔨 Reverse English</span>
+                  <span>Auction Format Mode</span>
+                  <span className="text-xs font-mono text-orange-400 font-bold">🔨 Reverse English</span>
                 </label>
-                <div className="py-2.5 px-3 rounded-xl bg-orange-500/10 border border-orange-500/40 text-xs font-mono text-orange-300 text-center font-bold">
-                  🔨 Reverse English Auction — Vendors compete by placing progressively lower bids
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="py-2.5 px-3 rounded-xl bg-orange-500/10 border border-orange-500/50 text-xs font-mono text-orange-300 text-center font-bold">
+                    <span className="block text-sm mb-0.5">🔨</span>
+                    <span>Reverse English</span>
+                    <span className="block text-[10px] text-slate-400 font-normal mt-0.5">Procurement Tender</span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => onStartForwardGame && onStartForwardGame('private')}
+                    className="py-2.5 px-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-purple-500/60 hover:bg-purple-950/30 text-xs font-mono text-purple-300 text-center font-bold transition cursor-pointer"
+                  >
+                    <span className="block text-sm mb-0.5">📦</span>
+                    <span>Forward English</span>
+                    <span className="block text-[10px] text-slate-400 font-normal mt-0.5">Multi-Buyer Purse</span>
+                  </button>
                 </div>
               </div>
             </div>
           </div>
 
           <button
-            onClick={() => onCreateRoom(selectedScenario, selectedRounds, selectedDifficulty, hostName, selectedMaxPlayers, chosenAuctionFormat)}
+            onClick={() => onCreateRoom(selectedScenario, selectedRounds, selectedDifficulty, hostName, selectedMaxPlayers, 'english')}
             className="w-full py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-xl shadow-indigo-600/30 transition flex items-center justify-center gap-2 mt-4 cursor-pointer active:scale-95"
           >
             <Sparkles className="w-4 h-4" />
-            Create {selectedMaxPlayers}-Vendor Room & Generate Code
+            <span>Create {selectedMaxPlayers}-Vendor Procurement Room & Generate Code</span>
           </button>
         </div>
 
