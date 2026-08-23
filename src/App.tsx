@@ -482,7 +482,7 @@ export const App: React.FC = () => {
       totalRounds,
       currentRound: 1,
       difficulty,
-      auctionFormatSequence: [auctionFormat, 'dutch', 'japanese', 'english', 'dutch', 'japanese'],
+      auctionFormatSequence: Array(totalRounds).fill(auctionFormat),
       maxPlayers,
       createdAt: Date.now()
     };
