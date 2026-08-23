@@ -16,6 +16,7 @@ import { GamePhase, PlayerState } from '../types/game';
 import { useTheme } from '../context/ThemeContext';
 import { sounds } from '../utils/soundEffects';
 import { calculatePlayerXp, getPlayerLevelInfo } from '../utils/gamification';
+import { isBuyerSpectator } from '../utils/formatters';
 
 interface NavbarProps {
   roomCode: string | null;
@@ -93,7 +94,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Gamified Level & XP Pill (§1.3 & §2.1) */}
-        {player && !player.name.includes('Director') && !player.name.includes('Spectator') && (
+        {player && !isBuyerSpectator(player) && (
           <div 
             onClick={onOpenDashboardModal}
             className="hidden md:flex items-center gap-2 bg-slate-950 px-3 py-1 rounded-xl border border-slate-800 cursor-pointer hover:border-indigo-500 transition group card-hover-lift"
