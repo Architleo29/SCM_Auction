@@ -180,24 +180,30 @@ export const App: React.FC = () => {
           const joinedProfile = event.payload.profile || generateCompanyProfile(event.payload.name, Math.floor(Math.random() * 8));
           joinedProfile.name = event.payload.name;
 
-          const newPlayer: PlayerState = {
-            id: joinedId,
-            name: event.payload.name,
-            isHost: event.payload.isHost,
-            isAi: false,
-            profile: joinedProfile,
-            score: 0,
-            bankedProfit: 0,
-            contractsWon: 0,
-            reputation: joinedProfile.reputationScore || 50,
-            intelPoints: 2,
-            disciplineWalkaways: 0,
-            ready: false,
-            submittedQuote: null,
-            history: []
-          };
-
           setPlayers(prev => {
+            const existing = prev[joinedId];
+            const newPlayer: PlayerState = existing ? {
+              ...existing,
+              name: event.payload.name || existing.name,
+              profile: { ...(existing.profile || {}), ...joinedProfile },
+              ready: event.payload.ready !== undefined ? event.payload.ready : existing.ready
+            } : {
+              id: joinedId,
+              name: event.payload.name,
+              isHost: event.payload.isHost,
+              isAi: false,
+              profile: joinedProfile,
+              score: 0,
+              bankedProfit: 0,
+              contractsWon: 0,
+              reputation: joinedProfile.reputationScore || 75,
+              intelPoints: 2,
+              disciplineWalkaways: 0,
+              ready: event.payload.ready || false,
+              submittedQuote: null,
+              history: []
+            };
+
             const updated = { ...prev, [joinedId]: newPlayer };
             if (isHostRef.current) {
               setTimeout(() => {
@@ -207,7 +213,46 @@ export const App: React.FC = () => {
                   players: updated,
                   currentRfq: rfqRef.current
                 });
-              }, 60);
+              }, 40);
+            }
+            return updated;
+          });
+          break;
+        }
+
+        case 'PLAYER_HEARTBEAT': {
+          const pl = event.payload.player;
+          if (!pl || !pl.id) break;
+
+          setPlayers(prev => {
+            const existing = prev[pl.id];
+            const updatedPlayer: PlayerState = existing ? {
+              ...existing,
+              ...pl,
+              profile: { ...(existing.profile || {}), ...(pl.profile || {}) }
+            } : {
+              ...pl,
+              score: pl.score || 0,
+              bankedProfit: pl.bankedProfit || 0,
+              contractsWon: pl.contractsWon || 0,
+              reputation: pl.reputation || pl.profile?.reputationScore || 75,
+              intelPoints: pl.intelPoints || 2,
+              disciplineWalkaways: pl.disciplineWalkaways || 0,
+              ready: pl.ready || false,
+              submittedQuote: pl.submittedQuote || null,
+              history: pl.history || []
+            };
+
+            const updated = { ...prev, [pl.id]: updatedPlayer };
+            if (isHostRef.current) {
+              setTimeout(() => {
+                broadcastSync({
+                  roomConfig: roomConfigRef.current,
+                  phase: phaseRef.current,
+                  players: updated,
+                  currentRfq: rfqRef.current
+                });
+              }, 40);
             }
             return updated;
           });
@@ -348,6 +393,37 @@ export const App: React.FC = () => {
       roomSync.unsubscribe();
     };
   }, [roomConfig?.code, isHost]);
+
+  // Periodic Room State Sync & Vendor Presence Heartbeat
+  useEffect(() => {
+    if (!roomConfig || !roomConfig.code) return;
+
+    const interval = setInterval(() => {
+      if (isHostRef.current) {
+        // Host broadcasts current state snapshot to all connected guests
+        roomSync.broadcast({
+          type: 'ROOM_STATE_SYNC',
+          payload: {
+            roomConfig: roomConfigRef.current,
+            phase: phaseRef.current,
+            players: playersRef.current,
+            currentRfq: rfqRef.current
+          }
+        }, roomConfig.code);
+      } else {
+        // Guest pings Host with their current player presence
+        const myState = playersRef.current[myPlayerId];
+        if (myState) {
+          roomSync.broadcast({
+            type: 'PLAYER_HEARTBEAT',
+            payload: { player: myState }
+          }, roomConfig.code);
+        }
+      }
+    }, 1800);
+
+    return () => clearInterval(interval);
+  }, [roomConfig?.code, isHost, myPlayerId]);
 
   // Host State Broadcast Helper
   const broadcastSync = (updates: any) => {

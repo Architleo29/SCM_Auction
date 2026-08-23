@@ -3,7 +3,8 @@ import { RealtimeChannel } from '@supabase/supabase-js';
 import { Peer, DataConnection } from 'peerjs';
 
 export type MultiplayerEvent = 
-  | { type: 'PLAYER_JOINED'; payload: { id: string; name: string; isHost: boolean; profile: any } }
+  | { type: 'PLAYER_JOINED'; payload: { id: string; name: string; isHost: boolean; profile: any; ready?: boolean } }
+  | { type: 'PLAYER_HEARTBEAT'; payload: { player: any } }
   | { type: 'PLAYER_LEFT'; payload: { id: string } }
   | { type: 'PLAYER_PROFILE_UPDATED'; payload: { playerId: string; stats: { qualityLevel: number; speedLevel: number; costEfficiency: number }; profile?: any } }
   | { type: 'PLAYER_READY_TOGGLED'; payload: { playerId: string; ready: boolean } }
@@ -29,6 +30,8 @@ class RoomSyncManager {
   public isConnectedToSupabase: boolean = false;
   public isPeerConnected: boolean = false;
   private pendingOutgoing: MultiplayerEvent[] = [];
+  private reconnectInterval: any = null;
+  private storageListener: any = null;
 
   private getHostPeerId(roomCode: string): string {
     const clean = roomCode.toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -43,21 +46,23 @@ class RoomSyncManager {
 
     const hostPeerId = this.getHostPeerId(formattedCode);
 
-    // 1. WebRTC Direct P2P Transport (PeerJS) - 0ms latency, works on Vercel, Mobile Safari, Android, Desktop
+    // 1. WebRTC Direct P2P Transport (PeerJS)
     try {
       if (typeof window !== 'undefined') {
         this.cleanupPeer();
+
+        const iceServers = [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' },
+          { urls: 'stun:stun2.l.google.com:19302' },
+          { urls: 'stun:global.stun.twilio.com:3478' }
+        ];
 
         if (isHost) {
           // Host claims the room peer ID
           this.peer = new Peer(hostPeerId, {
             debug: 0,
-            config: {
-              iceServers: [
-                { urls: 'stun:stun.l.google.com:19302' },
-                { urls: 'stun:global.stun.twilio.com:3478' }
-              ]
-            }
+            config: { iceServers }
           });
 
           this.peer.on('open', () => {
@@ -66,6 +71,10 @@ class RoomSyncManager {
 
           this.peer.on('connection', (conn) => {
             this.guestConnections.set(conn.peer, conn);
+
+            conn.on('open', () => {
+              // Trigger state broadcast when a guest connects
+            });
 
             conn.on('data', (data) => {
               try {
@@ -92,7 +101,6 @@ class RoomSyncManager {
           });
 
           this.peer.on('error', (err) => {
-            // If ID is already taken, fallback to random ID and retry
             console.warn('Host peer notice:', err?.type);
           });
 
@@ -100,12 +108,7 @@ class RoomSyncManager {
           // Guest creates an ephemeral peer and connects to the Host
           this.peer = new Peer({
             debug: 0,
-            config: {
-              iceServers: [
-                { urls: 'stun:stun.l.google.com:19302' },
-                { urls: 'stun:global.stun.twilio.com:3478' }
-              ]
-            }
+            config: { iceServers }
           });
 
           this.peer.on('open', () => {
@@ -116,6 +119,14 @@ class RoomSyncManager {
           this.peer.on('error', (err) => {
             console.warn('Guest peer notice:', err?.type);
           });
+
+          // Periodic guest reconnect attempt if not connected
+          if (this.reconnectInterval) clearInterval(this.reconnectInterval);
+          this.reconnectInterval = setInterval(() => {
+            if (!this.isHost && this.roomCode && (!this.hostConnection || !this.hostConnection.open)) {
+              this.connectToHost(hostPeerId);
+            }
+          }, 2000);
         }
       }
     } catch (err) {
@@ -154,32 +165,51 @@ class RoomSyncManager {
       }
     }
 
-    // 3. Local BroadcastChannel (For tabs on the same device)
+    // 3. Local BroadcastChannel & Storage Event (For tabs on the same browser/device)
     try {
-      if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
-        if (this.localBroadcastChannel) {
-          this.localBroadcastChannel.close();
-          this.localBroadcastChannel = null;
+      if (typeof window !== 'undefined') {
+        if ('BroadcastChannel' in window) {
+          if (this.localBroadcastChannel) {
+            this.localBroadcastChannel.close();
+            this.localBroadcastChannel = null;
+          }
+          this.localBroadcastChannel = new BroadcastChannel(`scm_room_${formattedCode}`);
+          this.localBroadcastChannel.onmessage = (event) => {
+            if (event.data) {
+              this.notifyHandlers(event.data as MultiplayerEvent);
+            }
+          };
         }
-        this.localBroadcastChannel = new BroadcastChannel(`scm_room_${formattedCode}`);
-        this.localBroadcastChannel.onmessage = (event) => {
-          if (event.data) {
-            this.notifyHandlers(event.data as MultiplayerEvent);
+
+        // localStorage fallback for cross-tab events
+        if (this.storageListener) {
+          window.removeEventListener('storage', this.storageListener);
+        }
+        this.storageListener = (e: StorageEvent) => {
+          if (e.key && e.key.startsWith(`scm_event_${formattedCode}`) && e.newValue) {
+            try {
+              const parsed = JSON.parse(e.newValue);
+              if (parsed && parsed.type) {
+                this.notifyHandlers(parsed as MultiplayerEvent);
+              }
+            } catch (err) {}
           }
         };
+        window.addEventListener('storage', this.storageListener);
       }
     } catch (e) {}
   }
 
   private connectToHost(hostPeerId: string) {
     if (!this.peer || this.peer.destroyed) return;
+    if (this.hostConnection && this.hostConnection.open) return;
 
     try {
       const conn = this.peer.connect(hostPeerId, { reliable: true });
       this.hostConnection = conn;
 
       conn.on('open', () => {
-        // Send any queued outgoing messages
+        // Send all queued outgoing messages
         while (this.pendingOutgoing.length > 0) {
           const ev = this.pendingOutgoing.shift();
           if (ev) conn.send(ev);
@@ -197,12 +227,6 @@ class RoomSyncManager {
 
       conn.on('close', () => {
         this.hostConnection = null;
-        // Auto-reconnect after 1.5s
-        setTimeout(() => {
-          if (this.roomCode && !this.isHost) {
-            this.connectToHost(hostPeerId);
-          }
-        }, 1500);
       });
 
       conn.on('error', () => {
@@ -212,6 +236,8 @@ class RoomSyncManager {
   }
 
   public broadcast(event: MultiplayerEvent, explicitRoomCode?: string) {
+    const code = explicitRoomCode || this.roomCode;
+
     // 1. Send via WebRTC P2P
     try {
       if (this.isHost) {
@@ -227,7 +253,7 @@ class RoomSyncManager {
           this.hostConnection.send(event);
         } else {
           this.pendingOutgoing.push(event);
-          if (this.pendingOutgoing.length > 20) {
+          if (this.pendingOutgoing.length > 25) {
             this.pendingOutgoing.shift();
           }
         }
@@ -247,11 +273,34 @@ class RoomSyncManager {
 
     // 3. Local BroadcastChannel
     if (this.localBroadcastChannel) {
-      this.localBroadcastChannel.postMessage(event);
+      try {
+        this.localBroadcastChannel.postMessage(event);
+      } catch (e) {}
     }
+
+    // 4. LocalStorage Cross-Tab Notification
+    try {
+      if (typeof window !== 'undefined' && window.localStorage && code) {
+        const key = `scm_event_${code}_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+        localStorage.setItem(key, JSON.stringify(event));
+        setTimeout(() => {
+          try { localStorage.removeItem(key); } catch (e) {}
+        }, 1000);
+      }
+    } catch (e) {}
   }
 
   private cleanupPeer() {
+    if (this.reconnectInterval) {
+      clearInterval(this.reconnectInterval);
+      this.reconnectInterval = null;
+    }
+
+    if (this.storageListener && typeof window !== 'undefined') {
+      window.removeEventListener('storage', this.storageListener);
+      this.storageListener = null;
+    }
+
     if (this.hostConnection) {
       try { this.hostConnection.close(); } catch (e) {}
       this.hostConnection = null;
