@@ -81,7 +81,7 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({ isOpen, onClos
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
-            <span>🔨</span> 2. Reverse Auction Formats
+            <span>🔨</span> 2. Reverse English Mechanics
           </button>
 
           <button
@@ -160,7 +160,7 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({ isOpen, onClos
                     <h4 className="font-bold text-slate-100 text-sm">Live Reverse Auction Floor</h4>
                   </div>
                   <p className="text-xs text-slate-400 leading-relaxed">
-                    Battle human and AI rivals across <strong>Reverse English</strong> (price undercutting), <strong>Reverse English</strong> (first to buzz), or <strong>Reverse English</strong> (hold-to-stay clock).
+                    Battle human and AI rivals in the <strong>Reverse English Auction</strong> — place progressively lower counter-bids to undercut competitors and win the contract at the best margin you can sustain.
                   </p>
                 </div>
 
@@ -202,9 +202,9 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({ isOpen, onClos
                     </span>
                   </div>
                   <div className="bg-slate-900/90 p-3 rounded-xl border border-slate-800 space-y-1">
-                    <strong className="text-amber-300 block">3. Drives Auction Formats</strong>
+                    <strong className="text-amber-300 block">3. Drives Auction Dynamics</strong>
                     <span className="text-slate-400">
-                      Used by Reverse English (starts low and climbs to ceiling) and Japanese (drops from ceiling) clocks.
+                      In Reverse English, all bids must undercut this ceiling. The auction starts at the ceiling and vendors compete downwards.
                     </span>
                   </div>
                 </div>
@@ -212,73 +212,96 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({ isOpen, onClos
             </div>
           )}
 
-          {/* TAB 2: AUCTION FORMATS */}
+          {/* TAB 2: REVERSE ENGLISH AUCTION MECHANICS */}
           {activeTab === 'auctions' && (
             <div className="space-y-4 animate-fade-in">
               
-              {/* Reverse English */}
-              <div className="bg-slate-950 p-5 rounded-2xl border border-orange-500/30 space-y-2.5">
+              {/* Main Reverse English Explainer */}
+              <div className="bg-slate-950 p-5 rounded-2xl border border-orange-500/40 space-y-3 shadow-lg">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-orange-400 font-bold text-sm">
-                    <Gavel className="w-4 h-4" />
-                    <span>🔨 1. Reverse English Auction (Live Counter-Bid War)</span>
+                    <Gavel className="w-5 h-5 text-orange-400" />
+                    <span>🔨 The Reverse English Auction Floor</span>
                   </div>
-                  <span className="text-[0.625rem] font-mono uppercase bg-orange-950 text-orange-300 border border-orange-800 px-2 py-0.5 rounded font-bold">
-                    Descending Bids
+                  <span className="text-[0.625rem] font-mono uppercase bg-orange-950 text-orange-300 border border-orange-800 px-2.5 py-0.5 rounded-full font-bold">
+                    Official SCM Format
                   </span>
                 </div>
-                <p className="text-xs text-slate-300">
-                  Suppliers submit decreasing counter-bids in real time. The lowest qualifying bid takes the lead!
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  In a <strong>Reverse English Auction</strong> (also known as a downward-bidding procurement auction), the buyer acts as the auctioneer seeking the lowest qualified cost. Vendors compete in real time by submitting progressively lower counter-bids to claim the lowest price on the floor.
                 </p>
-                <div className="bg-slate-900/80 p-3 rounded-xl text-xs space-y-1 font-mono border border-slate-800/80 text-slate-300">
-                  <p className="text-orange-300 font-bold">⚡ How to Play:</p>
-                  <p>• Click <strong>-₹10K</strong>, <strong>-₹25K</strong>, or enter a custom lower bid to capture the lead.</p>
-                  <p>• <strong>Anti-Sniping:</strong> Any bid placed in the final 15s adds +15s to the timer.</p>
-                  <p>• <strong>Margin Guard:</strong> Watch your real-time margin indicator so you don't bid below your cost floor!</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs pt-1 font-mono">
+                  <div className="bg-slate-900/90 p-3 rounded-xl border border-slate-800 space-y-1">
+                    <strong className="text-emerald-400 block">🏆 Winning Position</strong>
+                    <span className="text-slate-400">
+                      The supplier with the lowest qualifying bid at the end of the countdown clock wins the procurement tender award!
+                    </span>
+                  </div>
+                  <div className="bg-slate-900/90 p-3 rounded-xl border border-slate-800 space-y-1">
+                    <strong className="text-amber-400 block">⏱️ Dynamic Clock (45s)</strong>
+                    <span className="text-slate-400">
+                      Rounds run on an active countdown clock with real-time AI and multiplayer counter-bidding activity.
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              {/* Reverse English */}
-              <div className="bg-slate-950 p-5 rounded-2xl border border-teal-500/30 space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-teal-400 font-bold text-sm">
-                    <Zap className="w-4 h-4" />
-                    <span>⏳ 2. Reverse English Auction (Ascending Price Clock)</span>
-                  </div>
-                  <span className="text-[0.625rem] font-mono uppercase bg-teal-950 text-teal-300 border border-teal-800 px-2 py-0.5 rounded font-bold">
-                    First to Buzz
-                  </span>
-                </div>
-                <p className="text-xs text-slate-300">
-                  The contract price starts low (unprofitably cheap) and ticks <strong>UPWARDS</strong> by +3.5% every 2 seconds.
-                </p>
-                <div className="bg-slate-900/80 p-3 rounded-xl text-xs space-y-1 font-mono border border-slate-800/80 text-slate-300">
-                  <p className="text-teal-300 font-bold">⚡ How to Play:</p>
-                  <p>• The <strong>first supplier</strong> to click <strong className="text-teal-300">"Buzz In & Accept"</strong> instantly wins the tender at the current ticking price!</p>
-                  <p>• <strong>Strategic Tension:</strong> Buzz too early $ightarrow$ slim profit. Wait too long $ightarrow$ an aggressive rival buzzes first!</p>
-                </div>
-              </div>
-
-              {/* Japanese Clock */}
-              <div className="bg-slate-950 p-5 rounded-2xl border border-violet-500/30 space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-violet-400 font-bold text-sm">
+              {/* 3 Core Pillars of Reverse English Bidding */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                
+                {/* Pillar 1: Quick Decrements & Custom Bidding */}
+                <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
+                  <div className="flex items-center gap-2 text-indigo-400 font-bold text-xs">
                     <TrendingDown className="w-4 h-4" />
-                    <span>🇯🇵 3. Reverse English Clock Auction (Hold-to-Stay)</span>
+                    <span>1. Counter-Bidding Tools</span>
                   </div>
-                  <span className="text-[0.625rem] font-mono uppercase bg-violet-950 text-violet-300 border border-violet-800 px-2 py-0.5 rounded font-bold">
-                    2nd-Price Payout
-                  </span>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Use quick step buttons (<strong>-₹10K</strong>, <strong>-₹25K</strong>, <strong>-₹50K</strong>) or type any custom amount into the input box to instantly undercut the leader.
+                  </p>
+                  <p className="text-[11px] text-indigo-300 font-mono">
+                    ✓ Live profit preview updates as you type!
+                  </p>
                 </div>
-                <p className="text-xs text-slate-300">
-                  The price clock automatically steps <strong>DOWNWARDS</strong> in rounds.
+
+                {/* Pillar 2: Anti-Sniping Protection */}
+                <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
+                  <div className="flex items-center gap-2 text-amber-400 font-bold text-xs">
+                    <Zap className="w-4 h-4" />
+                    <span>2. +8s Anti-Sniping Protection</span>
+                  </div>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Any bid placed when the countdown is under 15 seconds automatically extends the clock by <strong>+8 seconds</strong>.
+                  </p>
+                  <p className="text-[11px] text-amber-300 font-mono">
+                    ✓ Prevents 0-second bot sniping.
+                  </p>
+                </div>
+
+                {/* Pillar 3: Margin Guard */}
+                <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
+                  <div className="flex items-center gap-2 text-rose-400 font-bold text-xs">
+                    <ShieldCheck className="w-4 h-4" />
+                    <span>3. Real-Time Margin Guard</span>
+                  </div>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Monitor your <strong>Fully Loaded Cost (FLC)</strong> breakeven line. Bids that cause negative profit turn <strong>red</strong> to prevent the Winner's Curse.
+                  </p>
+                  <p className="text-[11px] text-rose-300 font-mono">
+                    ✓ Protects you from unprofitable contracts.
+                  </p>
+                </div>
+
+              </div>
+
+              {/* Tactical Strategy Box */}
+              <div className="bg-slate-950 p-4 rounded-2xl border border-indigo-500/30 space-y-2">
+                <div className="flex items-center gap-2 text-indigo-300 font-bold text-xs">
+                  <Star className="w-4 h-4 text-amber-400" />
+                  <span>💡 Pro Strategy: The QCBS Sweet Spot</span>
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  You don't always have to be the cheapest vendor to win overall tournament points! If you chose <strong>5★ Flagship Quality</strong> in Step 2, you earn a 100% technical score. In tenders with high Quality Weight (e.g. 50%), you can afford to hold a higher, more profitable price floor while rival 1★ low-ballers squeeze their own margins dry!
                 </p>
-                <div className="bg-slate-900/80 p-3 rounded-xl text-xs space-y-1 font-mono border border-slate-800/80 text-slate-300">
-                  <p className="text-violet-300 font-bold">⚡ How to Play:</p>
-                  <p>• Hold the button to stay active as the price drops.</p>
-                  <p>• Release to permanently exit once the price drops below your breakeven threshold.</p>
-                  <p>• <strong>2nd-Price Incentive:</strong> The last standing vendor wins at the <strong>2nd-place exit price</strong> (higher payout)!</p>
-                </div>
               </div>
 
             </div>
