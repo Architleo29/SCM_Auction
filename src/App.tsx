@@ -212,22 +212,9 @@ export const App: React.FC = () => {
             forwardAuctionStateRef.current = event.payload.forwardAuctionState;
           }
           if (event.payload.players) {
-            setPlayers(prev => {
-              const incoming = event.payload.players;
-              const localMe = prev[myPlayerId];
-              const merged = { ...incoming };
-              if (localMe && incoming[myPlayerId]) {
-                merged[myPlayerId] = {
-                  ...localMe,
-                  ...incoming[myPlayerId],
-                  profile: {
-                    ...(localMe.profile || {}),
-                    ...(incoming[myPlayerId]?.profile || {})
-                  }
-                };
-              }
-              return merged;
-            });
+            const incoming = event.payload.players;
+            playersRef.current = incoming;
+            setPlayers(incoming);
           }
           if (event.payload.currentRfq) setCurrentRfq(event.payload.currentRfq);
           if (event.payload.activeAuction) {
@@ -270,6 +257,7 @@ export const App: React.FC = () => {
             };
 
             const updated = { ...prev, [joinedId]: newPlayer };
+            playersRef.current = updated;
             if (isHostRef.current) {
               setTimeout(() => {
                 broadcastSync({
@@ -293,8 +281,17 @@ export const App: React.FC = () => {
             const existing = prev[pl.id];
             const updatedPlayer: PlayerState = existing ? {
               ...existing,
-              ...pl,
-              profile: { ...(existing.profile || {}), ...(pl.profile || {}) }
+              name: pl.name || existing.name,
+              profile: { ...(existing.profile || {}), ...(pl.profile || {}) },
+              ready: pl.ready !== undefined ? pl.ready : existing.ready,
+              submittedQuote: pl.submittedQuote !== undefined ? pl.submittedQuote : existing.submittedQuote,
+              // Authoritative stats must NEVER be clobbered by guest ping
+              score: existing.score !== undefined ? existing.score : (pl.score || 0),
+              bankedProfit: existing.bankedProfit !== undefined ? existing.bankedProfit : (pl.bankedProfit || 0),
+              contractsWon: existing.contractsWon !== undefined ? existing.contractsWon : (pl.contractsWon || 0),
+              reputation: existing.reputation !== undefined ? existing.reputation : (pl.reputation || 75),
+              history: (existing.history && existing.history.length > 0) ? existing.history : (pl.history || []),
+              lastPnL: existing.lastPnL || pl.lastPnL
             } : {
               ...pl,
               score: pl.score || 0,
@@ -309,16 +306,7 @@ export const App: React.FC = () => {
             };
 
             const updated = { ...prev, [pl.id]: updatedPlayer };
-            if (isHostRef.current) {
-              setTimeout(() => {
-                broadcastSync({
-                  roomConfig: roomConfigRef.current,
-                  phase: phaseRef.current,
-                  players: updated,
-                  currentRfq: rfqRef.current
-                });
-              }, 40);
-            }
+            playersRef.current = updated;
             return updated;
           });
           break;
@@ -1504,7 +1492,7 @@ export const App: React.FC = () => {
 
       // Reset all per-round player states cleanly
       const cleanPlayers: Record<string, PlayerState> = {};
-      Object.entries(players).forEach(([id, p]) => {
+      Object.entries(playersRef.current).forEach(([id, p]) => {
         cleanPlayers[id] = {
           ...p,
           ready: p.isAi,
