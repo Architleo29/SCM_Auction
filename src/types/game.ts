@@ -19,7 +19,6 @@ export type GameDifficulty = 'beginner' | 'standard' | 'expert';
 export type GamePhase = 
   | 'LOBBY'
   | 'RFQ_BUILDER'
-  | 'DOSSIER'
   | 'RFQ'
   | 'INTEL'
   | 'QUOTING'

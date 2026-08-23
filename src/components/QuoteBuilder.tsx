@@ -3,13 +3,11 @@ import {
   DollarSign, 
   Clock, 
   Send, 
-  Sparkles,
-  Star,
-  Layers,
-  Building2,
-  TrendingUp,
-  Sliders,
-  CheckCircle2
+  Star, 
+  Layers, 
+  TrendingUp, 
+  CheckCircle2,
+  AlertCircle
 } from 'lucide-react';
 import { RFQ, PlayerState, Quote } from '../types/game';
 import { calculateCostBreakdown } from '../engine/costCalculator';
@@ -30,11 +28,11 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
 }) => {
   const profile = player.profile;
 
-  // 1. Vendor Strategic USP Controls (1 to 5 Scale)
-  const [qualityTier, setQualityTier] = useState<number>(profile.qualityLevel || 3); // 1 to 5 Stars
-  const [priceTier, setPriceTier] = useState<number>(3); // 1 to 5 Scale
+  // 1. Quality USP Focus (1 to 5 Stars)
+  const [qualityTier, setQualityTier] = useState<number>(3); // Standard 3★
+  const [priceTier, setPriceTier] = useState<number>(3); // Tier 3
 
-  // Dynamic effective profile updated by quality tier
+  // Dynamic effective profile updated when quality tier changes
   const effectiveProfile = useMemo(() => {
     return {
       ...profile,
@@ -44,12 +42,28 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
 
   const [hasSubmitted, setHasSubmitted] = useState<boolean>(false);
 
-  // Calculate base cost breakdown
-  const baselineBreakdown = useMemo(() => {
-    return calculateCostBreakdown(effectiveProfile, rfq);
-  }, [effectiveProfile, rfq]);
+  // Baseline cost breakdown at initial 3★
+  const initialFlc = useMemo(() => {
+    return calculateCostBreakdown({ ...profile, qualityLevel: 3 }, rfq).fullyLoadedCost;
+  }, [profile, rfq]);
 
-  // Target price calculation based on priceTier & FLC
+  // Initial Price (e.g. 90% of ceiling or 1.12x FLC)
+  const [price, setPrice] = useState<number>(() => {
+    return Math.min(Math.round(rfq.budgetCeiling * 0.90), Math.round(initialFlc * 1.15));
+  });
+
+  // Recompute cost breakdown live whenever qualityTier or price changes
+  const breakdown = useMemo(() => {
+    return calculateCostBreakdown(effectiveProfile, rfq, price);
+  }, [effectiveProfile, rfq, price]);
+
+  // When quality tier changes: ONLY change qualityTier (do not overwrite selling price!)
+  // This causes Variable Costs to rise/fall immediately, changing the Gross Margin and Net Profit!
+  const handleQualityTierChange = (newQ: number) => {
+    setQualityTier(newQ);
+  };
+
+  // Helper for price tier calculation
   const calculatedPriceForTier = (tier: number, flc: number, ceiling: number) => {
     if (tier === 1) return Math.min(Math.round(ceiling * 0.98), Math.round(flc * 1.30));
     if (tier === 2) return Math.min(Math.round(ceiling * 0.94), Math.round(flc * 1.20));
@@ -58,30 +72,13 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
     return Math.max(Math.round(flc * 1.02), Math.round(ceiling * 0.72));
   };
 
-  const [price, setPrice] = useState<number>(() => {
-    return calculatedPriceForTier(3, baselineBreakdown.fullyLoadedCost, rfq.budgetCeiling);
-  });
-
-  // Recompute cost breakdown with current selling price
-  const breakdown = useMemo(() => {
-    return calculateCostBreakdown(effectiveProfile, rfq, price);
-  }, [effectiveProfile, rfq, price]);
-
-  // When quality tier changes, update price proportionally if desired
-  const handleQualityTierChange = (newQ: number) => {
-    setQualityTier(newQ);
-    const updatedProfile = { ...profile, qualityLevel: newQ };
-    const newFlc = calculateCostBreakdown(updatedProfile, rfq).fullyLoadedCost;
-    setPrice(calculatedPriceForTier(priceTier, newFlc, rfq.budgetCeiling));
-  };
-
-  // When price tier changes (1 to 5 scale)
+  // When price tier changes
   const handlePriceTierChange = (newTier: number) => {
     setPriceTier(newTier);
     setPrice(calculatedPriceForTier(newTier, breakdown.fullyLoadedCost, rfq.budgetCeiling));
   };
 
-  // Direct price input
+  // Direct custom price input
   const handleDirectPriceChange = (val: number) => {
     const p = Math.max(1000, val);
     setPrice(p);
@@ -172,7 +169,7 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
           </div>
           <h2 className="text-xl sm:text-2xl font-bold text-slate-100">{rfq.title}</h2>
           <p className="text-xs text-slate-400 mt-0.5">
-            Select your Quality USP and Price Position (Scale 1 to 5). Watch your real-time P&L statement update below.
+            Select your Quality Level (1–5★) and Bid Price. Your variable costs and net profit margin update live below.
           </p>
         </div>
 
@@ -200,22 +197,22 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
             <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
               <span className="text-xs font-mono font-bold uppercase text-amber-400 flex items-center gap-1.5">
                 <Star className="w-4 h-4" />
-                1. Quality USP Focus (Scale 1 to 5★)
+                1. Select Quality Level (Scale 1 to 5★)
               </span>
               <span className="text-amber-400 font-bold font-mono text-sm">{qualityTier}★ / 5★</span>
             </div>
 
             <p className="text-xs text-slate-400">
-              Higher quality uses premium materials & skilled labor (higher cost), but awards top Buyer Evaluation points.
+              ⚡ <strong>Economic Tradeoff:</strong> Higher quality increases variable costs (+30% at 5★), reducing margin but awarding 100% technical score.
             </p>
 
             <div className="grid grid-cols-5 gap-1.5 pt-1">
               {[
-                { lvl: 1, name: 'Economy', desc: 'Baseline' },
-                { lvl: 2, name: 'Value', desc: 'Commercial' },
-                { lvl: 3, name: 'Standard', desc: 'Balanced' },
-                { lvl: 4, name: 'Premium', desc: 'High-Grade' },
-                { lvl: 5, name: 'Flagship', desc: 'Top 100%' }
+                { lvl: 1, name: 'Economy', cost: '-20% Cost' },
+                { lvl: 2, name: 'Value', cost: '-10% Cost' },
+                { lvl: 3, name: 'Standard', cost: 'Base Cost' },
+                { lvl: 4, name: 'Premium', cost: '+15% Cost' },
+                { lvl: 5, name: 'Flagship', cost: '+30% Cost' }
               ].map(q => (
                 <button
                   key={q.lvl}
@@ -223,12 +220,15 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
                   onClick={() => handleQualityTierChange(q.lvl)}
                   className={`py-2.5 rounded-2xl text-xs font-mono font-bold border transition cursor-pointer flex flex-col items-center justify-center ${
                     qualityTier === q.lvl
-                      ? 'bg-amber-600/30 border-amber-400 text-amber-300 shadow-md shadow-amber-600/20'
+                      ? 'bg-amber-600/30 border-amber-400 text-amber-300 shadow-md shadow-amber-600/20 ring-1 ring-amber-400'
                       : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
                   }`}
                 >
                   <span className="text-sm">{q.lvl}★</span>
-                  <span className="text-[10px] text-slate-500 font-normal">{q.name}</span>
+                  <span className="text-[10px] text-slate-400 font-normal">{q.name}</span>
+                  <span className={`text-[9px] font-mono mt-0.5 ${
+                    q.lvl > 3 ? 'text-rose-400' : q.lvl < 3 ? 'text-emerald-400' : 'text-slate-500'
+                  }`}>{q.cost}</span>
                 </button>
               ))}
             </div>
@@ -239,7 +239,7 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
             <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
               <span className="text-xs font-mono font-bold uppercase text-emerald-400 flex items-center gap-1.5">
                 <DollarSign className="w-4 h-4" />
-                2. Price Position USP (Scale 1 to 5)
+                2. Select Bid Price Position
               </span>
               <span className="text-xs font-mono text-slate-400">
                 Starting Limit: <strong className="text-slate-200">{formatINR(rfq.budgetCeiling)}</strong>
@@ -247,7 +247,7 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
             </div>
 
             <p className="text-xs text-slate-400">
-              Pick your margin strategy. Lower prices undercut rivals to score higher on Price, but reduce profits.
+              ⚡ <strong>Economic Tradeoff:</strong> Lower prices undercut rivals to score higher on Price, but leave smaller profit margin.
             </p>
 
             <div className="grid grid-cols-5 gap-1.5 pt-1">
@@ -264,7 +264,7 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
                   onClick={() => handlePriceTierChange(p.lvl)}
                   className={`py-2.5 rounded-2xl text-xs font-mono font-bold border transition cursor-pointer flex flex-col items-center justify-center ${
                     priceTier === p.lvl
-                      ? 'bg-emerald-600/30 border-emerald-400 text-emerald-300 shadow-md shadow-emerald-600/20'
+                      ? 'bg-emerald-600/30 border-emerald-400 text-emerald-300 shadow-md shadow-emerald-600/20 ring-1 ring-emerald-400'
                       : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
                   }`}
                 >
@@ -293,12 +293,12 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 shadow-xl space-y-2 text-xs font-mono">
             <div className="flex justify-between items-center text-slate-400 border-b border-slate-800 pb-2">
               <span className="flex items-center gap-1.5 uppercase font-semibold">
-                <Layers className="w-3.5 h-3.5 text-indigo-400" /> Cost Summary
+                <Layers className="w-3.5 h-3.5 text-indigo-400" /> Cost Summary for {qualityTier}★
               </span>
-              <span>Fully Loaded Cost (FLC): <strong className="text-slate-200">{formatINR(fullyLoadedCost)}</strong></span>
+              <span>Fully Loaded Cost: <strong className="text-slate-200">{formatINR(fullyLoadedCost)}</strong></span>
             </div>
             <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-400 pt-1">
-              <div>• Variable Costs: <strong className="text-indigo-300">{formatINR(variableDirectCosts)}</strong></div>
+              <div>• Variable Costs ({qualityTier}★): <strong className="text-indigo-300">{formatINR(variableDirectCosts)}</strong></div>
               <div>• Fixed Overhead: <strong className="text-amber-300">{formatINR(fixedOverhead)}</strong></div>
             </div>
           </div>
@@ -321,7 +321,7 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
                   ? 'bg-amber-950 text-amber-400 border border-amber-800' 
                   : 'bg-rose-950 text-rose-400 border border-rose-800'
               }`}>
-                Margin: {projectedOperatingMarginPct.toFixed(1)}%
+                Net Margin: {projectedOperatingMarginPct.toFixed(1)}%
               </span>
             </div>
 
@@ -335,8 +335,8 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
 
               {/* Variable Costs */}
               <div className="flex justify-between items-center text-slate-400">
-                <span className="pl-3">• Less: Variable Costs (Labor & Materials)</span>
-                <span className="text-rose-400">- {formatINR(variableDirectCosts)}</span>
+                <span className="pl-3">• Less: Variable Costs ({qualityTier}★ Materials & Labor)</span>
+                <span className="text-rose-400 font-semibold">- {formatINR(variableDirectCosts)}</span>
               </div>
 
               {/* Gross Margin */}
@@ -348,7 +348,7 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
               {/* Fixed Costs */}
               <div className="flex justify-between items-center text-slate-400">
                 <span className="pl-3">• Less: Fixed Overhead & Rent</span>
-                <span className="text-rose-400">- {formatINR(fixedOverhead)}</span>
+                <span className="text-rose-400 font-semibold">- {formatINR(fixedOverhead)}</span>
               </div>
 
               {/* Operating Profit */}
@@ -368,7 +368,7 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
               )}
 
               {/* Realized Net Profit */}
-              <div className={`flex justify-between items-center p-3 rounded-xl border mt-2 ${
+              <div className={`flex justify-between items-center p-3.5 rounded-xl border mt-2 ${
                 projectedNetProfit >= 0 
                   ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300' 
                   : 'bg-rose-950/40 border-rose-500/40 text-rose-300'

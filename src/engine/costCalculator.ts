@@ -10,13 +10,18 @@ export function calculateCostBreakdown(
   quotedRiskContingencyRate?: number
 ): CostBreakdown {
   // 1. Direct Costs & Profile Multipliers
-  // Cost Efficiency: 1 = +20% cost, 5 = -20% cost
   const effMultiplier = 1 - ((profile.costEfficiency || 3) - 3) * 0.10;
   
-  // Quality Level: 1 = -16% cost, 5 = +16% cost
-  const qualityCostMultiplier = 1 + ((profile.qualityLevel || 3) - 3) * 0.08;
+  // Quality Level (1 to 5 Stars):
+  // 1★ Economy = -20% cost, 2★ Value = -10% cost, 3★ Standard = baseline, 4★ Premium = +15% cost, 5★ Flagship = +30% cost
+  const qLvl = profile.qualityLevel || 3;
+  let qualityCostMultiplier = 1.0;
+  if (qLvl === 1) qualityCostMultiplier = 0.80;
+  else if (qLvl === 2) qualityCostMultiplier = 0.90;
+  else if (qLvl === 3) qualityCostMultiplier = 1.00;
+  else if (qLvl === 4) qualityCostMultiplier = 1.15;
+  else if (qLvl === 5) qualityCostMultiplier = 1.30;
   
-  // Speed Level: 1 = -10% logistics cost, 5 = +10% logistics cost (faster delivery = more expensive)
   const speedCostMultiplier = 1 + ((profile.speedLevel || 3) - 3) * 0.05;
 
   const directLaborCost = rfq.baseLaborHours * rfq.laborRate * profile.laborCostIndex * effMultiplier * qualityCostMultiplier;
