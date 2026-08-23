@@ -100,6 +100,10 @@ export interface Quote {
   playerId: string;
   playerName: string;
   price: number;
+  priceTier?: number;              // 1 - 5 Scale (Independent)
+  qualityTier?: number;            // 1 - 5 Scale (Independent)
+  timelineTier?: number;           // 1 - 5 Scale (Independent)
+  riskReputationScore?: number;    // 0 - 100 Score (Dependent on Price, Quality, Timeline)
   paymentTerms: PaymentTerms;
   deliveryDays: number;
   warrantyMonths: WarrantyPeriod;
@@ -185,6 +189,7 @@ export interface VendorCriterionScore {
   reputationScore: number;
   complianceScore: number;
   riskScore: number;
+  riskReputationScore?: number; // Merged composite score (0 - 100)
   paymentTermsScore: number;
   slaScore: number;
   sustainabilityScore: number;

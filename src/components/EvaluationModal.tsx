@@ -132,8 +132,8 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
                     <span className="text-slate-200 font-bold">{score.timelineScore}</span>
                   </div>
                   <div className="bg-slate-900/80 p-1.5 rounded-lg">
-                    <span className="text-slate-500 block text-[9px]">Reputation</span>
-                    <span className="text-slate-200 font-bold">{score.reputationScore}</span>
+                    <span className="text-slate-500 block text-[9px]">Risk & Rep</span>
+                    <span className="text-slate-200 font-bold">{score.riskReputationScore || score.reputationScore}</span>
                   </div>
                 </div>
               </div>
@@ -150,7 +150,7 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
                 <th className="py-2.5 px-2">Price ({(rfq.weights.price * 100).toFixed(0)}%)</th>
                 <th className="py-2.5 px-2">Quality ({(rfq.weights.quality * 100).toFixed(0)}%)</th>
                 <th className="py-2.5 px-2">Timeline ({(rfq.weights.timeline * 100).toFixed(0)}%)</th>
-                <th className="py-2.5 px-2">Reputation ({(rfq.weights.reputation * 100).toFixed(0)}%)</th>
+                <th className="py-2.5 px-2">Risk & Rep ({(((rfq.weights.reputation || 0.1) + (rfq.weights.risk || 0.05)) * 100).toFixed(0)}%)</th>
                 <th className="py-2.5 px-3 text-right">TOTAL SCORE</th>
               </tr>
             </thead>
@@ -192,7 +192,7 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
                     </td>
 
                     <td className="py-3 px-2 text-slate-300">
-                      {score.reputationScore} pts
+                      {score.riskReputationScore || score.reputationScore} pts
                     </td>
 
                     <td className="py-3 px-3 text-right font-bold text-indigo-400 text-sm">
