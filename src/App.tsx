@@ -1896,16 +1896,19 @@ export const App: React.FC = () => {
             player={pnlDisplayPlayer}
             allPlayers={players}
             rfq={currentRfq}
-            onProceedToLeaderboard={handleProceedToLeaderboard}
+            isHost={isHost}
+            currentRound={roomConfig?.currentRound || 1}
+            totalRounds={roomConfig?.totalRounds || 6}
+            onProceedToNextRound={handleNextRound}
           />
         )}
 
-        {(phase === 'LEADERBOARD' || phase === 'GAMEOVER') && roomConfig && (
+        {!isForwardMode && phase === 'GAMEOVER' && roomConfig && (
           <Leaderboard
             players={players}
             roomConfig={roomConfig}
             myPlayerId={myPlayerId}
-            isGameOver={phase === 'GAMEOVER'}
+            isGameOver={true}
             onNextRound={handleNextRound}
             onPlayAgain={() => {
               setPhase('LOBBY');

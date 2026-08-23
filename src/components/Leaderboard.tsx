@@ -61,11 +61,11 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
       <div className="text-center space-y-2 pt-2">
         <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-800 text-xs sm:text-xs font-mono font-bold">
           <Trophy className="w-3.5 h-3.5 text-amber-400" />
-          {isGameOver ? 'Fiscal Championship' : `Round ${roomConfig.currentRound} of ${roomConfig.totalRounds} Complete`}
+          Fiscal Championship Podium
         </div>
 
         <h2 className="text-2xl sm:text-4xl font-bold text-slate-100">
-          {isGameOver ? 'Final Fiscal Championship' : 'Executive Leaderboard'}
+          Final Fiscal Championship
         </h2>
       </div>
 

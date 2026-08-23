@@ -24,7 +24,10 @@ interface PnLBreakdownProps {
   player: PlayerState;
   allPlayers?: Record<string, PlayerState>;
   rfq: RFQ;
-  onProceedToLeaderboard: () => void;
+  isHost?: boolean;
+  currentRound?: number;
+  totalRounds?: number;
+  onProceedToNextRound: () => void;
 }
 
 export const PnLBreakdown: React.FC<PnLBreakdownProps> = ({
@@ -32,7 +35,10 @@ export const PnLBreakdown: React.FC<PnLBreakdownProps> = ({
   player,
   allPlayers,
   rfq,
-  onProceedToLeaderboard
+  isHost = true,
+  currentRound = 1,
+  totalRounds = 6,
+  onProceedToNextRound
 }) => {
   const playerList = (allPlayers ? Object.values(allPlayers) : [player])
     .filter(p => !isBuyerSpectator(p));
@@ -326,14 +332,25 @@ export const PnLBreakdown: React.FC<PnLBreakdownProps> = ({
       )}
 
       {/* Action Button */}
-      <div className="flex justify-end pt-2 pb-safe">
-        <button
-          onClick={onProceedToLeaderboard}
-          className="w-full sm:w-auto px-7 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-xl shadow-indigo-600/30 transition flex items-center justify-center gap-2 cursor-pointer min-h-[3.125rem] active:scale-95"
-        >
-          View Fiscal Year Leaderboard
-          <ArrowRight className="w-4 h-4" />
-        </button>
+      <div className="flex items-center justify-between pt-2 pb-safe gap-3">
+        <div className="text-xs font-mono text-slate-400">
+          Round {currentRound} of {totalRounds} Completed
+        </div>
+
+        {isHost ? (
+          <button
+            onClick={onProceedToNextRound}
+            className="w-full sm:w-auto px-7 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-xl shadow-indigo-600/30 transition flex items-center justify-center gap-2 cursor-pointer min-h-[3.125rem] active:scale-95"
+          >
+            <span>{currentRound < totalRounds ? `Proceed to Next Round (Round ${currentRound + 1})` : 'View Final Championship 🏆'}</span>
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        ) : (
+          <div className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-slate-900 border border-slate-800 text-slate-300 text-xs font-mono">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+            <span>Waiting for Host to begin {currentRound < totalRounds ? `Round ${currentRound + 1}` : 'Championship'}...</span>
+          </div>
+        )}
       </div>
 
     </div>
