@@ -508,14 +508,19 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({ isOpen, onClos
             </div>
           )}
 
-          {/* TAB 4: SCORING & LEADERBOARD */}
+          {/* TAB 5: SCORING & LEADERBOARD */}
           {activeTab === 'scoring' && (
             <div className="space-y-4 animate-fade-in">
               
               <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-3">
-                <div className="flex items-center gap-2 text-purple-300 font-bold text-sm">
-                  <Award className="w-5 h-5 text-amber-400" />
-                  <span>Executive Leaderboard Championship Formula</span>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-purple-300 font-bold text-sm">
+                    <Award className="w-5 h-5 text-amber-400" />
+                    <span>Executive Leaderboard Championship Formula</span>
+                  </div>
+                  <span className="text-[0.625rem] font-mono uppercase bg-indigo-950 text-indigo-300 border border-indigo-800 px-2.5 py-0.5 rounded-full font-bold">
+                    Official Standings
+                  </span>
                 </div>
                 <p className="text-xs text-slate-300">
                   Your tournament ranking on the Executive Leaderboard across all fiscal rounds is computed as:
@@ -523,6 +528,9 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({ isOpen, onClos
                 <div className="bg-slate-900 p-4 rounded-xl border border-slate-800 text-center font-mono text-indigo-300 font-bold text-xs sm:text-sm">
                   Total Score = (Cumulative Banked Profit ₹ × 1.0) + (Contracts Won × 1,000)
                 </div>
+                <p className="text-[11px] text-slate-400">
+                  *Note: The room <strong>Host acts as the Tournament Authority / Auctioneer</strong> and is excluded from the competitor ranking table.*
+                </p>
               </div>
 
               {/* Achievement Badges */}
