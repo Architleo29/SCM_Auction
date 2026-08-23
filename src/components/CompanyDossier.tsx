@@ -48,7 +48,7 @@ export const CompanyDossier: React.FC<CompanyDossierProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-mono text-indigo-400 uppercase tracking-wider font-bold">
-                  Quarter {roundNumber} of {totalRounds} • Confidential Dossier
+                  Round {roundNumber} of {totalRounds} • Your Company Profile
                 </span>
               </div>
               <h2 className="text-2xl font-bold text-slate-100">{playerName}</h2>
@@ -93,11 +93,11 @@ export const CompanyDossier: React.FC<CompanyDossierProps> = ({
         <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-md space-y-3">
           <div className="flex items-center gap-2 text-indigo-400 font-semibold text-xs uppercase font-mono">
             <DollarSign className="w-4 h-4" />
-            Fixed Overhead & Capacity
+            Factory Rent & Production Capacity
           </div>
           <div className="space-y-2 text-xs">
             <div className="flex justify-between py-1 border-b border-slate-800/80">
-              <span className="text-slate-400">Fixed Costs (per quarter):</span>
+              <span className="text-slate-400">Fixed Overhead (Rent & Leases):</span>
               <span className="font-mono font-bold text-slate-200">{formatINR(profile.fixedCosts)}</span>
             </div>
             <div className="flex justify-between py-1 border-b border-slate-800/80">
@@ -111,7 +111,7 @@ export const CompanyDossier: React.FC<CompanyDossierProps> = ({
           </div>
         </div>
 
-        {/* Direct Cost Multipliers */}
+        {/* Production Cost Multipliers */}
         <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-md space-y-3">
           <div className="flex items-center gap-2 text-cyan-400 font-semibold text-xs uppercase font-mono">
             <BarChart3 className="w-4 h-4" />
@@ -119,19 +119,19 @@ export const CompanyDossier: React.FC<CompanyDossierProps> = ({
           </div>
           <div className="space-y-2 text-xs">
             <div className="flex justify-between py-1 border-b border-slate-800/80">
-              <span className="text-slate-400">Labor Cost Index:</span>
+              <span className="text-slate-400">Worker Wage Rate Index:</span>
               <span className={`font-mono font-bold ${profile.laborCostIndex <= 1.0 ? 'text-emerald-400' : 'text-amber-400'}`}>
                 {profile.laborCostIndex.toFixed(2)}x {profile.laborCostIndex < 1.0 ? '(Favorable)' : ''}
               </span>
             </div>
             <div className="flex justify-between py-1 border-b border-slate-800/80">
-              <span className="text-slate-400">Materials Cost Index:</span>
+              <span className="text-slate-400">Raw Materials Cost Index:</span>
               <span className={`font-mono font-bold ${profile.materialsCostIndex <= 1.0 ? 'text-emerald-400' : 'text-amber-400'}`}>
                 {profile.materialsCostIndex.toFixed(2)}x
               </span>
             </div>
             <div className="flex justify-between py-1">
-              <span className="text-slate-400">Logistics Cost Index:</span>
+              <span className="text-slate-400">Freight & Shipping Cost Index:</span>
               <span className={`font-mono font-bold ${profile.logisticsCostIndex <= 1.0 ? 'text-emerald-400' : 'text-amber-400'}`}>
                 {profile.logisticsCostIndex.toFixed(2)}x
               </span>
@@ -169,7 +169,7 @@ export const CompanyDossier: React.FC<CompanyDossierProps> = ({
           <Lightbulb className="w-5 h-5" />
         </div>
         <div>
-          <h4 className="font-semibold text-sm text-indigo-200">Strategic Bidding Guidance</h4>
+          <h4 className="font-semibold text-sm text-indigo-200">💡 Pro-Tip for This Round</h4>
           <p className="text-xs text-slate-300 mt-1 leading-relaxed">
             {profile.qualityLevel >= 4 
               ? 'Your company possesses superior technical quality (4+ stars). You can win contracts even with slightly higher prices when the Buyer’s Quality weight is high (≥ 20%). Avoid racing aggressive bots to the bottom on price alone.'
@@ -186,7 +186,7 @@ export const CompanyDossier: React.FC<CompanyDossierProps> = ({
           onClick={onProceed}
           className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-xl shadow-indigo-600/30 transition flex items-center justify-center gap-2 cursor-pointer active:scale-95"
         >
-          <span>Proceed to RFQ Tender Notice & Quoting</span>
+          <span>View Tender Specifications & Order Details</span>
           <ArrowRight className="w-5 h-5" />
         </button>
       </div>

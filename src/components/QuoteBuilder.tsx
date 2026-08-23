@@ -209,7 +209,7 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
   const projectedTax = projectedOperatingProfit > 0 ? Math.round(projectedOperatingProfit * taxRate) : 0;
   const projectedNetProfit = projectedOperatingProfit - projectedTax;
 
-  // Win Probability & EV Estimate
+  // Chance of Winning & EV Estimate
   const winProb = useMemo(() => {
     const estMinPrice = rfq.budgetCeiling * 0.8; 
     const priceScore = price > 0 ? Math.min(1.0, Math.max(0.0, estMinPrice / price)) : 0.0;
@@ -284,12 +284,12 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="text-[0.625rem] sm:text-xs font-mono uppercase text-indigo-400 font-bold tracking-wider">
-              RFQ Phase 3 • Commercial Quotation & Strategy Engine
+              Step 3 • Set Your Strategy & Bid Price
             </span>
           </div>
           <h2 className="text-xl sm:text-2xl font-bold text-slate-100">{rfq.title}</h2>
           <p className="text-xs text-slate-400 mt-0.5">
-            Adjust your strategy parameters below. Review your fixed & variable costs, type your quotation price, and evaluate your live P&L in real time.
+            Set your quality and delivery speed, check what it costs to make the order, type your selling price, and see your live profit forecast.
           </p>
         </div>
 
@@ -317,10 +317,10 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <span className="text-xs font-mono font-bold uppercase text-indigo-400 flex items-center gap-1.5">
                 <Sliders className="w-4 h-4" />
-                1. Adjust Vendor Strategy (1 – 5 Scale)
+                1. Set Your Quality & Delivery Speed (1 – 5 Scale)
               </span>
               <span className="text-[0.6875rem] font-mono text-slate-400">
-                Independent Parameters
+                Pick your strategy levels
               </span>
             </div>
 
@@ -328,7 +328,7 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
             <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
               <div className="flex justify-between items-center text-xs font-mono">
                 <span className="text-slate-300 font-semibold flex items-center gap-1.5">
-                  <Star className="w-4 h-4 text-amber-400" /> Technical Quality Tier
+                  <Star className="w-4 h-4 text-amber-400" /> Product Quality Level
                 </span>
                 <div className="flex items-center gap-2">
                   <span className="text-amber-400 font-bold">{qualityTier}★ / 5★</span>
@@ -385,7 +385,7 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
             <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
               <div className="flex justify-between items-center text-xs font-mono">
                 <span className="text-slate-300 font-semibold flex items-center gap-1.5">
-                  <Activity className="w-4 h-4 text-emerald-400" /> Operational Cost Efficiency
+                  <Activity className="w-4 h-4 text-emerald-400" /> Factory Production Efficiency
                 </span>
                 <span className="text-emerald-400 font-bold">Level {costEfficiencyTier}/5</span>
               </div>
@@ -418,9 +418,9 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="w-4 h-4 text-purple-400" />
-                  <span className="text-xs font-bold text-slate-100 font-mono">🛡️ Risk & Reputation Index</span>
+                  <span className="text-xs font-bold text-slate-100 font-mono">🛡️ Delivery Feasibility & Trust Score</span>
                   <span className="text-[0.625rem] font-mono px-2 py-0.5 rounded bg-slate-950 text-purple-300 border border-slate-800">
-                    Dependent Feasibility
+                    Calculated from your Price, Quality & Speed
                   </span>
                 </div>
                 <div className="text-right">
@@ -439,7 +439,7 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <span className="text-xs font-mono font-bold uppercase text-cyan-400 flex items-center gap-1.5">
                 <Layers className="w-4 h-4" />
-                2. Transparent Cost Structure (Fixed vs Variable)
+                2. Your Costs to Build & Deliver (What it Costs You)
               </span>
               <span className="text-xs font-mono font-bold text-emerald-400">
                 FLC: {formatINR(breakdown.fullyLoadedCost)}
@@ -451,7 +451,7 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
               {/* Variable Costs Card */}
               <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2.5">
                 <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                  <span className="text-indigo-300 font-bold uppercase text-[0.6875rem]">📦 Variable Direct Costs</span>
+                  <span className="text-indigo-300 font-bold uppercase text-[0.6875rem]">📦 Direct Production Costs (Workers & Materials)</span>
                   <span className="text-indigo-400 font-bold">{formatINR(breakdown.directCostSubtotal)}</span>
                 </div>
                 <div className="space-y-1.5 text-[0.6875rem] text-slate-400">
@@ -473,7 +473,7 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
               {/* Fixed Costs & Overhead Card */}
               <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2.5">
                 <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                  <span className="text-amber-300 font-bold uppercase text-[0.6875rem]">🏛️ Fixed Overhead & Carrying</span>
+                  <span className="text-amber-300 font-bold uppercase text-[0.6875rem]">🏛️ Factory Rent & Overhead Costs</span>
                   <span className="text-amber-400 font-bold">{formatINR(breakdown.fixedCostAbsorption + breakdown.overheadAllocation + breakdown.financingCost)}</span>
                 </div>
                 <div className="space-y-1.5 text-[0.6875rem] text-slate-400">
@@ -500,7 +500,7 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <span className="text-xs font-mono font-bold uppercase text-emerald-400 flex items-center gap-1.5">
                 <DollarSign className="w-4 h-4" />
-                3. Enter Commercial Quoted Price
+                3. Type Your Selling Price (Your Bid)
               </span>
               <span className="text-xs font-mono text-slate-400">
                 Budget Ceiling: <strong className="text-slate-200">{formatINR(rfq.budgetCeiling)}</strong>
@@ -531,7 +531,7 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
             {/* Direct Number Input */}
             <div className="space-y-1.5">
               <label className="text-[0.6875rem] font-mono text-slate-400 uppercase">
-                Custom Quotation Amount in ₹ (Type below or use levels above)
+                Type your price in ₹ (Price higher than your cost to make a profit)
               </label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-mono font-bold text-xl">₹</span>
@@ -574,7 +574,7 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
               ) : (
                 <>
                   <Send className="w-5 h-5" />
-                  <span>Submit Commercial Quote ({formatINR(price)})</span>
+                  <span>Submit My Final Bid ({formatINR(price)})</span>
                 </>
               )}
             </button>
@@ -593,10 +593,10 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
                 <FileSpreadsheet className="w-5 h-5 text-emerald-400" />
                 <div>
                   <h3 className="text-sm font-bold text-slate-100 uppercase font-mono">
-                    Live Vendor P&L Statement
+                    Live Profit & Loss (P&L) Forecast
                   </h3>
                   <p className="text-[0.625rem] text-slate-400 font-mono">
-                    Real-time financial simulation of your quote
+                    How much money you will make if you win
                   </p>
                 </div>
               </div>
@@ -615,7 +615,7 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
               
               {/* Quoted Revenue */}
               <div className="flex justify-between py-2 border-b border-slate-800 font-semibold">
-                <span className="text-slate-200">(+) Quoted Selling Price (Revenue):</span>
+                <span className="text-slate-200">(+) Your Selling Price (Revenue):</span>
                 <span className="text-emerald-400 font-bold text-sm">{formatINR(grossQuotedRevenue)}</span>
               </div>
 
@@ -634,14 +634,14 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
                   <span className="text-slate-300">{formatINR(breakdown.directLogisticsCost)}</span>
                 </div>
                 <div className="flex justify-between pt-1 font-semibold text-slate-200 text-xs">
-                  <span>(=) Total Direct Variable Costs:</span>
+                  <span>(=) Total Production Costs:</span>
                   <span className="text-rose-400">-{formatINR(variableDirectCosts)}</span>
                 </div>
               </div>
 
               {/* Gross Contribution Margin */}
               <div className="flex justify-between py-1.5 bg-slate-950 px-3 rounded-xl border border-slate-800">
-                <span className="text-indigo-300 font-bold">Gross Contribution Margin:</span>
+                <span className="text-indigo-300 font-bold">Gross Profit (Before Overhead):</span>
                 <span className={`font-bold ${grossContributionMargin >= 0 ? 'text-indigo-300' : 'text-rose-400'}`}>
                   {formatINR(grossContributionMargin)} ({grossContributionMarginPct.toFixed(1)}%)
                 </span>
@@ -654,14 +654,14 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
                   <span className="text-slate-300">-{formatINR(overheadAndFinancing)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>(-) Fixed Cost Absorption:</span>
+                  <span>(-) Factory Rent & Fixed Overhead:</span>
                   <span className="text-slate-300">-{formatINR(fixedCostsAbsorption)}</span>
                 </div>
               </div>
 
               {/* Total Fully Loaded Cost */}
               <div className="flex justify-between py-1.5 bg-slate-950 px-3 rounded-xl border border-slate-800">
-                <span className="text-slate-400 font-bold">Fully Loaded Cost (FLC):</span>
+                <span className="text-slate-400 font-bold">Total Cost to Build (Breakeven Floor):</span>
                 <span className="text-slate-200 font-bold">{formatINR(fullyLoadedCost)}</span>
               </div>
 
@@ -671,7 +671,7 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
                   ? 'bg-emerald-950/60 border-emerald-700/80 text-emerald-300'
                   : 'bg-rose-950/60 border-rose-700/80 text-rose-300'
               }`}>
-                <span>Projected Operating Profit:</span>
+                <span>Profit Before Tax:</span>
                 <span className="font-mono text-base">
                   {projectedOperatingProfit >= 0 ? '+' : ''}{formatINR(projectedOperatingProfit)}
                 </span>
@@ -685,7 +685,7 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
 
               {/* Projected Realized Net Profit */}
               <div className="flex justify-between py-2 bg-slate-950 px-3.5 rounded-2xl border border-slate-800 text-xs font-bold">
-                <span className="text-slate-300">Projected Realized Net Profit:</span>
+                <span className="text-slate-300">Final Net Profit (Cash in Bank):</span>
                 <span className={`font-mono ${projectedNetProfit >= 0 ? 'text-emerald-400 text-sm' : 'text-rose-400 text-sm'}`}>
                   {projectedNetProfit >= 0 ? '+' : ''}{formatINR(projectedNetProfit)}
                 </span>

@@ -64,7 +64,7 @@ export const RfqBoard: React.FC<RfqBoardProps> = ({
           </div>
 
           <div className="bg-slate-950 px-4 py-3 rounded-2xl border border-slate-800 shrink-0 text-left sm:text-right">
-            <p className="text-[0.625rem] text-slate-500 uppercase font-mono">Budget Ceiling (Max)</p>
+            <p className="text-[0.625rem] text-slate-500 uppercase font-mono">Maximum Budget Limit</p>
             <p className="text-2xl font-mono font-bold text-emerald-400">
               {formatINR(rfq.budgetCeiling)}
             </p>
@@ -103,7 +103,7 @@ export const RfqBoard: React.FC<RfqBoardProps> = ({
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-md space-y-3">
           <div className="flex items-center gap-2 text-indigo-400 font-semibold text-xs uppercase font-mono">
             <Layers className="w-4 h-4" />
-            Contract Scope & Baseline Units
+            📦 Order Requirements & Quantities
           </div>
           <div className="space-y-2 text-xs">
             <div className="flex justify-between py-1 border-b border-slate-800">
@@ -129,10 +129,10 @@ export const RfqBoard: React.FC<RfqBoardProps> = ({
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-md space-y-3">
           <div className="flex items-center gap-2 text-rose-400 font-semibold text-xs uppercase font-mono">
             <ShieldCheck className="w-4 h-4" />
-            Mandatory Compliance Gates
+            🔒 Required Certificates (Must-Have)
           </div>
           <p className="text-xs text-slate-400">
-            Vendors failing any mandatory gate are automatically disqualified by the buyer:
+            You must check these certificates during quoting, or your bid will be rejected:
           </p>
           <div className="flex flex-wrap gap-2 pt-1">
             {rfq.requiredCompliance.map((cert) => (
@@ -154,7 +154,7 @@ export const RfqBoard: React.FC<RfqBoardProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
           <div className="flex items-center gap-2 text-cyan-400 font-semibold text-xs uppercase font-mono">
             <Award className="w-4 h-4" />
-            Buyer Evaluation Weights & Criteria
+            ⚖️ How the Buyer Scores Your Bid
           </div>
           <span className="text-[0.625rem] sm:text-xs text-slate-400 font-mono">
             Independent 1–5 parameters • Dependent Risk & Reputation index
@@ -204,7 +204,7 @@ export const RfqBoard: React.FC<RfqBoardProps> = ({
           onClick={onProceedToQuote}
           className="w-full sm:w-auto px-7 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-lg shadow-indigo-600/30 transition flex items-center justify-center gap-2 cursor-pointer min-h-12"
         >
-          Build Commercial Quote
+          Go to Quoting & Live P&L Setup
           <ArrowRight className="w-4 h-4" />
         </button>
       </div>

@@ -155,9 +155,9 @@ export const AuctionArena: React.FC<AuctionArenaProps> = ({
           </div>
           <h2 className="text-xl sm:text-2xl font-bold text-slate-100">{rfq.title}</h2>
           <p className="text-xs text-slate-400 mt-1">
-            {rfq.auctionFormat === 'english' && 'Reverse English: Bids drop in real-time. Final bids reset the soft-close clock.'}
-            {rfq.auctionFormat === 'dutch' && 'Reverse Dutch: Price rises every 2s. First vendor to buzz in wins immediately!'}
-            {rfq.auctionFormat === 'japanese' && 'Japanese Clock: Price descends in discrete steps. Hold button to stay in.'}
+            {rfq.auctionFormat === 'english' && 'Price drops in real time. Lower your price to take the lead, but do not bid below your cost!'}
+            {rfq.auctionFormat === 'dutch' && 'Price rises every 2s. The first vendor to click "Accept & Win" takes the contract!'}
+            {rfq.auctionFormat === 'japanese' && 'Price steps down. Press and hold to stay in. Release to exit safely when price is too low.'}
           </p>
         </div>
 
@@ -173,7 +173,7 @@ export const AuctionArena: React.FC<AuctionArenaProps> = ({
             <Clock className={`w-6 h-6 ${localTimeRemaining <= 5 ? 'text-rose-400' : localTimeRemaining <= 10 ? 'text-amber-400' : 'text-slate-400'}`} />
             <div>
               <p className="text-[0.625rem] text-slate-500 uppercase">
-                {rfq.auctionFormat === 'english' ? 'Soft-Close Clock' : 'Auction Clock'}
+                {rfq.auctionFormat === 'english' ? 'Time Remaining' : 'Auction Clock'}
               </p>
               <p className="text-2xl font-bold">{localTimeRemaining}s</p>
             </div>
@@ -193,17 +193,17 @@ export const AuctionArena: React.FC<AuctionArenaProps> = ({
             <div className="p-4 rounded-2xl bg-gradient-to-r from-orange-950/70 via-slate-900 to-indigo-950/70 border border-orange-500/40 shadow-lg space-y-1.5 animate-fade-in text-xs">
               <div className="flex items-center gap-2 text-orange-300 font-bold text-sm">
                 <Zap className="w-4 h-4 text-amber-400 shrink-0" />
-                <span>💡 Round 1 Live Bidding Hint: {rfq.auctionFormat === 'english' ? 'Reverse English Strategy' : rfq.auctionFormat === 'dutch' ? 'Reverse Dutch Clock Strategy' : 'Japanese Clock Strategy'}</span>
+                <span>💡 Round 1 Tip: How to Win This Auction</span>
               </div>
               <p className="text-slate-300 leading-relaxed">
                 {rfq.auctionFormat === 'english' && (
-                  <>In Reverse English, bids descend as vendors undercut each other. Watch your <strong>Your Margin</strong> indicator below! If your margin falls below 5%, <strong>stop bidding and walk away</strong> to protect your firm against the Winner's Curse.</>
+                  <>In Reverse English, vendors place lower bids to take 1st place. Watch your <strong>Profit Margin</strong> below! If your margin falls below 5%, <strong>stop bidding</strong> so you do not lose money.</>
                 )}
                 {rfq.auctionFormat === 'dutch' && (
-                  <>In Reverse Dutch, the price ticks <strong>UP</strong> every 2 seconds. The first vendor to click <strong>Buzz In</strong> wins immediately at that price! Wait for a profitable margin, but buzz before a rival firm steals the deal.</>
+                  <>In Reverse Dutch, the price rises every 2 seconds. The first person to click <strong>Buzz In</strong> wins immediately! Wait until the profit is good, but don't wait too long or a rival will grab it.</>
                 )}
                 {rfq.auctionFormat === 'japanese' && (
-                  <>In Japanese Clock, the price steps <strong>DOWN</strong>. Keep holding the button to remain in the tender. Once the price drops below your cost floor (FLC), release the button to exit safely.</>
+                  <>In Japanese Clock, the price drops automatically. Keep holding the button to stay in. When the price reaches your cost floor, release the button to leave safely.</>
                 )}
               </p>
             </div>
@@ -212,7 +212,7 @@ export const AuctionArena: React.FC<AuctionArenaProps> = ({
           {/* Main Price Display Card */}
           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 shadow-xl text-center relative overflow-hidden space-y-3">
             <span className="text-xs sm:text-xs uppercase font-mono font-semibold tracking-wider text-slate-400 block">
-              {rfq.auctionFormat === 'dutch' ? 'Current Ascending Tick Price' : 'Current Lowest Quoted Price'}
+              {rfq.auctionFormat === 'dutch' ? 'Current Rising Contract Price' : 'Current Lowest Bid (Winning Price)'}
             </span>
 
             <div className="text-3xl sm:text-5xl font-bold font-mono text-emerald-400 tracking-tight animate-pulse">
