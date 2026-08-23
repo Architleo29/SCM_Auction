@@ -656,6 +656,12 @@ export const Lobby: React.FC<LobbyProps> = ({
 
       </div>
 
+      <div className="text-center pt-2">
+        <span className="text-[11px] font-mono text-slate-500">
+          🚀 SCM Procurement Auction Simulator • Reverse English / Reverse Dutch / Reverse Japanese
+        </span>
+      </div>
+
     </div>
   );
 };
