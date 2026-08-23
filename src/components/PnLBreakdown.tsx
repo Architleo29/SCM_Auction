@@ -56,7 +56,7 @@ export const PnLBreakdown: React.FC<PnLBreakdownProps> = ({
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="text-[0.625rem] sm:text-xs font-mono uppercase text-indigo-400 font-bold tracking-wider">
-              Quarter Settlement (§10) • Post-Auction P&L
+              Quarter Financial Settlement • Post-Auction P&L
             </span>
           </div>
           <h2 className="text-xl sm:text-2xl font-bold text-slate-100">{player.name}</h2>
@@ -286,7 +286,7 @@ export const PnLBreakdown: React.FC<PnLBreakdownProps> = ({
             <div>
               <h3 className="text-xs font-semibold uppercase font-mono text-amber-400 flex items-center gap-2 border-b border-slate-800 pb-2.5">
                 <Percent className="w-4 h-4" />
-                Margin Variance & Risk-Adjusted Profit (§12)
+                Margin Variance & Risk-Adjusted Profit Analysis
               </h3>
 
               <div className="space-y-3 pt-2 text-xs font-mono">

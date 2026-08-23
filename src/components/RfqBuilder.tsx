@@ -358,7 +358,7 @@ export const RfqBuilder: React.FC<RfqBuilderProps> = ({
           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl space-y-3">
             <label className="text-xs font-semibold uppercase text-slate-300 font-mono flex items-center gap-2">
               <Gavel className="w-4 h-4 text-amber-400" />
-              Auction Format (§1.4)
+              Dynamic Auction Format
             </label>
             <select
               value={auctionFormat}

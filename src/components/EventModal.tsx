@@ -29,7 +29,7 @@ export const EventModal: React.FC<EventModalProps> = ({
           </div>
           <div>
             <span className="text-[0.625rem] uppercase font-mono tracking-widest text-amber-700 dark:text-amber-400 font-bold block">
-              Dynamic Market Shock (§7)
+              Dynamic Market Shock Event
             </span>
             <h2 className="text-xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100 mt-0.5 leading-tight">
               {event.title}

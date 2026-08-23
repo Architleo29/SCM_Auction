@@ -47,7 +47,7 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
         </div>
 
         <span className="text-[0.625rem] sm:text-xs uppercase font-mono tracking-widest text-slate-400 font-semibold block">
-          Procurement Award Decision (§5)
+          Procurement Award Decision • QCBS Results
         </span>
 
         <h2 className="text-xl sm:text-3xl font-bold text-slate-100 leading-tight">

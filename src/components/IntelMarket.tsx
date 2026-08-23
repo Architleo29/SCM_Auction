@@ -63,7 +63,7 @@ export const IntelMarket: React.FC<IntelMarketProps> = ({
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="text-xs font-mono uppercase text-cyan-400 font-bold tracking-wider">
-              Information Asymmetry (§8)
+              Competitive Market Intelligence & Data
             </span>
           </div>
           <h2 className="text-2xl font-bold text-slate-100">Market Intelligence Office</h2>
