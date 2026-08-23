@@ -58,7 +58,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   // Step sequence mapping for visual gamification
   const steps = [
-    { label: 'RFQ', active: currentPhase === 'RFQ_BUILDER' || currentPhase === 'RFQ' || currentPhase === 'DOSSIER' },
+    { label: 'RFQ', active: currentPhase === 'RFQ_BUILDER' || currentPhase === 'RFQ' },
     { label: 'QUOTE', active: currentPhase === 'QUOTING' || currentPhase === 'INTEL' },
     { label: 'AUCTION', active: currentPhase === 'AUCTION' },
     { label: 'RESULTS', active: currentPhase === 'EVALUATION' || currentPhase === 'EVENT' || currentPhase === 'PNL' || currentPhase === 'LEADERBOARD' }
