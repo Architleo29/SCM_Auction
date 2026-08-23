@@ -40,6 +40,7 @@ interface LobbyProps {
   onOpenRfqBuilder?: () => void;
   onOpenManualModal?: () => void;
   onUpdatePlayerProfile?: (stats: { qualityLevel: number; speedLevel: number; costEfficiency: number }) => void;
+  onStartForwardGame?: (valuationMode: 'private' | 'common') => void;
   onToggleReady?: (isReady: boolean) => void;
   isSupabaseConnected?: boolean;
   onOpenSupabaseModal?: () => void;
@@ -57,8 +58,9 @@ export const Lobby: React.FC<LobbyProps> = ({
   onOpenRfqBuilder,
   onOpenManualModal,
   onUpdatePlayerProfile,
+  onStartForwardGame,
   onToggleReady,
-  isSupabaseConnected = false,
+  isSupabaseConnected,
   onOpenSupabaseModal
 }) => {
   const [hostName, setHostName] = useState('Apex Procurement Directorate (Buyer)');
@@ -471,6 +473,64 @@ export const Lobby: React.FC<LobbyProps> = ({
           Compete in high-stakes reverse auctions against rival vendors and procurement scoring engines. Build quotes, price risk, survive market shocks, and bank profits in INR (₹).
         </p>
       </div>
+
+
+      {/* GAME MODE SELECTION BANNER */}
+      <div className="bg-gradient-to-r from-purple-950/80 via-slate-900 to-indigo-950/80 border border-purple-500/40 rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="p-3 rounded-2xl bg-purple-600/30 border border-purple-500/40 text-purple-300 shadow-md">
+              <Sparkles className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-lg sm:text-xl font-bold text-slate-100">
+                  NEW: Forward English Auction — Multi-Buyer Purse Mode
+                </h3>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono bg-purple-900 text-purple-200 border border-purple-700 font-bold">
+                  IPL / Asset Draft
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 mt-0.5">
+                Play as a <strong>Buyer</strong> managing a <strong>₹10,00,000 Purse</strong> across 6 sequential industrial asset lots. Bid prices <strong>UP</strong> to build the highest surplus portfolio!
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+          <button
+            onClick={() => onStartForwardGame && onStartForwardGame('private')}
+            className="p-4 rounded-2xl bg-slate-950/90 border border-indigo-500/40 hover:border-indigo-400 hover:bg-indigo-950/40 transition cursor-pointer text-left space-y-1.5 group active:scale-95 shadow-md"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-indigo-300 font-mono flex items-center gap-1.5">
+                <span>🎯</span> Launch Mode A: Private Value
+              </span>
+              <span className="text-[10px] px-2 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-800 font-mono">Personal Valuation</span>
+            </div>
+            <p className="text-[11px] text-slate-400 leading-relaxed">
+              Every buyer receives unique private valuations (0.7× to 1.4× market value). Compete to acquire lots below your personal valuation threshold.
+            </p>
+          </button>
+
+          <button
+            onClick={() => onStartForwardGame && onStartForwardGame('common')}
+            className="p-4 rounded-2xl bg-slate-950/90 border border-purple-500/40 hover:border-purple-400 hover:bg-purple-950/40 transition cursor-pointer text-left space-y-1.5 group active:scale-95 shadow-md"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-purple-300 font-mono flex items-center gap-1.5">
+                <span>🎲</span> Launch Mode B: Common Value
+              </span>
+              <span className="text-[10px] px-2 py-0.5 rounded bg-purple-950 text-purple-300 border border-purple-800 font-mono">Winner's Curse</span>
+            </div>
+            <p className="text-[11px] text-slate-400 leading-relaxed">
+              Assets have one true shared value, but buyers only see noisy private estimates (0.8× to 1.2×). Shade bids strategically to avoid the Winner's Curse!
+            </p>
+          </button>
+        </div>
+      </div>
+
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         

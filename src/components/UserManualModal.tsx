@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { 
-  BookOpen, 
+  BookOpen,
+  ShoppingBag, 
   X, 
   Gavel, 
   TrendingDown, 
@@ -24,7 +25,7 @@ interface UserManualModalProps {
 }
 
 export const UserManualModal: React.FC<UserManualModalProps> = ({ isOpen, onClose }) => {
-  const [activeTab, setActiveTab] = useState<'quickstart' | 'auctions' | 'strategy' | 'scoring'>('quickstart');
+  const [activeTab, setActiveTab] = useState<'quickstart' | 'auctions' | 'forward' | 'strategy' | 'scoring'>('quickstart');
 
   if (!isOpen) return null;
 
@@ -82,6 +83,17 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({ isOpen, onClos
             }`}
           >
             <span>🔨</span> 2. Reverse English Mechanics
+          </button>
+
+          <button
+            onClick={() => setActiveTab('forward')}
+            className={`py-3.5 px-3 text-xs font-bold font-mono transition border-b-2 shrink-0 flex items-center gap-1.5 cursor-pointer ${
+              activeTab === 'forward'
+                ? 'border-purple-500 text-purple-300'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <span>📦</span> 3. Forward English (Buyer Purse Mode)
           </button>
 
           <button
