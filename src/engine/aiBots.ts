@@ -3,8 +3,8 @@ import { calculateCostBreakdown } from './costCalculator';
 import { formatINR } from '../utils/formatters';
 
 /**
- * Generates an initial commercial quote for an AI Bot (§9.4)
- * AI starts with an initial high quote allowing room for dynamic counter-bidding during the live auction!
+ * Generates an initial commercial quote for an AI Bot
+ * AI starts with an initial competitive quote leaving room for dynamic bidding wars!
  */
 export function generateAiQuote(
   bot: PlayerState,
@@ -16,7 +16,7 @@ export function generateAiQuote(
   const breakdown = calculateCostBreakdown(profile, rfq);
   const flc = breakdown.fullyLoadedCost;
 
-  let marginMultiplier = 1.25;
+  let marginMultiplier = 1.22;
   let riskContingencyRate = profile.riskContingencyNeed;
   let slaTier: 'basic' | 'standard' | 'premium' = 'standard';
   let paymentTerms: 'upfront_20' | 'milestone' | 'net_30' | 'net_60' = 'net_30';
@@ -25,8 +25,8 @@ export function generateAiQuote(
 
   switch (personality) {
     case 'aggressive':
-      // Vulcan: Starts moderately high (~14-18% margin) and aggressively cuts bids during live auction down to 3-6%
-      marginMultiplier = 1.15 + (Math.random() * 0.03);
+      // Vulcan: Starts at ~18-22% margin and aggressively undercuts down to 4-6%
+      marginMultiplier = 1.18 + (Math.random() * 0.04);
       riskContingencyRate = 0.04;
       slaTier = 'basic';
       paymentTerms = 'net_60';
@@ -35,38 +35,36 @@ export function generateAiQuote(
       break;
 
     case 'conservative':
-      // Apex: Starts with 20-25% margin and defends 10-14% floor with 5/5 quality & premium SLA
-      marginMultiplier = 1.22 + (Math.random() * 0.04);
-      riskContingencyRate = 0.12;
+      // Apex: Starts with 25-30% margin and defends a 12-15% floor with premium quality
+      marginMultiplier = 1.25 + (Math.random() * 0.05);
+      riskContingencyRate = 0.10;
       slaTier = 'premium';
       paymentTerms = 'net_30';
       deliveryDays = Math.max(8, rfq.requiredDeliveryDays - 4);
       warrantyMonths = 24;
       break;
 
-    case 'opportunist': {
-      // Matrix: Starts at ~16-20% margin and calculates optimal undercuts down to 5-8%
-      marginMultiplier = 1.18 + (Math.random() * 0.03);
-      riskContingencyRate = 0.07;
+    case 'opportunist':
+      // Matrix: Starts at ~20-25% margin and calculates optimal undercuts down to 6-9%
+      marginMultiplier = 1.20 + (Math.random() * 0.05);
+      riskContingencyRate = 0.06;
       slaTier = 'standard';
       paymentTerms = 'net_30';
       deliveryDays = Math.max(9, rfq.requiredDeliveryDays - 2);
       warrantyMonths = 12;
       break;
-    }
 
-    case 'copycat': {
-      // Echo: Adaptive follower starting at ~17-21% margin down to 6-9%
-      marginMultiplier = 1.19 + (Math.random() * 0.03);
+    case 'copycat':
+      // Echo: Adaptive follower starting at ~21-26% margin down to 7-10%
+      marginMultiplier = 1.21 + (Math.random() * 0.05);
       slaTier = 'standard';
-      riskContingencyRate = 0.08;
+      riskContingencyRate = 0.07;
       deliveryDays = rfq.requiredDeliveryDays;
       warrantyMonths = 12;
       break;
-    }
   }
 
-  // Calculate Final Initial Quote Price (capped by budget ceiling)
+  // Cap initial quote by budget ceiling
   const rawPrice = Math.round(flc * marginMultiplier);
   const finalPrice = Math.min(Math.round(rfq.budgetCeiling * 0.98), rawPrice);
 
@@ -97,37 +95,39 @@ export function shouldAiBidInEnglishAuction(
   const personality = bot.aiPersonality || 'conservative';
   const flc = calculateCostBreakdown(bot.profile, rfq).fullyLoadedCost;
 
-  let walkawayMargin = 1.10;
-  let decrement = 1000;
+  let walkawayMargin = 1.08;
+  let decrement = Math.max(2000, Math.round(rfq.budgetCeiling * 0.015));
 
   if (personality === 'aggressive') {
-    // Vulcan: 4% to 7% floor margin, $2000-$6000 decrement
+    // Vulcan: 4% to 7% floor margin, aggressive steps
     walkawayMargin = 1.04 + (Math.random() * 0.03);
-    decrement = 2000 + Math.random() * 4000;
+    decrement = Math.max(3000, Math.round(rfq.budgetCeiling * 0.025));
   } else if (personality === 'conservative') {
-    // Apex: 10% to 14% floor margin, $500-$2000 decrement
+    // Apex: 10% to 14% floor margin, small steps
     walkawayMargin = 1.10 + (Math.random() * 0.04);
-    decrement = 500 + Math.random() * 1500;
+    decrement = Math.max(1500, Math.round(rfq.budgetCeiling * 0.01));
   } else if (personality === 'opportunist') {
-    // Matrix: 5% to 9% floor margin, $1000-$3000 decrement
+    // Matrix: 5% to 9% floor margin, balanced steps
     walkawayMargin = 1.05 + (Math.random() * 0.04);
-    decrement = 1000 + Math.random() * 2000;
+    decrement = Math.max(2500, Math.round(rfq.budgetCeiling * 0.02));
   } else if (personality === 'copycat') {
-    // Echo: 6% to 10% floor margin, approximates human decrement
+    // Echo: 6% to 10% floor margin
     walkawayMargin = 1.06 + (Math.random() * 0.04);
-    decrement = 1000 + Math.random() * 2000;
+    decrement = Math.max(2000, Math.round(rfq.budgetCeiling * 0.018));
   }
 
   const minAcceptablePrice = Math.round(flc * walkawayMargin);
-  decrement = Math.max(500, Math.round(decrement));
-  const proposedBid = currentPrice - decrement;
 
-  if (proposedBid >= minAcceptablePrice) {
-    return {
-      shouldBid: true,
-      nextBidAmount: proposedBid,
-      rationale: `${personality.toUpperCase()}: Undercut to ${formatINR(proposedBid)} (Margin: ${Math.round(((proposedBid - flc) / proposedBid) * 100)}%)`
-    };
+  // If current price is higher than bot's minimum acceptable floor, the bot can bid!
+  if (currentPrice > minAcceptablePrice) {
+    const proposedBid = Math.max(minAcceptablePrice, currentPrice - decrement);
+    if (proposedBid < currentPrice) {
+      return {
+        shouldBid: true,
+        nextBidAmount: proposedBid,
+        rationale: `${personality.toUpperCase()}: Undercut to ${formatINR(proposedBid)} (Margin: ${Math.round(((proposedBid - flc) / proposedBid) * 100)}%)`
+      };
+    }
   }
 
   return {
@@ -151,17 +151,17 @@ export function shouldAiAcceptInDutchAuction(
   let targetMargin = 1.16;
 
   if (personality === 'aggressive') {
-    // Vulcan targets 14-18% profit margin buzz
-    targetMargin = 1.14 + (Math.random() * 0.04);
+    // Vulcan targets 12-16% profit margin buzz
+    targetMargin = 1.12 + (Math.random() * 0.04);
   } else if (personality === 'conservative') {
-    // Apex targets 20-25% profit margin buzz
-    targetMargin = 1.20 + (Math.random() * 0.05);
+    // Apex targets 18-24% profit margin buzz
+    targetMargin = 1.18 + (Math.random() * 0.05);
   } else if (personality === 'opportunist') {
-    // Matrix targets 16-20% profit margin buzz
-    targetMargin = 1.16 + (Math.random() * 0.04);
+    // Matrix targets 15-20% profit margin buzz
+    targetMargin = 1.15 + (Math.random() * 0.04);
   } else if (personality === 'copycat') {
-    // Echo targets 17-21% profit margin buzz
-    targetMargin = 1.17 + (Math.random() * 0.04);
+    // Echo targets 16-21% profit margin buzz
+    targetMargin = 1.16 + (Math.random() * 0.04);
   }
 
   const targetAcceptPrice = Math.round(flc * targetMargin);

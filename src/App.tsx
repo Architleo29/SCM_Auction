@@ -346,14 +346,14 @@ export const App: React.FC = () => {
               }
             };
 
-            // If I am Host, check if all human vendors have submitted
+            // If I am Host, check if all human active players have submitted
             if (isHostRef.current) {
-              const humanVendors = Object.values(updated).filter(pl => !pl.isHost && !pl.isAi);
-              const allSubmitted = humanVendors.length > 0 && humanVendors.every(pl => pl.submittedQuote !== null);
+              const humanActive = Object.values(updated).filter(pl => !pl.isAi);
+              const allSubmitted = humanActive.length > 0 && humanActive.every(pl => pl.submittedQuote !== null);
               if (allSubmitted) {
                 setTimeout(() => {
                   handleQuotingTimeout();
-                }, 1200);
+                }, 600);
               }
             }
 
@@ -777,12 +777,12 @@ export const App: React.FC = () => {
     });
 
     if (isHost) {
-      const humanVendors = Object.values(updatedPlayers).filter(pl => !pl.isHost && !pl.isAi);
-      const allSubmitted = humanVendors.length > 0 && humanVendors.every(pl => pl.submittedQuote !== null);
+      const humanActive = Object.values(updatedPlayers).filter(pl => !pl.isAi);
+      const allSubmitted = humanActive.length > 0 && humanActive.every(pl => pl.submittedQuote !== null);
       if (allSubmitted) {
         setTimeout(() => {
           handleQuotingTimeout();
-        }, 1200);
+        }, 600);
       }
     }
   };
@@ -971,6 +971,7 @@ export const App: React.FC = () => {
       }
 
       setActiveAuction(state);
+      broadcastSync({ activeAuction: state });
     }, 1000);
   };
 
