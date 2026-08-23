@@ -17,7 +17,7 @@ import {
 import { RFQ, PlayerState, AuctionState, AuctionFormat } from '../types/game';
 import { calculateCostBreakdown } from '../engine/costCalculator';
 import { sounds } from '../utils/soundEffects';
-import { formatINR } from '../utils/formatters';
+import { formatINR, isBuyerSpectator } from '../utils/formatters';
 
 interface AuctionArenaProps {
   rfq: RFQ;
