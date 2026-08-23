@@ -557,12 +557,10 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
             {/* Submit Quote Button */}
             <button
               type="submit"
-              disabled={hasSubmitted || complianceChecked.length < rfq.requiredCompliance.length}
+              disabled={hasSubmitted}
               className={`w-full py-4 rounded-2xl font-bold text-sm shadow-xl transition flex items-center justify-center gap-2 cursor-pointer active:scale-95 ${
                 hasSubmitted
                   ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
-                  : complianceChecked.length < rfq.requiredCompliance.length
-                  ? 'bg-rose-950 border border-rose-800 text-rose-300 cursor-not-allowed'
                   : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-indigo-600/30'
               }`}
             >

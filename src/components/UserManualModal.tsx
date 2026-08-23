@@ -292,17 +292,17 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({ isOpen, onClos
                     <span>1. Avoid Winner's Curse</span>
                   </div>
                   <p className="text-xs text-slate-400 leading-relaxed">
-                    Winning a contract at a loss drains your banked cash and destroys your score. Never bid below your <strong>Fully Loaded Cost (FLC)</strong>.
+                    In procurement auctions, the lowest bidder often bids too low and loses money. Never bid below your <strong>Breakeven Cost (FLC)</strong>!
                   </p>
                 </div>
 
                 <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
                   <div className="flex items-center gap-1.5 text-cyan-400 font-bold text-xs">
                     <ShieldCheck className="w-4 h-4" />
-                    <span>2. QCBS Non-Price Power</span>
+                    <span>2. QCBS Scoring Power</span>
                   </div>
                   <p className="text-xs text-slate-400 leading-relaxed">
-                    Buyer scoring weighs Quality and Delivery Speed too! High-quality firms can win tenders even when bidding slightly higher than rivals.
+                    Buyers score both Quality and Delivery Speed. High-quality vendors can win contracts even when quoting a slightly higher price.
                   </p>
                 </div>
 
@@ -312,28 +312,28 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({ isOpen, onClos
                     <span>3. Target 15-20% Margins</span>
                   </div>
                   <p className="text-xs text-slate-400 leading-relaxed">
-                    Target healthy margins to build a financial fortress. Consistency beats reckless low-ball bidding every single time.
+                    Consistent 15-20% margins build a fortress balance sheet. Disciplined pricing always beats reckless low-ball bidding.
                   </p>
                 </div>
               </div>
 
-              {/* 10 Points Allocation Guide */}
+              {/* MBA Procurement Framework Guide */}
               <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-3">
                 <h4 className="font-bold text-indigo-300 text-xs uppercase font-mono tracking-wider">
-                  How 10-Point Company Strategy Works
+                  🎓 Core MBA Concepts Applied in This Simulator
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
                   <div className="bg-slate-900 p-3 rounded-xl border border-slate-800 space-y-1">
-                    <strong className="text-amber-400 block">⭐ Quality (1-5 Pts)</strong>
-                    <span className="text-slate-400">Boosts technical evaluation score in QCBS tenders.</span>
+                    <strong className="text-amber-400 block">📊 1. Cost Accounting</strong>
+                    <span className="text-slate-400">Total Cost = Variable Direct Costs (Labor + Materials + Logistics) + Fixed Factory Rent.</span>
                   </div>
                   <div className="bg-slate-900 p-3 rounded-xl border border-slate-800 space-y-1">
-                    <strong className="text-indigo-400 block">⚡ Speed (1-5 Pts)</strong>
-                    <span className="text-slate-400">Boosts delivery turnaround score and satisfies tight deadlines.</span>
+                    <strong className="text-indigo-400 block">⚖️ 2. Multi-Criteria QCBS</strong>
+                    <span className="text-slate-400">Total Bid Score = Price (1-5) + Quality (1-5★) + Speed (T1-T5) + Vendor Trust Score.</span>
                   </div>
                   <div className="bg-slate-900 p-3 rounded-xl border border-slate-800 space-y-1">
-                    <strong className="text-emerald-400 block">📉 Cost Efficiency (1-5 Pts)</strong>
-                    <span className="text-slate-400">Slashes your baseline FLC by up to -20%, unlocking high margins.</span>
+                    <strong className="text-emerald-400 block">🔨 3. Game Theory & Auctions</strong>
+                    <span className="text-slate-400">English (price war), Dutch (first to buzz), and Japanese (hold-to-stay) reverse mechanisms.</span>
                   </div>
                 </div>
               </div>
