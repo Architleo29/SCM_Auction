@@ -503,7 +503,7 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
                 3. Type Your Selling Price (Your Bid)
               </span>
               <span className="text-xs font-mono text-slate-400">
-                Budget Ceiling: <strong className="text-slate-200">{formatINR(rfq.budgetCeiling)}</strong>
+                Auction Starting Price: <strong className="text-slate-200">{formatINR(rfq.budgetCeiling)}</strong>
               </span>
             </div>
 

@@ -64,7 +64,7 @@ export const RfqBoard: React.FC<RfqBoardProps> = ({
           </div>
 
           <div className="bg-slate-950 px-4 py-3 rounded-2xl border border-slate-800 shrink-0 text-left sm:text-right">
-            <p className="text-[0.625rem] text-slate-500 uppercase font-mono">Maximum Budget Limit</p>
+            <p className="text-[0.625rem] text-slate-500 uppercase font-mono">Auction Starting Price (Max Limit)</p>
             <p className="text-2xl font-mono font-bold text-emerald-400">
               {formatINR(rfq.budgetCeiling)}
             </p>
@@ -81,8 +81,8 @@ export const RfqBoard: React.FC<RfqBoardProps> = ({
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-slate-300 pt-1">
             <div className="bg-slate-950/70 p-2.5 rounded-xl border border-slate-800">
-              <strong className="text-emerald-400 block mb-1">1. Budget Ceiling</strong>
-              Your price must be under {formatINR(rfq.budgetCeiling)}. Any quote above this ceiling is disqualified automatically.
+              <strong className="text-emerald-400 block mb-1">1. Auction Starting Price</strong>
+              Your price must be under {formatINR(rfq.budgetCeiling)}. Any quote above this starting price is disqualified automatically.
             </div>
             <div className="bg-slate-950/70 p-2.5 rounded-xl border border-slate-800">
               <strong className="text-indigo-400 block mb-1">2. Multi-Criteria Weights</strong>

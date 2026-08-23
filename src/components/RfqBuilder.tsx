@@ -383,10 +383,10 @@ export const RfqBuilder: React.FC<RfqBuilderProps> = ({
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
             <div className="flex items-center gap-2 text-xs font-mono font-semibold uppercase text-indigo-400">
               <FileText className="w-4 h-4" />
-              Commercial Scope & Budget Ceiling
+              Commercial Scope & Auction Starting Price
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-[0.625rem] text-slate-400 uppercase font-mono">Quick Ceiling:</span>
+              <span className="text-[0.625rem] text-slate-400 uppercase font-mono">Quick Starting Price:</span>
               {[250000, 500000, 1000000, 2000000].map(val => (
                 <button
                   key={val}
@@ -418,7 +418,7 @@ export const RfqBuilder: React.FC<RfqBuilderProps> = ({
 
             <div>
               <div className="flex justify-between items-center mb-1">
-                <label className="text-xs font-mono text-slate-300">Buyer Budget Ceiling</label>
+                <label className="text-xs font-mono text-slate-300">Auction Starting Price (Max Budget)</label>
                 <span className="text-base font-mono font-bold text-emerald-400">{formatINR(budgetCeiling)}</span>
               </div>
               <input

@@ -141,10 +141,10 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({ isOpen, onClos
                     <div className="w-7 h-7 rounded-xl bg-cyan-600/20 text-cyan-400 border border-cyan-500/30 flex items-center justify-center font-bold font-mono text-xs">
                       2
                     </div>
-                    <h4 className="font-bold text-slate-100 text-sm">Tender Review & Budget Ceiling</h4>
+                    <h4 className="font-bold text-slate-100 text-sm">Tender Review & Auction Starting Price</h4>
                   </div>
                   <p className="text-xs text-slate-400 leading-relaxed">
-                    Inspect the buyer's <strong>Budget Ceiling</strong> and <strong>QCBS scoring weights</strong> (e.g. Price, Quality, Timeline, Risk & Reputation). Any quote above the ceiling is disqualified!
+                    Inspect the buyer's <strong>Auction Starting Price</strong> and <strong>QCBS scoring weights</strong> (e.g. Price, Quality, Timeline, Risk & Reputation). Any quote above this starting price is disqualified!
                   </p>
                 </div>
 
@@ -180,7 +180,7 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({ isOpen, onClos
               <div className="bg-slate-950 p-5 rounded-2xl border border-cyan-500/40 shadow-lg space-y-3">
                 <div className="flex items-center gap-2 text-cyan-400 font-bold text-sm">
                   <ShieldCheck className="w-5 h-5 text-cyan-400 shrink-0" />
-                  <span>🏛️ Why is a Budget Ceiling Essential in Reverse Auctions?</span>
+                  <span>🏛️ Why is the Auction Starting Price (Ceiling) Essential in Reverse Auctions?</span>
                 </div>
                 <p className="text-xs text-slate-300 leading-relaxed">
                   In a traditional auction (selling), prices start low and bid <strong>UPWARDS</strong> from a reserve floor. But in a <strong>Reverse Auction (procurement)</strong>, prices start high and compete <strong>DOWNWARDS</strong>. Here is why the ceiling is critical:
