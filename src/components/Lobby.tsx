@@ -72,7 +72,7 @@ export const Lobby: React.FC<LobbyProps> = ({
   const [selectedRounds, setSelectedRounds] = useState<number>(3);
   const [selectedDifficulty, setSelectedDifficulty] = useState<GameDifficulty>('standard');
   const [selectedMaxPlayers, setSelectedMaxPlayers] = useState<number>(4);
-  const [chosenAuctionFormat, setChosenAuctionFormat] = useState<AuctionFormat>('english');
+  const [chosenAuctionFormat, setChosenAuctionFormat] = useState<'english' | 'forward'>('english');
   const [copied, setCopied] = useState(false);
   const [isSetupModalOpen, setIsSetupModalOpen] = useState(false);
 
@@ -670,24 +670,38 @@ export const Lobby: React.FC<LobbyProps> = ({
               {/* Auction Format Selector */}
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center justify-between">
-                  <span>Auction Format Mode</span>
-                  <span className="text-xs font-mono text-orange-400 font-bold">🔨 Reverse English</span>
+                  <span>Select Auction Format</span>
+                  <span className={`text-xs font-mono font-bold ${chosenAuctionFormat === 'english' ? 'text-orange-400' : 'text-purple-400'}`}>
+                    {chosenAuctionFormat === 'english' ? '🔨 Reverse English' : '📦 Forward English'}
+                  </span>
                 </label>
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="py-2.5 px-3 rounded-xl bg-orange-500/10 border border-orange-500/50 text-xs font-mono text-orange-300 text-center font-bold">
-                    <span className="block text-sm mb-0.5">🔨</span>
+                  <button
+                    type="button"
+                    onClick={() => setChosenAuctionFormat('english')}
+                    className={`py-3 px-2 rounded-xl text-xs font-mono font-bold border transition cursor-pointer flex flex-col items-center justify-center gap-1 active:scale-95 ${
+                      chosenAuctionFormat === 'english'
+                        ? 'bg-orange-500/20 border-orange-500 text-orange-300 shadow-md ring-1 ring-orange-400'
+                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
+                    }`}
+                  >
+                    <span className="text-base">🔨</span>
                     <span>Reverse English</span>
-                    <span className="block text-[10px] text-slate-400 font-normal mt-0.5">Procurement Tender</span>
-                  </div>
+                    <span className="text-[10px] text-slate-400 font-normal">Procurement Tender</span>
+                  </button>
 
                   <button
                     type="button"
-                    onClick={() => onStartForwardGame && onStartForwardGame('private')}
-                    className="py-2.5 px-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-purple-500/60 hover:bg-purple-950/30 text-xs font-mono text-purple-300 text-center font-bold transition cursor-pointer"
+                    onClick={() => setChosenAuctionFormat('forward')}
+                    className={`py-3 px-2 rounded-xl text-xs font-mono font-bold border transition cursor-pointer flex flex-col items-center justify-center gap-1 active:scale-95 ${
+                      chosenAuctionFormat === 'forward'
+                        ? 'bg-purple-500/20 border-purple-500 text-purple-300 shadow-md ring-1 ring-purple-400'
+                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
+                    }`}
                   >
-                    <span className="block text-sm mb-0.5">📦</span>
+                    <span className="text-base">📦</span>
                     <span>Forward English</span>
-                    <span className="block text-[10px] text-slate-400 font-normal mt-0.5">Multi-Buyer Purse</span>
+                    <span className="text-[10px] text-slate-400 font-normal">Buyer Purse Draft</span>
                   </button>
                 </div>
               </div>
@@ -695,11 +709,27 @@ export const Lobby: React.FC<LobbyProps> = ({
           </div>
 
           <button
-            onClick={() => onCreateRoom(selectedScenario, selectedRounds, selectedDifficulty, hostName, selectedMaxPlayers, 'english')}
-            className="w-full py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-xl shadow-indigo-600/30 transition flex items-center justify-center gap-2 mt-4 cursor-pointer active:scale-95"
+            onClick={() => {
+              if (chosenAuctionFormat === 'forward') {
+                if (onStartForwardGame) {
+                  onStartForwardGame('private');
+                }
+              } else {
+                onCreateRoom(selectedScenario, selectedRounds, selectedDifficulty, hostName, selectedMaxPlayers, 'english');
+              }
+            }}
+            className={`w-full py-3.5 rounded-2xl text-white font-semibold text-sm shadow-xl transition flex items-center justify-center gap-2 mt-4 cursor-pointer active:scale-95 ${
+              chosenAuctionFormat === 'forward'
+                ? 'bg-purple-600 hover:bg-purple-500 shadow-purple-600/30'
+                : 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-600/30'
+            }`}
           >
             <Sparkles className="w-4 h-4" />
-            <span>Create {selectedMaxPlayers}-Vendor Procurement Room & Generate Code</span>
+            <span>
+              {chosenAuctionFormat === 'forward'
+                ? 'Launch Forward English Asset Draft 🚀'
+                : `Create ${selectedMaxPlayers}-Vendor Procurement Room & Generate Code`}
+            </span>
           </button>
         </div>
 

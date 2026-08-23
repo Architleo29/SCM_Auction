@@ -1547,6 +1547,8 @@ export const App: React.FC = () => {
             onAddAiBot={handleAddAiBot}
             onRemovePlayer={handleRemovePlayer}
             onStartGame={handleStartGame}
+            onQuickPlayVsBots={handleQuickPlayVsBots}
+            onStartForwardGame={handleStartForwardSession}
             onOpenRfqBuilder={() => {
               setPhase('RFQ_BUILDER');
               broadcastSync({ phase: 'RFQ_BUILDER' });
