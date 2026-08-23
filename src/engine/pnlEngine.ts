@@ -1,7 +1,7 @@
 import { PlayerState, RFQ, Quote, DynamicEventCard, PnLResult } from '../types/game';
 import { calculateCostBreakdown } from './costCalculator';
 
-export const SUNK_BID_PREP_COST = 0; // Set to 0 so outbid players are not penalized arbitrarily
+export const SUNK_BID_PREP_COST = 15000; // ₹15,000 cost incurred by all participating vendors
 
 /**
  * Computes Post-Auction Delivery Settlement and P&L Breakdown
@@ -17,7 +17,7 @@ export function settleContractPnL(
   const quote = player.submittedQuote || winningQuote;
   const bidPrepCost = SUNK_BID_PREP_COST;
 
-  // If player did not win
+  // If player did not win: Incur ₹15,000 Bid Preparation Fee
   if (!isWinner || !winningQuote) {
     const quotedP = quote ? quote.price : 0;
     return {
@@ -30,15 +30,15 @@ export function settleContractPnL(
       actualDeliveryCost: 0,
       operatingProfit: 0,
       tax: 0,
-      realizedProfit: 0,
+      realizedProfit: -bidPrepCost, // Incurred -₹15,000
       quotedMarginPct: quotedP > 0 ? Number(((quotedP - calculateCostBreakdown(profile, rfq).fullyLoadedCost) / quotedP * 100).toFixed(1)) : 0,
       realizedMarginPct: 0,
       marginVariancePts: 0,
       volatilityPenalty: 0,
-      riskAdjustedProfit: 0,
+      riskAdjustedProfit: -bidPrepCost,
       reputationDelta: 0,
       newReputation: 100,
-      reputationReason: quote ? 'Outbid in auction' : 'Idle Round'
+      reputationReason: quote ? 'Outbid in auction (-₹15k Participation Fee)' : 'Idle Round'
     };
   }
 
@@ -73,11 +73,11 @@ export function settleContractPnL(
     }
   }
 
-  // 3. Calculate Actual Delivery Cost & Tax
+  // 3. Calculate Actual Delivery Cost, Taxes, and Net Realized Profit
   const actualDeliveryCost = Math.round(baselineCost + eventCostDelta);
   const operatingProfit = contractAwardPrice - actualDeliveryCost;
   const tax = operatingProfit > 0 ? Math.round(operatingProfit * (profile.taxRate || 0.20)) : 0;
-  const realizedProfit = operatingProfit - tax;
+  const realizedProfit = operatingProfit - tax - bidPrepCost; // Deduct ₹15,000 participation fee
 
   // 4. Margins & Variance
   const quotedMarginPct = baselineBreakdown.quotedMarginPct;
@@ -93,7 +93,7 @@ export function settleContractPnL(
     playerId: player.id,
     contractWon: true,
     quotedPrice: contractAwardPrice,
-    bidPrepCost: 0,
+    bidPrepCost,
     baselineCost,
     eventCostDelta,
     actualDeliveryCost,
@@ -122,7 +122,7 @@ export function calculateTotalScore(
   penalties: number = 0
 ): number {
   const profitScore = bankedProfit * 1.0;
-  const contractScore = contractsWon * 100;
+  const contractScore = contractsWon * 1000;
   const riskAdjustedBonus = totalRiskAdjustedProfit * 0.20;
 
   return Math.round(profitScore + contractScore + riskAdjustedBonus - penalties);

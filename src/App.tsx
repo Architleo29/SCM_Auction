@@ -152,14 +152,13 @@ export const App: React.FC = () => {
               const incoming = event.payload.players;
               const localMe = prev[myPlayerId];
               const merged = { ...incoming };
-              if (localMe) {
+              if (localMe && incoming[myPlayerId]) {
                 merged[myPlayerId] = {
-                  ...(incoming[myPlayerId] || {}),
                   ...localMe,
-                  ready: localMe.ready || incoming[myPlayerId]?.ready || false,
+                  ...incoming[myPlayerId],
                   profile: {
-                    ...(incoming[myPlayerId]?.profile || {}),
-                    ...(localMe.profile || {})
+                    ...(localMe.profile || {}),
+                    ...(incoming[myPlayerId]?.profile || {})
                   }
                 };
               }
@@ -1114,17 +1113,17 @@ export const App: React.FC = () => {
       const pnl = settleContractPnL(p, activeRfq, winningQuote, isWinner, null);
       const newBankedProfit = p.bankedProfit + pnl.realizedProfit;
       const newContractsWon = p.contractsWon + (isWinner ? 1 : 0);
-      const newScore = calculateTotalScore(newBankedProfit, newContractsWon, pnl.newReputation, pnl.riskAdjustedProfit);
+      const newScore = calculateTotalScore(newBankedProfit, newContractsWon, 100, pnl.riskAdjustedProfit);
       updatedPlayers[p.id] = {
         ...p,
         bankedProfit: newBankedProfit,
         contractsWon: newContractsWon,
-        reputation: pnl.newReputation,
         score: newScore,
         lastPnL: pnl,
         history: [...p.history, pnl]
       };
     });
+    playersRef.current = updatedPlayers;
     setPlayers(updatedPlayers);
     setPhase('PNL');
     broadcastSync({ phase: 'PNL', players: updatedPlayers });
@@ -1305,7 +1304,11 @@ export const App: React.FC = () => {
     });
   };
 
-  const pnlDisplayPlayer = (!isHost && me?.lastPnL) ? me : (winnerPlayer || Object.values(players).find(p => p.isAi && p.lastPnL) || Object.values(players)[0]);
+  const pnlDisplayPlayer = (me && me.lastPnL) 
+    ? me 
+    : (winnerPlayer && winnerPlayer.lastPnL)
+    ? winnerPlayer
+    : (Object.values(players).find(p => p.lastPnL) || me || Object.values(players)[0]);
 
   return (
     <ErrorBoundary>
