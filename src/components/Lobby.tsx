@@ -143,7 +143,7 @@ export const Lobby: React.FC<LobbyProps> = ({
                       📦 Forward English Auction
                     </span>
                     <span className="text-xs text-slate-400 font-mono">
-                      6 Asset Lots • {maxPlayers} Max Buyers • ₹10,00,000 Purse • {(roomConfig.forwardValuationMode || 'private') === 'private' ? 'Private Valuation' : 'Common Valuation'}
+                      {roomConfig.totalRounds} Asset Lots • {maxPlayers} Max Buyers • ₹10,00,000 Purse • {(roomConfig.forwardValuationMode || 'private') === 'private' ? 'Private Valuation' : 'Common Valuation'}
                     </span>
                   </>
                 ) : (
@@ -757,13 +757,37 @@ export const Lobby: React.FC<LobbyProps> = ({
                     </div>
                   </div>
 
+                  {/* Number of Asset Lots (Rounds) Selector (2 to 12) */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center justify-between">
+                      <span>Number of Asset Lots (Rounds)</span>
+                      <span className="text-xs font-mono text-purple-400 font-bold">{selectedRounds} Lots</span>
+                    </label>
+                    <div className="grid grid-cols-4 sm:grid-cols-8 gap-1.5">
+                      {[2, 3, 4, 5, 6, 8, 10, 12].map(count => (
+                        <button
+                          key={count}
+                          type="button"
+                          onClick={() => setSelectedRounds(count)}
+                          className={`py-2 rounded-xl text-xs font-mono font-bold border transition cursor-pointer ${
+                            selectedRounds === count
+                              ? 'bg-purple-600 border-purple-400 text-white shadow-md shadow-purple-600/30'
+                              : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+                          }`}
+                        >
+                          {count}L
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   {/* Information Card */}
                   <div className="p-3.5 bg-slate-950 rounded-2xl border border-slate-800 text-xs text-slate-400 space-y-1">
                     <p className="font-bold text-purple-300 flex items-center gap-1.5">
-                      <span>📦</span> 6-Lot Asset Draft • ₹10,00,000 Purse
+                      <span>📦</span> {selectedRounds}-Lot Asset Draft • ₹10,00,000 Purse
                     </p>
                     <p className="text-[11px] text-slate-400 leading-relaxed">
-                      All connected players will enter the room as <strong>Buyers</strong> with a ₹10 Lakh starting purse. No AI bots required — human buyers compete directly across 6 lots.
+                      All connected players will enter the room as <strong>Buyers</strong> with a ₹10 Lakh starting purse. No AI bots required — human buyers compete directly across {selectedRounds} sequential lots.
                     </p>
                   </div>
                 </div>
@@ -786,32 +810,41 @@ export const Lobby: React.FC<LobbyProps> = ({
                     </select>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1">Fiscal Rounds</label>
-                      <select
-                        value={selectedRounds}
-                        onChange={(e) => setSelectedRounds(Number(e.target.value))}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 cursor-pointer"
-                      >
-                        <option value={3}>3 Rounds (Quick)</option>
-                        <option value={6}>6 Rounds (Standard)</option>
-                        <option value={12}>12 Rounds (Campaign)</option>
-                      </select>
+                  {/* Fiscal Rounds Selector (1 to 12) */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center justify-between">
+                      <span>Number of Fiscal Rounds</span>
+                      <span className="text-xs font-mono text-indigo-400 font-bold">{selectedRounds} Rounds</span>
+                    </label>
+                    <div className="grid grid-cols-4 sm:grid-cols-8 gap-1.5">
+                      {[1, 2, 3, 4, 5, 6, 8, 12].map(count => (
+                        <button
+                          key={count}
+                          type="button"
+                          onClick={() => setSelectedRounds(count)}
+                          className={`py-2 rounded-xl text-xs font-mono font-bold border transition cursor-pointer ${
+                            selectedRounds === count
+                              ? 'bg-indigo-600 border-indigo-400 text-white shadow-md shadow-indigo-600/30'
+                              : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+                          }`}
+                        >
+                          {count}R
+                        </button>
+                      ))}
                     </div>
+                  </div>
 
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1">Difficulty</label>
-                      <select
-                        value={selectedDifficulty}
-                        onChange={(e) => setSelectedDifficulty(e.target.value as GameDifficulty)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 cursor-pointer"
-                      >
-                        <option value="beginner">Beginner</option>
-                        <option value="standard">Standard</option>
-                        <option value="expert">Expert</option>
-                      </select>
-                    </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">Difficulty</label>
+                    <select
+                      value={selectedDifficulty}
+                      onChange={(e) => setSelectedDifficulty(e.target.value as GameDifficulty)}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 cursor-pointer"
+                    >
+                      <option value="beginner">Beginner</option>
+                      <option value="standard">Standard</option>
+                      <option value="expert">Expert</option>
+                    </select>
                   </div>
 
                   {/* Target Number of Competing Vendors Selector */}
@@ -847,7 +880,7 @@ export const Lobby: React.FC<LobbyProps> = ({
               if (chosenAuctionFormat === 'forward') {
                 onCreateRoom(
                   'manufacturing', 
-                  6, 
+                  selectedRounds, 
                   'standard', 
                   hostName.trim() || 'Apex Capital (Host)', 
                   selectedMaxPlayers, 

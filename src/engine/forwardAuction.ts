@@ -107,6 +107,60 @@ export const FORWARD_CATALOG_PRESETS: ForwardItem[] = [
     baseMarketValue: 680000,
     startingPrice: 80000,
     bidIncrement: 15000
+  },
+  {
+    id: 'lot_07_cold_chain_hub',
+    name: '-20°C Deep-Freeze Pharma Cold Storage Facility',
+    category: 'Cold Chain IP',
+    description: 'Precision temperature-controlled pharmaceutical cold storage depot.',
+    baseMarketValue: 580000,
+    startingPrice: 70000,
+    bidIncrement: 15000
+  },
+  {
+    id: 'lot_08_robotic_welding_cell',
+    name: 'Dual 6-Axis Robotic Welding Automation Cell',
+    category: 'Industrial Machinery',
+    description: 'High-speed robotic laser welding station for structural chassis.',
+    baseMarketValue: 420000,
+    startingPrice: 45000,
+    bidIncrement: 10000
+  },
+  {
+    id: 'lot_09_container_straddle_carrier',
+    name: 'Diesel-Electric Port Straddle Carrier',
+    category: 'Logistics Assets',
+    description: 'Heavy-lift intermodal container transfer vehicle with telescopic spreader.',
+    baseMarketValue: 820000,
+    startingPrice: 110000,
+    bidIncrement: 20000
+  },
+  {
+    id: 'lot_10_hydrogen_fuel_depot',
+    name: '500kg/Day Green Hydrogen Fueling Dispensary',
+    category: 'Energy Infrastructure',
+    description: 'Modular high-pressure hydrogen dispensing station for zero-emission fleets.',
+    baseMarketValue: 640000,
+    startingPrice: 80000,
+    bidIncrement: 15000
+  },
+  {
+    id: 'lot_11_rfid_crossdock_sorter',
+    name: 'High-Speed Shoe Sorter & Cross-Dock Conveyor',
+    category: 'Warehousing IP',
+    description: 'Automated 12,000 unit/hour parcel sortation matrix with RFID tunnels.',
+    baseMarketValue: 490000,
+    startingPrice: 55000,
+    bidIncrement: 10000
+  },
+  {
+    id: 'lot_12_aerospace_autoclave',
+    name: '3.5-Meter Carbon Composite Curing Autoclave',
+    category: 'Raw Materials & IP',
+    description: 'Precision thermal autoclave for high-performance carbon-fiber structures.',
+    baseMarketValue: 790000,
+    startingPrice: 95000,
+    bidIncrement: 20000
   }
 ];
 

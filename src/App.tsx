@@ -568,11 +568,12 @@ export const App: React.FC = () => {
   const handleStartForwardSession = (mode: ForwardValuationMode) => {
     setIsForwardMode(true);
     setForwardValuationMode(mode);
-    setForwardCatalog(FORWARD_CATALOG_PRESETS);
+    const roundCount = roomConfig?.totalRounds || 6;
+    const catalog = FORWARD_CATALOG_PRESETS.slice(0, roundCount);
+    setForwardCatalog(catalog);
     setForwardLotIndex(0);
 
     const STARTING_PURSE = 1000000; // ₹10,00,000 starting purse
-    const catalog = FORWARD_CATALOG_PRESETS;
     const currentPlayers = { ...playersRef.current };
     const initialBuyers: Record<string, ForwardBuyerState> = {};
 
