@@ -155,6 +155,27 @@ export const App: React.FC = () => {
     isHostRef.current = isHost;
   }, [isHost]);
 
+  const isForwardModeRef = useRef<boolean>(isForwardMode);
+  const forwardValuationModeRef = useRef<ForwardValuationMode>(forwardValuationMode);
+  const forwardCatalogRef = useRef<ForwardItem[]>(forwardCatalog);
+  const forwardLotIndexRef = useRef<number>(forwardLotIndex);
+
+  useEffect(() => {
+    isForwardModeRef.current = isForwardMode;
+  }, [isForwardMode]);
+
+  useEffect(() => {
+    forwardValuationModeRef.current = forwardValuationMode;
+  }, [forwardValuationMode]);
+
+  useEffect(() => {
+    forwardCatalogRef.current = forwardCatalog;
+  }, [forwardCatalog]);
+
+  useEffect(() => {
+    forwardLotIndexRef.current = forwardLotIndex;
+  }, [forwardLotIndex]);
+
   useEffect(() => {
     forwardBuyersRef.current = forwardBuyers;
   }, [forwardBuyers]);
@@ -475,10 +496,10 @@ export const App: React.FC = () => {
             currentRfq: rfqRef.current,
             activeAuction: activeAuctionRef.current,
             evaluationResult: evaluationResult,
-            isForwardMode: isForwardMode,
-            forwardValuationMode: forwardValuationMode,
-            forwardCatalog: forwardCatalog,
-            forwardLotIndex: forwardLotIndex,
+            isForwardMode: isForwardModeRef.current,
+            forwardValuationMode: forwardValuationModeRef.current,
+            forwardCatalog: forwardCatalogRef.current,
+            forwardLotIndex: forwardLotIndexRef.current,
             forwardBuyers: forwardBuyersRef.current,
             forwardAuctionState: forwardAuctionStateRef.current
           }
@@ -512,14 +533,19 @@ export const App: React.FC = () => {
   const handleProcessIncomingForwardBid = (playerId: string, playerName: string, amount: number) => {
     const state = forwardAuctionStateRef.current;
     if (!state || state.status !== 'BIDDING') return;
-    const buyer = forwardBuyersRef.current[playerId];
+    
+    // Lookup buyer by exact id or fallback by player name
+    const buyerKey = forwardBuyersRef.current[playerId] 
+      ? playerId 
+      : Object.keys(forwardBuyersRef.current).find(k => forwardBuyersRef.current[k].name === playerName || k === playerId);
+    const buyer = buyerKey ? forwardBuyersRef.current[buyerKey] : null;
     if (!buyer) return;
 
     // Race condition / price check
     if (amount <= state.currentHighestBid) return;
 
     // Reserve check
-    const roundsRemaining = forwardCatalog.length - forwardLotIndex;
+    const roundsRemaining = forwardCatalogRef.current.length - forwardLotIndexRef.current;
     const reserveReq = getReserveRequirement(buyer.startingPurse, roundsRemaining);
     const maxSpendable = buyer.remainingPurse - reserveReq;
     if (amount > maxSpendable) return;
@@ -527,14 +553,14 @@ export const App: React.FC = () => {
     const updatedState: ForwardAuctionState = {
       ...state,
       currentHighestBid: amount,
-      currentLeaderId: playerId,
-      currentLeaderName: playerName,
+      currentLeaderId: buyer.id,
+      currentLeaderName: buyer.name,
       timeRemaining: state.timeRemaining < 15 ? state.timeRemaining + 8 : state.timeRemaining,
       bids: [
         {
           timestamp: Date.now(),
-          playerId,
-          playerName,
+          playerId: buyer.id,
+          playerName: buyer.name,
           amount,
           isAi: false
         },
@@ -681,17 +707,19 @@ export const App: React.FC = () => {
 
   const handlePlaceForwardBid = (amount: number) => {
     const myId = myPlayerId;
-    const myBuyer = forwardBuyersRef.current[myId];
+    const myBuyer = forwardBuyersRef.current[myId] 
+      || Object.values(forwardBuyersRef.current).find(b => b.name === me?.name) 
+      || Object.values(forwardBuyersRef.current)[0];
     if (!myBuyer) return;
 
     if (isHostRef.current) {
-      handleProcessIncomingForwardBid(myId, myBuyer.name, amount);
+      handleProcessIncomingForwardBid(myBuyer.id, myBuyer.name, amount);
     } else {
       sounds.bid();
       roomSync.broadcast({
         type: 'FORWARD_AUCTION_BID',
         payload: {
-          playerId: myId,
+          playerId: myBuyer.id,
           playerName: myBuyer.name,
           amount
         }
@@ -712,14 +740,18 @@ export const App: React.FC = () => {
     const winningPrice = state.currentHighestBid;
     const item = state.currentItem;
 
-    if (winnerId && updatedBuyers[winnerId] && winningPrice > 0) {
-      const winner = updatedBuyers[winnerId];
+    const winnerKey = (winnerId && updatedBuyers[winnerId])
+      ? winnerId 
+      : Object.keys(updatedBuyers).find(k => updatedBuyers[k].name === state.currentLeaderName || k === winnerId);
+
+    if (winnerKey && updatedBuyers[winnerKey] && winningPrice > 0) {
+      const winner = updatedBuyers[winnerKey];
       const valuationData = winner.valuations[item.id] || {};
       const valuation = mode === 'private' 
         ? valuationData.privateValue || item.baseMarketValue 
         : item.baseMarketValue;
 
-      updatedBuyers[winnerId] = {
+      updatedBuyers[winnerKey] = {
         ...winner,
         remainingPurse: Math.max(0, winner.remainingPurse - winningPrice),
         itemsWon: [
@@ -739,7 +771,8 @@ export const App: React.FC = () => {
     const nextLot = lotIndex + 1;
     if (nextLot < catalog.length) {
       broadcastSync({
-        forwardBuyers: updatedBuyers
+        forwardBuyers: updatedBuyers,
+        forwardLotIndex: nextLot
       });
       setTimeout(() => {
         startForwardLot(nextLot, updatedBuyers, catalog, mode);
@@ -1801,7 +1834,7 @@ export const App: React.FC = () => {
         {isForwardMode && phase === 'AUCTION' && forwardAuctionState && (
           <ForwardAuctionArena
             item={forwardAuctionState.currentItem}
-            buyer={isHost ? undefined : forwardBuyers[myPlayerId]}
+            buyer={isHost ? undefined : (forwardBuyers[myPlayerId] || Object.values(forwardBuyers).find(b => b.name === me?.name) || Object.values(forwardBuyers)[0])}
             allBuyers={forwardBuyers}
             auctionState={forwardAuctionState}
             totalLots={forwardCatalog.length}
@@ -1819,7 +1852,7 @@ export const App: React.FC = () => {
           <ForwardLeaderboard
             buyers={forwardBuyers}
             valuationMode={forwardValuationMode}
-            myBuyerId={myPlayerId}
+            myBuyerId={forwardBuyers[myPlayerId]?.id || Object.values(forwardBuyers).find(b => b.name === me?.name)?.id || myPlayerId}
             isAuctioneer={isHost}
             onPlayAgain={() => {
               setIsForwardMode(false);

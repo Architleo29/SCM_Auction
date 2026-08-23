@@ -390,9 +390,16 @@ export const ForwardAuctionArena: React.FC<ForwardAuctionArenaProps> = ({
           ) : (
             /* Buyer Purse Card */
             <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl space-y-4">
-              <div className="flex items-center gap-2 text-slate-200 font-bold text-sm">
-                <DollarSign className="w-4 h-4 text-emerald-400" />
-                <span>Your Buyer Purse Balance</span>
+              <div className="flex items-center justify-between text-slate-200 font-bold text-sm">
+                <div className="flex items-center gap-2">
+                  <DollarSign className="w-4 h-4 text-emerald-400" />
+                  <span>{buyer?.name ? `${buyer.name}'s Purse` : 'Your Buyer Purse Balance'}</span>
+                </div>
+                {isLeading && (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800 font-mono font-bold animate-pulse">
+                    👑 Holding Top Bid
+                  </span>
+                )}
               </div>
 
               <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2.5">
@@ -401,15 +408,21 @@ export const ForwardAuctionArena: React.FC<ForwardAuctionArenaProps> = ({
                   <span className="font-mono font-bold text-slate-300">{formatINR(startingPurse)}</span>
                 </div>
                 <div className="flex justify-between items-center text-xs">
-                  <span className="text-slate-400">Remaining Purse:</span>
+                  <span className="text-slate-400">Available Total Purse:</span>
                   <span className="font-mono font-bold text-emerald-400">{formatINR(remainingPurse)}</span>
                 </div>
+                {isLeading && (
+                  <div className="flex justify-between items-center text-xs text-amber-300">
+                    <span>Committed in Active Bid:</span>
+                    <span className="font-mono font-bold">-{formatINR(auctionState.currentHighestBid)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between items-center text-xs pt-1 border-t border-slate-800/80">
                   <span className="text-slate-400">Reserve Lock (10%):</span>
                   <span className="font-mono text-amber-400 font-semibold">{formatINR(reserveReq)}</span>
                 </div>
                 <div className="flex justify-between items-center text-xs">
-                  <span className="text-slate-200 font-bold">Max Spendable Now:</span>
+                  <span className="text-slate-200 font-bold">Max Spendable to Raise:</span>
                   <span className="font-mono font-bold text-indigo-300">{formatINR(spendablePurse)}</span>
                 </div>
               </div>
