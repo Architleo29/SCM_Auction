@@ -17,21 +17,21 @@ const VENDOR_NAMES = [
 export function generateCompanyProfile(customName?: string, index: number = 0): CompanyProfile {
   const name = customName || VENDOR_NAMES[index % VENDOR_NAMES.length];
 
-  // Randomized within realistic bounded ranges (§3)
-  const fixedCosts = Math.round(8000 + Math.random() * 12000); // 8,000 - 20,000
-  const variableCostRate = Number((0.50 + Math.random() * 0.15).toFixed(2)); // 0.50 - 0.65
-  const laborCostIndex = Number((0.85 + Math.random() * 0.35).toFixed(2)); // 0.85 - 1.20
-  const materialsCostIndex = Number((0.85 + Math.random() * 0.35).toFixed(2)); // 0.85 - 1.20
-  const logisticsCostIndex = Number((0.80 + Math.random() * 0.40).toFixed(2)); // 0.80 - 1.20
-  const overheadRate = Number((0.10 + Math.random() * 0.06).toFixed(2)); // 10% - 16%
-  const taxRate = 0.20; // 20% standard
-  const financingCostRate = Number((0.05 + Math.random() * 0.05).toFixed(2)); // 5% - 10% APR
-  const riskContingencyNeed = Number((0.05 + Math.random() * 0.07).toFixed(2)); // 5% - 12%
-  const capacity = Math.floor(1 + Math.random() * 2); // 1 - 2 capacity slots
-  const reputationScore = 75; // Standard baseline starting reputation (75/100) for all vendors
-  const qualityLevel = 3; // Neutral baseline
-  const deliveryCapabilityDays = Math.round(20 + Math.random() * 15);
-  const targetProfitMargin = Number((0.15 + Math.random() * 0.10).toFixed(2)); // 15% - 25%
+  // Standardized baseline cost parameters across all vendors for fair competition (§3)
+  const fixedCosts = 12000; // ₹12,000 standard annual facility fixed costs
+  const variableCostRate = 0.55; // 55% standard variable direct cost ratio
+  const laborCostIndex = 1.00; // Standard labor cost baseline (1.00x)
+  const materialsCostIndex = 1.00; // Standard raw materials cost baseline (1.00x)
+  const logisticsCostIndex = 1.00; // Standard freight & warehousing baseline (1.00x)
+  const overheadRate = 0.10; // 10% standard factory overhead allocation
+  const taxRate = 0.20; // 20% standard corporate tax rate
+  const financingCostRate = 0.06; // 6% APR working capital carrying rate
+  const riskContingencyNeed = 0.05; // 5% baseline risk contingency reserve
+  const capacity = 2; // 2 standard operating capacity slots (Absorption = ₹6,000/slot)
+  const reputationScore = 75; // Standard baseline starting reputation (75/100)
+  const qualityLevel = 3; // Neutral 3★ baseline
+  const deliveryCapabilityDays = 30; // 30-day standard delivery SLA
+  const targetProfitMargin = 0.18; // 18% standard target margin baseline
 
   return {
     id: `profile_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
