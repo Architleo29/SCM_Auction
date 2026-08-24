@@ -24,6 +24,7 @@ export function settleContractPnL(
       playerId: player.id,
       contractWon: false,
       quotedPrice: quotedP,
+      awardedPrice: 0,
       bidPrepCost,
       baselineCost: 0,
       eventCostDelta: 0,
@@ -80,7 +81,14 @@ export function settleContractPnL(
   const realizedProfit = operatingProfit - tax - bidPrepCost; // Deduct ₹15,000 participation fee
 
   // 4. Margins & Variance
-  const quotedMarginPct = baselineBreakdown.quotedMarginPct;
+  // quotedMarginPct should reflect the margin the player saw during live bidding.
+  // During the auction, the AuctionArena calculates FLC without passing quotedPrice or
+  // riskContingencyRate (uses default profile values), so we replicate that here.
+  const auctionTimeFLC = calculateCostBreakdown(profile, rfq).fullyLoadedCost;
+  const originalQuotePrice = player.submittedQuote?.price || contractAwardPrice;
+  const quotedMarginPct = originalQuotePrice > 0
+    ? Number((((originalQuotePrice - auctionTimeFLC) / originalQuotePrice) * 100).toFixed(1))
+    : 0;
   const realizedMarginPct = contractAwardPrice > 0 ? Number(((operatingProfit / contractAwardPrice) * 100).toFixed(1)) : 0;
   const marginVariancePts = Number((realizedMarginPct - quotedMarginPct).toFixed(1));
 
@@ -92,7 +100,8 @@ export function settleContractPnL(
   return {
     playerId: player.id,
     contractWon: true,
-    quotedPrice: contractAwardPrice,
+    quotedPrice: originalQuotePrice,
+    awardedPrice: contractAwardPrice,
     bidPrepCost,
     baselineCost,
     eventCostDelta,

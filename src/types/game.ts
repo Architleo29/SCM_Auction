@@ -210,6 +210,7 @@ export interface PnLResult {
   playerId: string;
   contractWon: boolean;
   quotedPrice: number;
+  awardedPrice: number;
   bidPrepCost: number;
   baselineCost: number;
   eventCostDelta: number;

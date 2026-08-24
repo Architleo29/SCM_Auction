@@ -244,7 +244,7 @@ export const PnLBreakdown: React.FC<PnLBreakdownProps> = ({
             <div className="space-y-2.5 text-xs font-mono">
               <div className="flex justify-between text-slate-200">
                 <span>Contract Revenue (Awarded Price):</span>
-                <strong className="text-emerald-400 font-bold">{formatINR(pnl.quotedPrice)}</strong>
+                <strong className="text-emerald-400 font-bold">{formatINR(pnl.awardedPrice || pnl.quotedPrice)}</strong>
               </div>
 
               <div className="flex justify-between text-slate-400">
