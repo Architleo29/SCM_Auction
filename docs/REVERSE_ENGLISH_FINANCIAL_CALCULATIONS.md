@@ -7,18 +7,19 @@
 ---
 
 ## Table of Contents
-1. [Executive Summary & Lifecycle](#1-executive-summary--lifecycle)
+1. [Executive Summary & Financial Lifecycle](#1-executive-summary--financial-lifecycle)
 2. [Stage 1: Company Strategy Multipliers](#2-stage-1-company-strategy-multipliers)
-3. [Stage 2: Fully Loaded Cost (FLC) Waterfall](#3-stage-2-fully-loaded-cost-flc-waterfall)
-4. [Stage 3: RFQ Quoting & Pricing Strategies](#4-stage-3-rfq-quoting--pricing-strategies)
+3. [Stage 2: Fully Loaded Cost (FLC) Accounting Waterfall](#3-stage-2-fully-loaded-cost-flc-accounting-waterfall)
+4. [Stage 3: RFQ Quoting & Margin Strategies](#4-stage-3-rfq-quoting--margin-strategies)
 5. [Stage 4: Live Reverse Auction Floor Calculations](#5-stage-4-live-reverse-auction-floor-calculations)
 6. [Stage 5: Post-Auction Delivery Settlement & GAAP P&L](#6-stage-5-post-auction-delivery-settlement--gaap-pl)
 7. [Stage 6: Risk-Adjusted Profit (RAP) & Tournament Scoring](#7-stage-6-risk-adjusted-profit-rap--tournament-scoring)
 8. [Comprehensive End-to-End Worked Numerical Example](#8-comprehensive-end-to-end-worked-numerical-example)
+9. [Code Reference Map](#9-code-reference-map)
 
 ---
 
-## 1. Executive Summary & Lifecycle
+## 1. Executive Summary & Financial Lifecycle
 
 In a **Reverse English Procurement Auction**, suppliers compete to win enterprise procurement contracts from the buyer by placing downward counter-bids. The financial lifecycle proceeds through 5 distinct accounting stages:
 
@@ -78,7 +79,7 @@ $$\text{SpeedCostMultiplier} = 1 + \big((\text{SpeedLevel} - 3) \times 0.05\big)
 
 ---
 
-## 3. Stage 2: Fully Loaded Cost (FLC) Waterfall
+## 3. Stage 2: Fully Loaded Cost (FLC) Accounting Waterfall
 
 The Fully Loaded Cost (FLC) represents the total direct, indirect, capital, and fixed costs required to fulfill the RFQ:
 
@@ -113,7 +114,7 @@ $$\text{FLC} = \text{Round}(\text{TDC} + \text{FixedCostAbsorption})$$
 
 ---
 
-## 4. Stage 3: RFQ Quoting & Pricing Strategies
+## 4. Stage 3: RFQ Quoting & Margin Strategies
 
 During the RFQ submission phase (Step 2), vendors select their target profit margin position:
 
