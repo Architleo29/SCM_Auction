@@ -13,8 +13,13 @@ export function settleContractPnL(
   isWinner: boolean,
   activeEvent: DynamicEventCard | null
 ): PnLResult {
-  const profile = player.profile;
   const quote = player.submittedQuote || winningQuote;
+  const chosenQualityLevel = quote?.qualityTier || player.profile?.qualityLevel || 3;
+  const effectiveProfile = {
+    ...player.profile,
+    qualityLevel: chosenQualityLevel
+  };
+  const profile = effectiveProfile;
   const bidPrepCost = SUNK_BID_PREP_COST;
 
   // If player did not win: Incur ₹15,000 Bid Preparation Fee
