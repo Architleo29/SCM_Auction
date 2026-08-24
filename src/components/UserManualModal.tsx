@@ -517,6 +517,49 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({
                 </div>
               </div>
 
+              {/* 5 Pricing Tiers Section */}
+              <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm">
+                    <DollarSign className="w-4 h-4" />
+                    <span>5 Strategic Pricing Tiers (Step 2 Quoting)</span>
+                  </div>
+                  <span className="text-[0.625rem] font-mono uppercase bg-emerald-950 text-emerald-300 border border-emerald-800 px-2.5 py-0.5 rounded-full font-bold">
+                    FLC-Indexed Pricing
+                  </span>
+                </div>
+                <p className="text-xs text-slate-300">
+                  During RFQ Quoting, select a quick price tier based on your risk tolerance and competitive target:
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-5 gap-2 text-xs font-mono">
+                  <div className="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800 space-y-1 text-center">
+                    <span className="text-emerald-400 font-bold block text-xs">Tier 1: High Margin</span>
+                    <span className="text-slate-300 text-[11px]">~25% Margin</span>
+                    <span className="text-[10px] text-slate-500 block">1.30x FLC</span>
+                  </div>
+                  <div className="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800 space-y-1 text-center">
+                    <span className="text-emerald-400 font-bold block text-xs">Tier 2: Target</span>
+                    <span className="text-slate-300 text-[11px]">~18% Margin</span>
+                    <span className="text-[10px] text-slate-500 block">1.20x FLC</span>
+                  </div>
+                  <div className="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800 space-y-1 text-center">
+                    <span className="text-emerald-400 font-bold block text-xs">Tier 3: Balanced</span>
+                    <span className="text-slate-300 text-[11px]">~12% Margin</span>
+                    <span className="text-[10px] text-slate-500 block">1.12x FLC</span>
+                  </div>
+                  <div className="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800 space-y-1 text-center">
+                    <span className="text-amber-400 font-bold block text-xs">Tier 4: Aggressive</span>
+                    <span className="text-slate-300 text-[11px]">~6% Margin</span>
+                    <span className="text-[10px] text-slate-500 block">1.06x FLC</span>
+                  </div>
+                  <div className="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800 space-y-1 text-center">
+                    <span className="text-rose-400 font-bold block text-xs">Tier 5: Price Blitz</span>
+                    <span className="text-slate-300 text-[11px]">~2% Margin</span>
+                    <span className="text-[10px] text-slate-500 block">1.02x FLC</span>
+                  </div>
+                </div>
+              </div>
+
             </div>
           )}
 
