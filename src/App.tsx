@@ -228,8 +228,20 @@ export const App: React.FC = () => {
           }
           if (event.payload.players) {
             const incoming = event.payload.players;
-            playersRef.current = incoming;
-            setPlayers(incoming);
+            setPlayers(prev => {
+              const localMe = prev[myPlayerId];
+              const merged = { ...incoming };
+              if (localMe && incoming[myPlayerId]) {
+                merged[myPlayerId] = {
+                  ...incoming[myPlayerId],
+                  ready: localMe.ready !== undefined ? localMe.ready : incoming[myPlayerId].ready,
+                  profile: localMe.profile || incoming[myPlayerId].profile,
+                  submittedQuote: localMe.submittedQuote !== undefined ? localMe.submittedQuote : incoming[myPlayerId].submittedQuote
+                };
+              }
+              playersRef.current = merged;
+              return merged;
+            });
           }
           if (event.payload.currentRfq) setCurrentRfq(event.payload.currentRfq);
           if (event.payload.activeAuction) {
@@ -1708,18 +1720,26 @@ export const App: React.FC = () => {
   };
 
   const handleToggleReady = (isReady: boolean) => {
+    sounds.click();
     setPlayers(prev => {
       const me = prev[myPlayerId];
       if (!me) return prev;
       const updatedMe = { ...me, ready: isReady };
       const nextPlayers = { ...prev, [myPlayerId]: updatedMe };
+      playersRef.current = nextPlayers;
 
-      roomSync.broadcast({
-        type: 'PLAYER_READY_TOGGLED',
-        payload: {
-          playerId: myPlayerId,
-          ready: isReady
-        }
+      // Broadcast across all transports with retries for rock-solid network delivery
+      const code = roomConfigRef.current?.code || roomConfig?.code;
+      [0, 150, 450].forEach(delay => {
+        setTimeout(() => {
+          roomSync.broadcast({
+            type: 'PLAYER_READY_TOGGLED',
+            payload: {
+              playerId: myPlayerId,
+              ready: isReady
+            }
+          }, code);
+        }, delay);
       });
 
       return nextPlayers;

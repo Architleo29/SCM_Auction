@@ -381,26 +381,36 @@ export const Lobby: React.FC<LobbyProps> = ({
             ) : (
               /* Dedicated Player Ready Action Panel */
               <div className="mt-6 pt-4 border-t border-slate-800 space-y-3">
-                <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-3.5 h-3.5 rounded-full shrink-0 ${me?.ready ? 'bg-emerald-400 shadow-md shadow-emerald-400/50' : 'bg-amber-400 animate-pulse'}`} />
+                <div className={`p-4 sm:p-5 rounded-2xl border transition-all duration-300 flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
+                  me?.ready 
+                    ? 'bg-emerald-950/40 border-emerald-500/50 shadow-lg shadow-emerald-950/40' 
+                    : 'bg-slate-950 border-amber-500/30'
+                }`}>
+                  <div className="flex items-center gap-3.5">
+                    <div className={`w-4 h-4 rounded-full shrink-0 transition-all ${
+                      me?.ready 
+                        ? 'bg-emerald-400 shadow-lg shadow-emerald-400/80 ring-4 ring-emerald-900/50' 
+                        : 'bg-amber-400 animate-pulse ring-4 ring-amber-900/30'
+                    }`} />
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono font-bold uppercase text-slate-400">My Readiness:</span>
+                        <span className="text-xs font-mono font-bold uppercase text-slate-400">My Status:</span>
                         {me?.ready ? (
-                          <span className="text-xs font-mono font-bold text-emerald-400 flex items-center gap-1 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/60">
-                            <CheckCircle2 className="w-3.5 h-3.5" /> READY FOR AUCTION
+                          <span className="text-xs font-mono font-bold text-emerald-300 flex items-center gap-1.5 bg-emerald-950/80 px-2.5 py-1 rounded-lg border border-emerald-600/60 shadow-sm">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                            <span>READY FOR TENDER</span>
                           </span>
                         ) : (
-                          <span className="text-xs font-mono font-bold text-amber-400 flex items-center gap-1 bg-amber-950/60 px-2 py-0.5 rounded border border-amber-800/60">
-                            <Clock className="w-3.5 h-3.5" /> NOT READY (CLICK TO READY UP)
+                          <span className="text-xs font-mono font-bold text-amber-300 flex items-center gap-1.5 bg-amber-950/80 px-2.5 py-1 rounded-lg border border-amber-600/50 shadow-sm">
+                            <Clock className="w-4 h-4 text-amber-400 animate-spin" />
+                            <span>NOT READY (ACTION REQUIRED)</span>
                           </span>
                         )}
                       </div>
-                      <p className="text-[0.6875rem] text-slate-400 font-mono mt-0.5">
+                      <p className="text-xs text-slate-300 font-medium mt-1">
                         {me?.ready 
-                          ? (isForwardFormat ? 'You are ready! When the Host starts, you will bid on 6 asset lots with your ₹10,00,000 purse.' : 'Your firm is ready! Once the Buyer publishes the RFQ tender, you will adjust strategy & submit your quote.')
-                          : 'Click "I Am Ready" to signal the Host that you are prepared to begin.'}
+                          ? '✅ Your company is marked ready! Waiting for the Host to publish the tender and launch the auction.'
+                          : '👉 Click the green button to signal to the Host that you are prepared to compete.'}
                       </p>
                     </div>
                   </div>
@@ -410,14 +420,14 @@ export const Lobby: React.FC<LobbyProps> = ({
                       <button
                         type="button"
                         onClick={() => onToggleReady(!me?.ready)}
-                        className={`w-full sm:w-auto px-6 py-3 rounded-xl font-bold text-xs shadow-xl flex items-center justify-center gap-2 transition cursor-pointer active:scale-95 ${
+                        className={`w-full sm:w-auto px-6 py-3.5 rounded-2xl font-bold text-xs sm:text-sm shadow-xl flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95 ${
                           me?.ready
-                            ? 'bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-600/80 text-emerald-300'
-                            : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30'
+                            ? 'bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white shadow-md'
+                            : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-emerald-600/40 ring-1 ring-emerald-400'
                         }`}
                       >
-                        <CheckCircle2 className="w-4 h-4" />
-                        <span>{me?.ready ? 'Ready (Click to un-ready)' : '✅ I Am Ready!'}</span>
+                        <CheckCircle2 className={`w-4 h-4 ${me?.ready ? 'text-slate-400' : 'text-white'}`} />
+                        <span>{me?.ready ? 'Change to Not Ready' : '✅ I Am Ready!'}</span>
                       </button>
                     )}
                   </div>
