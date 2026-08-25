@@ -490,6 +490,27 @@ export const App: React.FC = () => {
     const interval = setInterval(() => {
       if (isHostRef.current) {
         // Host broadcasts complete authoritative state snapshot to all connected guests
+        try {
+          if (typeof window !== 'undefined' && window.localStorage && roomConfig.code) {
+            const snapshot = {
+              roomConfig: roomConfigRef.current,
+              phase: phaseRef.current,
+              players: playersRef.current,
+              currentRfq: rfqRef.current,
+              activeAuction: activeAuctionRef.current,
+              evaluationResult: evaluationResult,
+              isForwardMode: isForwardModeRef.current,
+              forwardValuationMode: forwardValuationModeRef.current,
+              forwardCatalog: forwardCatalogRef.current,
+              forwardLotIndex: forwardLotIndexRef.current,
+              forwardBuyers: forwardBuyersRef.current,
+              forwardAuctionState: forwardAuctionStateRef.current,
+              lastHeartbeat: Date.now()
+            };
+            localStorage.setItem(`scm_room_${roomConfig.code}`, JSON.stringify(snapshot));
+          }
+        } catch (e) {}
+
         roomSync.broadcast({
           type: 'ROOM_STATE_SYNC',
           payload: {
@@ -847,6 +868,30 @@ export const App: React.FC = () => {
     setPlayers({ [myPlayerId]: initialPlayer });
     setPhase('LOBBY');
 
+    // Register active room in localStorage
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const roomData = {
+          roomConfig: config,
+          phase: 'LOBBY',
+          isForwardMode: isForward,
+          forwardValuationMode: forwardValuationMode,
+          players: { [myPlayerId]: initialPlayer },
+          lastHeartbeat: Date.now()
+        };
+        localStorage.setItem(`scm_room_${code}`, JSON.stringify(roomData));
+        
+        // Update active rooms registry
+        const rawRegistry = localStorage.getItem('scm_active_rooms_registry');
+        let registry: Record<string, number> = {};
+        if (rawRegistry) {
+          try { registry = JSON.parse(rawRegistry); } catch (e) {}
+        }
+        registry[code] = Date.now();
+        localStorage.setItem('scm_active_rooms_registry', JSON.stringify(registry));
+      }
+    } catch (e) {}
+
     // Immediately broadcast initial room state so joiners find the room populated
     setTimeout(() => {
       roomSync.broadcast({
@@ -862,10 +907,12 @@ export const App: React.FC = () => {
     }, 100);
   };
 
-  // 2. Join Existing Room
-  const handleJoinRoom = async (roomCodeInput: string, playerName: string) => {
+    // 2. Join Existing Room with Active Room Verification
+  const handleJoinRoom = async (roomCodeInput: string, playerName: string): Promise<{ success: boolean; error?: string }> => {
     const code = roomCodeInput.toUpperCase().trim();
-    if (!code) return;
+    if (!code) {
+      return { success: false, error: 'Please enter a valid room code.' };
+    }
 
     const trimmedPlayerName = playerName.trim() || 'Vendor Company';
     const myProfile = generateCompanyProfile(trimmedPlayerName, Math.floor(Math.random() * 8));
@@ -883,70 +930,117 @@ export const App: React.FC = () => {
       reputation: myProfile.reputationScore,
       intelPoints: 2,
       disciplineWalkaways: 0,
-      ready: false,
+      ready: true,
       submittedQuote: null,
       history: []
     };
 
-    // Store in state immediately
-    setPlayers(prev => ({
-      ...prev,
-      [myPlayerId]: newPlayer
-    }));
-
-    // 1. Fetch current server snapshot for this room
+    // Step 1: Check Local Storage for active room (instant for same browser / tabs)
+    let foundRoomState: any = null;
     try {
-      const res = await fetch(`/api/sync/state?room=${encodeURIComponent(code)}`);
-      const data = await res.json();
-      if (data && data.state && data.state.roomConfig) {
-        setRoomConfig(data.state.roomConfig);
-        setPhase(data.state.phase || 'LOBBY');
-        if (data.state.currentRfq) setCurrentRfq(data.state.currentRfq);
-        if (data.state.activeAuction) setActiveAuction(data.state.activeAuction);
-        
-        const existingPlayers = data.state.players || {};
-        setPlayers({ ...existingPlayers, [myPlayerId]: newPlayer });
-      } else {
-        const fallbackConfig: RoomConfig = {
-          code,
-          hostId: '',
-          scenarioId: 'manufacturing',
-          totalRounds: 3,
-          currentRound: 1,
-          difficulty: 'standard',
-          auctionFormatSequence: ['english', 'english', 'english'],
-          maxPlayers: 4,
-          createdAt: Date.now()
-        };
-        setRoomConfig(fallbackConfig);
-        setPhase('LOBBY');
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const raw = localStorage.getItem(`scm_room_${code}`);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && parsed.roomConfig && parsed.roomConfig.code === code) {
+            foundRoomState = parsed;
+          }
+        }
       }
-    } catch (e) {
-      const fallbackConfig: RoomConfig = {
-        code,
-        hostId: '',
-        scenarioId: 'manufacturing',
-        totalRounds: 3,
-        currentRound: 1,
-        difficulty: 'standard',
-        auctionFormatSequence: ['english', 'english', 'english'],
-        maxPlayers: 4,
-        createdAt: Date.now()
-      };
-      setRoomConfig(fallbackConfig);
-      setPhase('LOBBY');
+    } catch (e) {}
+
+    // Step 2: If found locally, immediately populate state and join
+    if (foundRoomState) {
+      applyJoinedRoomState(foundRoomState, newPlayer, code);
+      return { success: true };
     }
 
-    // 2. Broadcast join announcement with explicit room code (multiple staggered retries for network resilience)
-    [0, 200, 600, 1400].forEach(delay => {
+    // Step 3: Listen on real-time channel & send probe to discover remote host
+    return new Promise((resolve) => {
+      let resolved = false;
+
+      const timeoutId = setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          // Unsubscribe probe listener since no host responded
+          roomSync.unsubscribe();
+          resolve({
+            success: false,
+            error: `No active room found with code "${code}". Please verify the code or ensure the host has created the room.`
+          });
+        }
+      }, 2000);
+
+      // Probe listener
+      const handleProbeEvent = (event: MultiplayerEvent) => {
+        if (event.type === 'ROOM_STATE_SYNC' && event.payload && event.payload.roomConfig) {
+          if (event.payload.roomConfig.code === code && !resolved) {
+            resolved = true;
+            clearTimeout(timeoutId);
+            applyJoinedRoomState(event.payload, newPlayer, code);
+            resolve({ success: true });
+          }
+        }
+      };
+
+      roomSync.subscribe(code, handleProbeEvent, false);
+
+      // Broadcast join request probe
+      [0, 300, 800].forEach(delay => {
+        setTimeout(() => {
+          if (!resolved) {
+            roomSync.broadcast({
+              type: 'PLAYER_JOINED',
+              payload: { id: myPlayerId, name: trimmedPlayerName, isHost: false, profile: myProfile, ready: true }
+            }, code);
+          }
+        }, delay);
+      });
+    });
+  };
+
+  const applyJoinedRoomState = (stateData: any, newPlayer: PlayerState, code: string) => {
+    if (stateData.roomConfig) setRoomConfig(stateData.roomConfig);
+    setPhase(stateData.phase || 'LOBBY');
+    if (stateData.isForwardMode !== undefined) setIsForwardMode(stateData.isForwardMode);
+    if (stateData.forwardValuationMode) setForwardValuationMode(stateData.forwardValuationMode);
+    if (stateData.forwardCatalog) setForwardCatalog(stateData.forwardCatalog);
+    if (stateData.forwardLotIndex !== undefined) setForwardLotIndex(stateData.forwardLotIndex);
+    if (stateData.forwardBuyers) {
+      setForwardBuyers({
+        ...stateData.forwardBuyers,
+        [myPlayerId]: {
+          id: myPlayerId,
+          name: newPlayer.name,
+          isAi: false,
+          startingPurse: 1000000,
+          remainingPurse: 1000000,
+          itemsWon: [],
+          totalSurplus: 0,
+          valuations: generateBuyerValuations(stateData.forwardCatalog || FORWARD_CATALOG_PRESETS, myPlayerId, stateData.forwardValuationMode || 'private')
+        }
+      });
+    }
+    if (stateData.forwardAuctionState) setForwardAuctionState(stateData.forwardAuctionState);
+    if (stateData.currentRfq) setCurrentRfq(stateData.currentRfq);
+    if (stateData.activeAuction) setActiveAuction(stateData.activeAuction);
+    
+    const existingPlayers = stateData.players || {};
+    const mergedPlayers = { ...existingPlayers, [myPlayerId]: newPlayer };
+    setPlayers(mergedPlayers);
+    playersRef.current = mergedPlayers;
+
+    // Announce presence to host
+    [0, 200, 600].forEach(delay => {
       setTimeout(() => {
         roomSync.broadcast({
           type: 'PLAYER_JOINED',
-          payload: { id: myPlayerId, name: trimmedPlayerName, isHost: false, profile: myProfile }
+          payload: { id: myPlayerId, name: newPlayer.name, isHost: false, profile: newPlayer.profile, ready: true }
         }, code);
       }, delay);
     });
   };
+
 
   // 3. Add AI Bot Manually
   const handleAddAiBot = (personality: AIPersonality) => {

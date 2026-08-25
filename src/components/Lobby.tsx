@@ -41,7 +41,7 @@ interface LobbyProps {
     auctionFormat?: AuctionFormat,
     forwardValuationMode?: 'private' | 'common'
   ) => void;
-  onJoinRoom: (roomCode: string, playerName: string) => void;
+  onJoinRoom: (roomCode: string, playerName: string) => Promise<{ success: boolean; error?: string }> | void;
   onAddAiBot: (personality: AIPersonality) => void;
   onRemovePlayer: (playerId: string) => void;
   onStartGame: () => void;
@@ -84,6 +84,8 @@ export const Lobby: React.FC<LobbyProps> = ({
   const [selectedForwardValuationMode, setSelectedForwardValuationMode] = useState<'private' | 'common'>('private');
   const [copied, setCopied] = useState(false);
   const [isSetupModalOpen, setIsSetupModalOpen] = useState(false);
+  const [isJoining, setIsJoining] = useState<boolean>(false);
+  const [joinError, setJoinError] = useState<string | null>(null);
 
   const playerList = Object.values(players);
   const isHost = roomConfig ? roomConfig.hostId === myPlayerId : false;
@@ -943,7 +945,10 @@ export const Lobby: React.FC<LobbyProps> = ({
                 <input
                   type="text"
                   value={joinName}
-                  onChange={(e) => setJoinName(e.target.value)}
+                  onChange={(e) => {
+                    setJoinName(e.target.value);
+                    if (joinError) setJoinError(null);
+                  }}
                   placeholder="e.g. Acme Global or Titan Capital"
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
                 />
@@ -954,21 +959,60 @@ export const Lobby: React.FC<LobbyProps> = ({
                 <input
                   type="text"
                   value={joinCode}
-                  onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                  onChange={(e) => {
+                    setJoinCode(e.target.value.toUpperCase());
+                    if (joinError) setJoinError(null);
+                  }}
                   placeholder="e.g. AUCT-48"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm font-mono tracking-wider uppercase text-emerald-400 focus:outline-none focus:border-emerald-500"
+                  className={`w-full bg-slate-950 border rounded-xl px-3.5 py-2.5 text-sm font-mono tracking-wider uppercase text-emerald-400 focus:outline-none ${
+                    joinError ? 'border-rose-500 focus:border-rose-400' : 'border-slate-800 focus:border-emerald-500'
+                  }`}
                 />
               </div>
+
+              {/* No Room Exists / Invalid Code Warning Badge */}
+              {joinError && (
+                <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/40 text-rose-300 text-xs flex items-start gap-2.5 animate-fade-in font-mono shadow-md">
+                  <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                  <div className="space-y-0.5">
+                    <strong className="text-rose-200 block">No Active Room Found</strong>
+                    <p className="text-[11px] text-rose-300/90 leading-relaxed">{joinError}</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
           <button
-            onClick={() => onJoinRoom(joinCode, joinName)}
-            disabled={!joinCode.trim() || !joinName.trim()}
+            onClick={async () => {
+              if (!joinCode.trim() || !joinName.trim() || isJoining) return;
+              setIsJoining(true);
+              setJoinError(null);
+              try {
+                const res = await onJoinRoom(joinCode.trim(), joinName.trim());
+                if (res && res.success === false) {
+                  setJoinError(res.error || `No active room found with code "${joinCode.trim().toUpperCase()}". Please check the code or ensure the host has created the room.`);
+                }
+              } catch (err: any) {
+                setJoinError(err?.message || `Unable to connect to room "${joinCode.trim().toUpperCase()}". No active host found.`);
+              } finally {
+                setIsJoining(false);
+              }
+            }}
+            disabled={!joinCode.trim() || !joinName.trim() || isJoining}
             className="w-full py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 text-white font-semibold text-sm shadow-xl shadow-emerald-600/30 transition flex items-center justify-center gap-2 mt-4 cursor-pointer active:scale-95 disabled:cursor-not-allowed"
           >
-            <Users className="w-4 h-4" />
-            Join Room with Code
+            {isJoining ? (
+              <>
+                <Clock className="w-4 h-4 animate-spin text-emerald-300" />
+                <span>Verifying Room {joinCode.trim().toUpperCase()}...</span>
+              </>
+            ) : (
+              <>
+                <Users className="w-4 h-4" />
+                <span>Join Room with Code</span>
+              </>
+            )}
           </button>
         </div>
 
