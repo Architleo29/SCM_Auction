@@ -27,6 +27,12 @@ export const CompanySetupModal: React.FC<CompanySetupModalProps> = ({
     }
   }, [isOpen, profile]);
 
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [onClose]);
+
   if (!isOpen) return null;
 
   const totalPointsUsed = qualityLevel + speedLevel + costEfficiency;
@@ -40,7 +46,11 @@ export const CompanySetupModal: React.FC<CompanySetupModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in">
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in"
+    >
       <div className="bg-slate-900 border border-slate-700/80 rounded-3xl p-6 sm:p-8 max-w-xl w-full shadow-2xl space-y-6 relative overflow-hidden">
         <div className="absolute right-0 top-0 w-72 h-72 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -59,6 +69,7 @@ export const CompanySetupModal: React.FC<CompanySetupModalProps> = ({
           </div>
           <button
             onClick={onClose}
+            aria-label="Close setup"
             className="p-2 rounded-xl text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition"
           >
             <X className="w-5 h-5" />

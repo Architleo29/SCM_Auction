@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { 
   Trophy, 
   Award, 
@@ -33,13 +33,15 @@ export const ForwardLeaderboard: React.FC<ForwardLeaderboardProps> = ({
   onPlayAgain,
   isAuctioneer = false
 }) => {
-  const rankedBuyers = Object.values(buyers).map(buyer => {
-    const scoreBreakdown = calculateForwardPortfolioScore(buyer, valuationMode);
-    return {
-      ...buyer,
-      ...scoreBreakdown
-    };
-  }).sort((a, b) => b.netSurplus - a.netSurplus);
+  const rankedBuyers = useMemo(() => {
+    return Object.values(buyers).map(buyer => {
+      const scoreBreakdown = calculateForwardPortfolioScore(buyer, valuationMode);
+      return {
+        ...buyer,
+        ...scoreBreakdown
+      };
+    }).sort((a, b) => b.netSurplus - a.netSurplus);
+  }, [buyers, valuationMode]);
 
   const isWinner = !isAuctioneer && rankedBuyers[0]?.id === myBuyerId;
 
@@ -88,7 +90,68 @@ export const ForwardLeaderboard: React.FC<ForwardLeaderboardProps> = ({
           </span>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Mobile Leaderboard Cards */}
+        <div className="block md:hidden space-y-3">
+          {rankedBuyers.map((buyer, idx) => {
+            const isMe = !isAuctioneer && buyer.id === myBuyerId;
+            const isTop1 = idx === 0;
+            return (
+              <div
+                key={buyer.id}
+                className={`p-4 rounded-2xl border transition ${
+                  isMe
+                    ? 'bg-indigo-950/40 border-indigo-500/50 shadow-md'
+                    : isTop1
+                    ? 'bg-amber-950/20 border-amber-500/40 shadow-sm'
+                    : 'bg-slate-950/60 border-slate-800'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base font-mono">
+                      {isTop1 ? (
+                        '🥇'
+                      ) : idx === 1 ? (
+                        '🥈'
+                      ) : idx === 2 ? (
+                        '🥉'
+                      ) : (
+                        <span className="text-xs text-slate-500 font-bold">#{idx + 1}</span>
+                      )}
+                    </span>
+                    <span className={`text-sm font-bold ${isMe ? 'text-indigo-300' : 'text-slate-100'}`}>
+                      {buyer.name}
+                    </span>
+                    {isMe && (
+                      <span className="text-[10px] bg-indigo-500/20 text-indigo-300 px-1.5 py-0.5 rounded font-mono font-bold">
+                        YOU
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-right font-mono">
+                    <span className="text-[10px] text-slate-400 block uppercase">Net Surplus</span>
+                    <strong className={`text-sm font-bold ${buyer.netSurplus >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                      {buyer.netSurplus >= 0 ? '+' : ''}{formatINR(buyer.netSurplus)}
+                    </strong>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800/80 text-xs font-mono">
+                  <div className="bg-slate-900/60 p-2 rounded-xl border border-slate-800/50">
+                    <span className="text-[10px] text-slate-400 block">Lots Won</span>
+                    <span className="font-bold text-slate-200">{buyer.itemsWon.length}</span>
+                  </div>
+                  <div className="bg-slate-900/60 p-2 rounded-xl border border-slate-800/50 text-right">
+                    <span className="text-[10px] text-slate-400 block">Purse Remaining</span>
+                    <span className="font-bold text-slate-300">{formatINR(buyer.remainingPurse)}</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-xs font-mono">
             <thead>
               <tr className="border-b border-slate-800 text-slate-400">

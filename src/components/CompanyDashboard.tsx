@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Award, ShieldCheck, Flame, Sparkles, Crown, Zap, Target } from 'lucide-react';
 import { PlayerState } from '../types/game';
 import { calculatePlayerXp, getPlayerLevelInfo, TIER_CONFIGS } from '../utils/gamification';
@@ -25,6 +25,12 @@ export const CompanyDashboard: React.FC<CompanyDashboardProps> = ({
     return saved ? parseInt(saved, 10) : 0;
   });
 
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [onClose]);
+
   if (!isOpen || !player) return null;
 
   const totalXp = calculatePlayerXp(
@@ -50,12 +56,17 @@ export const CompanyDashboard: React.FC<CompanyDashboardProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/75 backdrop-blur-sm animate-fade-in modal-backdrop">
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/75 backdrop-blur-sm animate-fade-in modal-backdrop"
+    >
       <div className="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-2xl p-6 shadow-2xl relative text-slate-100 space-y-6 max-h-[90vh] overflow-y-auto elevation-2">
         
         {/* Close Button */}
         <button
           onClick={onClose}
+          aria-label="Close dashboard"
           className="absolute top-5 right-5 text-slate-400 hover:text-white p-2 rounded-xl bg-slate-800 hover:bg-slate-700 transition cursor-pointer"
         >
           <X className="w-5 h-5" />

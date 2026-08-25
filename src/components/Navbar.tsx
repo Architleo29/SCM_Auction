@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Database, 
   ShieldCheck, 
@@ -52,18 +52,20 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   // Calculate Level & XP
-  const totalXp = player 
-    ? calculatePlayerXp(player.bankedProfit, player.contractsWon, player.disciplineWalkaways, player.reputation)
-    : 0;
-  const levelInfo = getPlayerLevelInfo(totalXp);
+  const totalXp = useMemo(() => {
+    return player 
+      ? calculatePlayerXp(player.bankedProfit, player.contractsWon, player.disciplineWalkaways, player.reputation)
+      : 0;
+  }, [player?.bankedProfit, player?.contractsWon, player?.disciplineWalkaways, player?.reputation]);
+  const levelInfo = useMemo(() => getPlayerLevelInfo(totalXp), [totalXp]);
 
   // Step sequence mapping for visual gamification
-  const steps = [
+  const steps = useMemo(() => [
     { label: 'RFQ', active: currentPhase === 'RFQ_BUILDER' || currentPhase === 'RFQ' },
     { label: 'QUOTE', active: currentPhase === 'QUOTING' || currentPhase === 'INTEL' },
     { label: 'AUCTION', active: currentPhase === 'AUCTION' },
     { label: 'RESULTS', active: currentPhase === 'EVALUATION' || currentPhase === 'EVENT' || currentPhase === 'PNL' || currentPhase === 'LEADERBOARD' }
-  ];
+  ], [currentPhase]);
 
   return (
     <header className="bg-white/95 dark:bg-slate-900/95 backdrop-blur border-b border-slate-200 dark:border-slate-800 sticky top-0 z-40 px-3 sm:px-4 py-2.5 shadow-sm">
@@ -172,6 +174,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Sound FX Audio Toggle */}
           <button
             onClick={handleToggleSound}
+            aria-label="Toggle sound effects"
             className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer"
             title={isAudioMuted ? 'Unmute Sound Effects' : 'Mute Sound Effects'}
           >

@@ -48,7 +48,7 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
   }, [profile, rfq]);
 
   // Initial Price (e.g. 90% of ceiling or 1.12x FLC)
-  const initialCalculatedPrice = Math.min(Math.round(rfq.budgetCeiling * 0.90), Math.round(initialFlc * 1.15));
+  const initialCalculatedPrice = Math.min(Math.round(rfq.budgetCeiling * 0.90), Math.round(initialFlc * 1.12));
   const [price, setPrice] = useState<number>(initialCalculatedPrice);
   const [priceInput, setPriceInput] = useState<string>(initialCalculatedPrice.toString());
 
@@ -69,7 +69,7 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
     if (tier === 2) return Math.min(Math.round(ceiling * 0.94), Math.round(flc * 1.20));
     if (tier === 3) return Math.min(Math.round(ceiling * 0.90), Math.round(flc * 1.12));
     if (tier === 4) return Math.min(Math.round(ceiling * 0.85), Math.round(flc * 1.06));
-    return Math.max(Math.round(flc * 1.02), Math.round(ceiling * 0.72));
+    return Math.min(Math.round(flc * 1.02), Math.round(ceiling * 0.72));
   };
 
   // When price tier changes

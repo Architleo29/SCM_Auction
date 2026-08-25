@@ -19,7 +19,7 @@ import { drawRandomEvent } from './data/dynamicEvents';
 import { generateCompanyProfile } from './utils/profileGenerator';
 import { evaluateQuotes } from './engine/buyerScoring';
 import { settleContractPnL, calculateTotalScore } from './engine/pnlEngine';
-import { generateAiQuote, shouldAiBidInEnglishAuction, shouldAiAcceptInDutchAuction, shouldAiHoldInJapaneseAuction } from './engine/aiBots';
+import { generateAiQuote, shouldAiBidInEnglishAuction } from './engine/aiBots';
 import { roomSync, MultiplayerEvent } from './services/realtimeChannel';
 import { getSavedSupabaseConfig } from './services/supabase';
 import { sounds } from './utils/soundEffects';
@@ -133,6 +133,14 @@ export const App: React.FC = () => {
 
   const me = players[myPlayerId] || null;
   const isHost = roomConfig ? roomConfig.hostId === myPlayerId : false;
+
+  useEffect(() => {
+    return () => {
+      if (auctionTimerRef.current) clearInterval(auctionTimerRef.current);
+      if (quotingTimerRef.current) clearInterval(quotingTimerRef.current);
+      if (forwardTimerRef.current) clearInterval(forwardTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     playersRef.current = players;

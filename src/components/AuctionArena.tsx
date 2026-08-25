@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Gavel, 
   Clock, 
@@ -18,6 +18,7 @@ import { RFQ, PlayerState, AuctionState, AuctionFormat } from '../types/game';
 import { calculateCostBreakdown } from '../engine/costCalculator';
 import { sounds } from '../utils/soundEffects';
 import { formatINR, isBuyerSpectator } from '../utils/formatters';
+import { SUNK_BID_PREP_COST } from '../engine/pnlEngine';
 
 interface AuctionArenaProps {
   rfq: RFQ;
@@ -41,20 +42,23 @@ export const AuctionArena: React.FC<AuctionArenaProps> = ({
   onSkipToEnd
 }) => {
   const chosenQualityLevel = player.submittedQuote?.qualityTier || player.profile?.qualityLevel || 3;
-  const effectiveProfile = {
+  const effectiveProfile = useMemo(() => ({
     ...player.profile,
     qualityLevel: chosenQualityLevel
-  };
-  const costBreakdown = calculateCostBreakdown(effectiveProfile, rfq);
+  }), [player.profile, chosenQualityLevel]);
+  const costBreakdown = useMemo(() => calculateCostBreakdown(effectiveProfile, rfq), [effectiveProfile, rfq]);
   const flc = costBreakdown.fullyLoadedCost;
   const isSpectator = isBuyerSpectator(player);
 
-  const step1 = Math.max(1000, Math.round(rfq.budgetCeiling * 0.01));
-  const step2 = Math.max(2500, Math.round(rfq.budgetCeiling * 0.025));
-  const step3 = Math.max(5000, Math.round(rfq.budgetCeiling * 0.05));
+  const { step1, step2, step3 } = useMemo(() => ({
+    step1: Math.max(1000, Math.round(rfq.budgetCeiling * 0.01)),
+    step2: Math.max(2500, Math.round(rfq.budgetCeiling * 0.025)),
+    step3: Math.max(5000, Math.round(rfq.budgetCeiling * 0.05))
+  }), [rfq.budgetCeiling]);
 
   // Custom bid input for English mode (Allows freely typing any price)
   const [customBidInput, setCustomBidInput] = useState<string>((auctionState.currentPrice - step1).toString());
+  const [bidError, setBidError] = useState<string | null>(null);
   
 
   // Local smooth ticking auction countdown clock (Guarantees ticking on guest devices)
@@ -83,7 +87,7 @@ export const AuctionArena: React.FC<AuctionArenaProps> = ({
     : 0;
   const taxRate = effectiveProfile.taxRate || 0.20;
   const taxAtPrice = operatingProfitAtPrice > 0 ? Math.round(operatingProfitAtPrice * taxRate) : 0;
-  const projectedNetProfitAtPrice = operatingProfitAtPrice - taxAtPrice - 15000;
+  const projectedNetProfitAtPrice = operatingProfitAtPrice - taxAtPrice - SUNK_BID_PREP_COST;
 
   const calcStepMargin = (targetPrice: number) => {
     if (targetPrice <= 0) return 0;
@@ -96,17 +100,20 @@ export const AuctionArena: React.FC<AuctionArenaProps> = ({
     ? Number(((previewOperatingProfit / previewCustomBidAmount) * 100).toFixed(1))
     : 0;
   const previewTax = previewOperatingProfit > 0 ? Math.round(previewOperatingProfit * taxRate) : 0;
-  const previewNetProfit = previewOperatingProfit - previewTax - 15000;
+  const previewNetProfit = previewOperatingProfit - previewTax - SUNK_BID_PREP_COST;
 
   const handlePlaceBid = (amount: number) => {
     if (amount <= 0) {
-      alert('Please enter a valid positive bid amount.');
+      setBidError('Please enter a valid positive bid amount.');
+      setTimeout(() => setBidError(null), 4000);
       return;
     }
     if (amount >= auctionState.currentPrice) {
-      alert(`Your counter-bid must be lower than the current leading price (${formatINR(auctionState.currentPrice)})`);
+      setBidError(`Your counter-bid must be lower than the current leading price (${formatINR(auctionState.currentPrice)})`);
+      setTimeout(() => setBidError(null), 4000);
       return;
     }
+    setBidError(null);
     sounds.bid();
     onPlaceEnglishBid(amount);
   };
@@ -157,14 +164,10 @@ export const AuctionArena: React.FC<AuctionArenaProps> = ({
             <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold font-mono uppercase tracking-wider border ${
               rfq.auctionFormat === 'english'
                 ? 'bg-orange-950/60 text-orange-300 border-orange-800/60'
-                : false
-                ? 'bg-teal-950/60 text-teal-300 border-teal-800/60'
                 : 'bg-violet-950/60 text-violet-300 border-violet-800/60'
             }`}>
               <Gavel className="w-3.5 h-3.5 inline mr-1" />
               {rfq.auctionFormat === 'english' && '🔨 Reverse English (Price Drops)'}
-              {false && '⏳ Reverse Dutch (Price Rises)'}
-              {false && '🇯🇵 Reverse Japanese Clock (Price Drops)'}
             </span>
             <span className="text-xs font-mono text-slate-400">
               Round {rfq.roundNumber}
@@ -173,32 +176,10 @@ export const AuctionArena: React.FC<AuctionArenaProps> = ({
           <h2 className="text-xl sm:text-2xl font-bold text-slate-100">{rfq.title}</h2>
           <p className="text-xs text-slate-400 mt-1">
             {rfq.auctionFormat === 'english' && 'Vendors compete by undercutting bids downward. Lowest qualifying bidder takes the lead!'}
-            {false && 'The Buyer starts with a low offer. The contract price ticks UPWARDS every 2 seconds. The first vendor to click "Buzz & Accept" claims the contract on the spot!'}
-            {false && 'The price clock steps DOWNWARDS every 2 seconds. Vendors stay active until the price drops too low, then release to exit safely.'}
           </p>
         </div>
 
         {/* Real-time Clock / Speed Indicator */}
-        {false ? (
-          <div className="px-4 sm:px-5 py-3 rounded-2xl border border-teal-500/40 bg-teal-950/30 text-teal-300 flex items-center justify-between sm:justify-start gap-4 shrink-0 font-mono shadow-md">
-            <div className="flex items-center gap-3">
-              <Zap className="w-6 h-6 text-teal-400 animate-pulse" />
-              <div>
-                <p className="text-[0.625rem] text-teal-400 uppercase font-bold">Reverse Dutch Clock</p>
-                <p className="text-xl font-bold">Price Rising Continuously</p>
-              </div>
-            </div>
-            {isSpectator && onSkipToEnd && (
-              <button
-                onClick={onSkipToEnd}
-                className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow transition cursor-pointer active:scale-95 ml-2"
-                title="End Dutch Auction as Host"
-              >
-                🛑 End Auction
-              </button>
-            )}
-          </div>
-        ) : (
           <div className={`px-4 sm:px-5 py-3 rounded-2xl border flex items-center justify-between sm:justify-start gap-4 shrink-0 font-mono transition-colors duration-200 ${
             localTimeRemaining <= 5
               ? 'bg-rose-950/70 text-rose-300 border-rose-500'
@@ -217,7 +198,6 @@ export const AuctionArena: React.FC<AuctionArenaProps> = ({
             </div>
             <span className="text-[0.625rem] sm:hidden font-bold uppercase text-slate-500">Live</span>
           </div>
-        )}
       </div>
 
       {/* Main Auction Floor */}
@@ -312,6 +292,13 @@ export const AuctionArena: React.FC<AuctionArenaProps> = ({
                 <ArrowDown className="w-4 h-4" />
                 Place Lower Competitive Bid
               </h3>
+
+              {bidError && (
+                <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-rose-950/60 border border-rose-500/40 text-rose-300 text-xs font-mono animate-pulse">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{bidError}</span>
+                </div>
+              )}
 
               <div className="grid grid-cols-3 gap-2 sm:gap-3">
                 <button

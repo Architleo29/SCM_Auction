@@ -178,11 +178,10 @@ export const RfqBuilder: React.FC<RfqBuilderProps> = ({
             1. Select Live Auction Format
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {[
-              { id: 'english', label: '🔨 Reverse English', desc: 'Price ticks down with open counter-bids from vendors' },
-              { id: 'english', label: '⏳ Reverse English', desc: 'Price ticks upwards every 2s until the first bidder buzzes in' },
-              { id: 'english', label: '🇯🇵 Reverse English', desc: 'Price steps down in discrete rounds; exiters cannot re-enter' }
+              { id: 'english', label: '🔨 Reverse English Procurement', desc: 'Vendors compete by placing lower counter-bids. Price ticks down in open outcry until one vendor wins at the lowest price.' },
+              { id: 'forward', label: '📈 Forward English Asset Draft', desc: 'Buyers compete by placing higher bids on industrial asset lots. Ascending price auction with purse management and winner\'s curse protection.' }
             ].map(fmt => (
               <button
                 key={fmt.id}

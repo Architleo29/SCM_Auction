@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   BookOpen,
   ShoppingBag, 
   X, 
   Gavel, 
   TrendingDown, 
-  TrendingUp,
+  TrendingUp, 
   Percent, 
   Award, 
   Zap, 
@@ -37,16 +37,26 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'quickstart' | 'auctions' | 'forward' | 'strategy' | 'scoring'>(initialTab);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (isOpen && initialTab) {
       setActiveTab(initialTab);
     }
   }, [isOpen, initialTab]);
 
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [onClose]);
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 animate-fade-in">
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 animate-fade-in"
+    >
       <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-4xl max-h-[90vh] shadow-2xl flex flex-col overflow-hidden">
         
         {/* Header */}
@@ -70,6 +80,7 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({
 
           <button
             onClick={onClose}
+            aria-label="Close manual"
             className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition cursor-pointer"
             title="Close Manual"
           >

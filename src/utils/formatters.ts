@@ -32,16 +32,7 @@ export function formatINRCompact(amount: number): string {
 export const isBuyerSpectator = (p: any): boolean => {
   if (!p) return false;
   if (p.isAi) return false;
-  if (p.isHost === true) return true;
-  const name = (p.name || '').toLowerCase();
-  return (
-    name.includes('director') ||
-    name.includes('buyer') ||
-    name.includes('procurement authority') ||
-    name.includes('procurement directorate') ||
-    name.includes('spectator') ||
-    name.includes('auctioneer') ||
-    name.includes('host') ||
-    name.includes('(host)')
-  );
+  // Use the explicit isHost flag as the authoritative role indicator.
+  // The host acts as the Procurement Authority (buyer/spectator).
+  return p.isHost === true;
 };
