@@ -212,6 +212,8 @@ export const App: React.FC = () => {
     const handleMultiplayerEvent = (event: MultiplayerEvent) => {
       switch (event.type) {
         case 'ROOM_STATE_SYNC':
+          // Security: Host is authoritative and never accepts state overwrite from guests
+          if (isHostRef.current) break;
           if (event.payload.roomConfig) setRoomConfig(event.payload.roomConfig);
           if (event.payload.phase) setPhase(event.payload.phase);
           if (event.payload.isForwardMode !== undefined) setIsForwardMode(event.payload.isForwardMode);
@@ -253,11 +255,12 @@ export const App: React.FC = () => {
           break;
 
         case 'PLAYER_JOINED': {
-          const joinedId = event.payload.id;
+          const joinedId = String(event.payload.id || '').trim().slice(0, 64);
           if (!joinedId) break;
 
-          const joinedProfile = event.payload.profile || generateCompanyProfile(event.payload.name, Math.floor(Math.random() * 8));
-          joinedProfile.name = event.payload.name;
+          const sanitizedName = String(event.payload.name || 'Vendor Company').trim().slice(0, 40);
+          const joinedProfile = event.payload.profile || generateCompanyProfile(sanitizedName, Math.floor(Math.random() * 8));
+          joinedProfile.name = sanitizedName;
 
           setPlayers(prev => {
             const existing = prev[joinedId];
@@ -441,27 +444,33 @@ export const App: React.FC = () => {
           });
           break;
 
-        case 'AUCTION_BID':
+        case 'AUCTION_BID': {
+          const bidAmount = Number(event.payload.amount);
+          if (!Number.isFinite(bidAmount) || bidAmount <= 0) break;
+          const bidderId = String(event.payload.playerId || '').slice(0, 64);
+          const bidderName = String(event.payload.playerName || '').slice(0, 40);
+
           setActiveAuction(prev => {
+            // Strict Reverse English rule: Bid must be strictly lower than current floor
+            if (prev.currentPrice > 0 && bidAmount >= prev.currentPrice) return prev;
+
             const updated = {
               ...prev,
-              currentPrice: event.payload.amount,
-              currentLeaderId: event.payload.playerId,
-              currentLeaderName: event.payload.playerName,
+              currentPrice: bidAmount,
+              currentLeaderId: bidderId,
+              currentLeaderName: bidderName,
               timeRemaining: prev.timeRemaining < 15 ? prev.timeRemaining + 8 : prev.timeRemaining,
               bids: [
                 {
                   timestamp: Date.now(),
-                  playerId: event.payload.playerId,
-                  playerName: event.payload.playerName,
-                  amount: event.payload.amount,
-                  isAi: event.payload.isAi
+                  playerId: bidderId,
+                  playerName: bidderName,
+                  amount: bidAmount,
+                  isAi: Boolean(event.payload.isAi)
                 },
                 ...prev.bids
               ]
             };
-            // Only accept if it's actually a lower price (race condition guard)
-            if (event.payload.amount >= prev.currentPrice) return prev;
             activeAuctionRef.current = updated;
             if (isHostRef.current) {
               setTimeout(() => {
@@ -471,6 +480,7 @@ export const App: React.FC = () => {
             return updated;
           });
           break;
+        }
 
         case 'FORWARD_AUCTION_BID':
           if (isHostRef.current) {
@@ -1444,8 +1454,8 @@ export const App: React.FC = () => {
     }, 1000);
   };
 
-  // 8. Auction Resolution -> Buyer Evaluation
-  const handleAuctionResolved = (winnerId: string, finalPrice: number) => {
+  // 8. Auction Resolution -> Buyer Evaluation (Option 1: True QCBS Multi-Criteria Award)
+  const handleAuctionResolved = (lowestBidderId: string, finalLowestPrice: number) => {
     if (auctionTimerRef.current) clearInterval(auctionTimerRef.current);
     const activeRfq = rfqRef.current;
     if (!activeRfq) return;
@@ -1454,8 +1464,8 @@ export const App: React.FC = () => {
     const currentActivePlayers = playersRef.current;
 
     const evaluatedQuotes = currentQuotes.map(q => {
-      if (q.playerId === winnerId) {
-        return { ...q, price: finalPrice };
+      if (q.playerId === lowestBidderId) {
+        return { ...q, price: finalLowestPrice };
       }
       const playerCurrentQuote = currentActivePlayers[q.playerId]?.submittedQuote;
       if (playerCurrentQuote) {
@@ -1464,7 +1474,7 @@ export const App: React.FC = () => {
       return q;
     });
 
-    const evalResult = evaluateQuotes(activeRfq, evaluatedQuotes, currentActivePlayers, winnerId, finalPrice);
+    const evalResult = evaluateQuotes(activeRfq, evaluatedQuotes, currentActivePlayers);
     setEvaluationResult(evalResult);
     setSubmittedQuotes(evaluatedQuotes);
     quotesRef.current = evaluatedQuotes;

@@ -132,7 +132,7 @@ Vendors can click any of the 5 quick-tier buttons to automatically compute their
 | **Tier 2** | **Target Standard** | $\approx +18\%$ | $P_2 = \min(0.94 \times \text{Ceiling},\, 1.20 \times \text{FLC})$ | Recommended balanced tender strategy for sustainable operations. |
 | **Tier 3** | **Balanced** | $\approx +12\%$ | $P_3 = \min(0.90 \times \text{Ceiling},\, 1.12 \times \text{FLC})$ | Competitive pricing against standard industry rivals. |
 | **Tier 4** | **Aggressive** | $\approx +6\%$ | $P_4 = \min(0.85 \times \text{Ceiling},\, 1.06 \times \text{FLC})$ | Aggressive undercutting to capture volume; low margin buffer. |
-| **Tier 5** | **Price Blitz** | $\approx +2\%$ | $P_5 = \max(1.02 \times \text{FLC},\, 0.72 \times \text{Ceiling})$ | Ultra-low price floor; aims for maximum 100% Price evaluation score. |
+| **Tier 5** | **Price Blitz** | $\approx +2\%$ | $P_5 = \min(1.02 \times \text{FLC},\, 0.72 \times \text{Ceiling})$ | Ultra-low price floor; aims for maximum 100% Price evaluation score. |
 
 ### 4.3 Custom Price Input & Dynamic Tier Detection
 If a vendor manually types a custom selling price $P_{\text{custom}}$, the system dynamically detects and highlights the corresponding tier based on the resulting margin:
@@ -150,7 +150,7 @@ $$
 
 ---
 
-## 5. Live Reverse Auction Floor Calculations
+## 5. Live Reverse Auction Floor & QCBS Award Calculations
 
 During live bidding in the arena, vendors place counter-bids that undercut rivals downwards:
 
@@ -179,6 +179,31 @@ $$
 $$
 \text{ProjectedNetProfit}(P) = \text{OperatingProfit}(P) - \text{ProjectedTax}(P) - 15000
 $$
+
+### 5.3 QCBS Tender Award Decision (Quality & Cost Based Selection)
+Upon completion of the auction round, the buyer evaluates all final active quotes using the **Quality & Cost Based Selection (QCBS)** scoring system:
+
+1. **Normalized Price Score**:
+   $$
+   \text{PriceScore}_i = \min\left(100,\, \frac{P_{\min}}{P_i} \times 100\right)
+   $$
+   where $P_{\min}$ is the lowest active bid across all vendors and $P_i$ is vendor $i$'s final quote price.
+
+2. **Quality Technical Score**:
+   $$
+   \text{QualityScore}_i = \left(\frac{\text{QualityLevel}_i}{5.0}\right) \times 100
+   $$
+   (1★ = 20 pts, 2★ = 40 pts, 3★ = 60 pts, 4★ = 80 pts, 5★ = 100 pts)
+
+3. **Total Composite QCBS Score**:
+   $$
+   \text{TotalQCBSScore}_i = (w_{\text{price}} \times \text{PriceScore}_i) + (w_{\text{quality}} \times \text{QualityScore}_i)
+   $$
+
+4. **Award Determination**:
+   The tender is awarded strictly to the vendor with the **highest Total QCBS Score** ($\text{Rank } \#1$).
+   The winning vendor delivers the contract at their submitted bid price $P_{\text{winner}}$.
+   All other vendors are classified as outbid and incur the ₹15,000 tender participation fee.
 
 ---
 

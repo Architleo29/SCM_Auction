@@ -6,9 +6,7 @@ import { RFQ, Quote, PlayerState, BuyerEvaluationResult, VendorCriterionScore } 
 export function evaluateQuotes(
   rfq: RFQ,
   quotes: Quote[],
-  players: Record<string, PlayerState>,
-  forcedWinnerId?: string,
-  forcedWinningPrice?: number
+  players: Record<string, PlayerState>
 ): BuyerEvaluationResult {
   const scoresByPlayer: Record<string, VendorCriterionScore> = {};
 
@@ -88,21 +86,14 @@ export function evaluateQuotes(
     };
   }
 
-  // 3. Rank Players by Weighted Score
-  let rankedPlayerIds = Object.keys(scoresByPlayer).sort((a, b) => {
+  // 3. Rank Players strictly by Total Weighted QCBS Score (Option 1: True QCBS)
+  const rankedPlayerIds = Object.keys(scoresByPlayer).sort((a, b) => {
     return scoresByPlayer[b].totalWeightedScore - scoresByPlayer[a].totalWeightedScore;
   });
 
-  // If a winner was decided by the live auction floor (English/Dutch/Japanese buzz), ensure they rank #1
-  let winnerId = forcedWinnerId || rankedPlayerIds[0] || '';
-  if (forcedWinnerId && scoresByPlayer[forcedWinnerId]) {
-    rankedPlayerIds = [forcedWinnerId, ...rankedPlayerIds.filter(id => id !== forcedWinnerId)];
-  }
-
+  const winnerId = rankedPlayerIds[0] || '';
   const winningQuote = effectiveQuotes.find(q => q.playerId === winnerId);
-  const winningPrice = forcedWinningPrice !== undefined && forcedWinningPrice > 0 
-    ? forcedWinningPrice 
-    : winningQuote?.price || rfq.budgetCeiling * 0.90;
+  const winningPrice = winningQuote?.price || rfq.budgetCeiling * 0.90;
 
   return {
     winnerId,

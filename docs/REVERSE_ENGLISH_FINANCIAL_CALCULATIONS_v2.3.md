@@ -173,6 +173,31 @@ $$
 \text{ProjectedNetProfit}(P) = \text{OperatingProfit}(P) - \text{ProjectedTax}(P) - 15000
 $$
 
+### 5.3 QCBS Tender Award Decision (Quality & Cost Based Selection)
+Upon completion of the auction round, the buyer evaluates all final active quotes using the **Quality & Cost Based Selection (QCBS)** scoring system:
+
+1. **Normalized Price Score**:
+   $$
+   \text{PriceScore}_i = \min\left(100,\, \frac{P_{\min}}{P_i} \times 100\right)
+   $$
+   where $P_{\min}$ is the lowest active bid across all vendors and $P_i$ is vendor $i$'s final quote price.
+
+2. **Quality Technical Score**:
+   $$
+   \text{QualityScore}_i = \left(\frac{\text{QualityLevel}_i}{5.0}\right) \times 100
+   $$
+   (1★ = 20 pts, 2★ = 40 pts, 3★ = 60 pts, 4★ = 80 pts, 5★ = 100 pts)
+
+3. **Total Composite QCBS Score**:
+   $$
+   \text{TotalQCBSScore}_i = (w_{\text{price}} \times \text{PriceScore}_i) + (w_{\text{quality}} \times \text{QualityScore}_i)
+   $$
+
+4. **Award Determination**:
+   The tender is awarded strictly to the vendor with the **highest Total QCBS Score** ($\text{Rank } \#1$).
+   The winning vendor delivers the contract at their submitted bid price $P_{\text{winner}}$.
+   All other vendors are classified as outbid and incur the ₹15,000 tender participation fee.
+
 ---
 
 ## 6. Post-Auction Delivery Settlement & GAAP P&L
