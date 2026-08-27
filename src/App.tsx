@@ -94,7 +94,7 @@ export const App: React.FC = () => {
 
   const [evaluationResult, setEvaluationResult] = useState<BuyerEvaluationResult | null>(null);
   const [activeEvent, setActiveEvent] = useState<DynamicEventCard | null>(null);
-  const [quotingTimerSeconds, setQuotingTimerSeconds] = useState<number>(45);
+  const [quotingTimerSeconds, setQuotingTimerSeconds] = useState<number>(90);
 
   // Forward Auction Multi-Buyer Purse Mode State
   const [isForwardMode, setIsForwardMode] = useState<boolean>(false);
@@ -1269,7 +1269,7 @@ export const App: React.FC = () => {
 
   const handleProceedToQuote = () => {
     setPhase('QUOTING');
-    setQuotingTimerSeconds(45);
+    setQuotingTimerSeconds(90);
 
     broadcastSync({
       phase: 'QUOTING',

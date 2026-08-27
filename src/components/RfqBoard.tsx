@@ -1,11 +1,13 @@
-import React from 'react';
 import { 
   DollarSign, 
   Award, 
   ArrowRight, 
-  Search,
-  Sparkles,
-  Gavel
+  Search, 
+  Sparkles, 
+  Gavel,
+  Eye,
+  Zap,
+  ShieldCheck
 } from 'lucide-react';
 import { RFQ, PlayerState } from '../types/game';
 import { formatINR } from '../utils/formatters';
@@ -119,21 +121,47 @@ export const RfqBoard: React.FC<RfqBoardProps> = ({
         </div>
       </div>
 
-      {/* Action Buttons */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 pb-safe">
-        <button
-          onClick={onOpenIntelMarket}
-          className="w-full sm:w-auto px-5 py-3.5 rounded-2xl bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-white text-xs font-semibold border border-slate-800 transition flex items-center justify-center gap-2 cursor-pointer min-h-12 active:scale-95"
-        >
-          <Search className="w-4 h-4 text-cyan-400" />
-          Competitor Intel Market ({player.intelPoints} Points Available)
-        </button>
+      {/* PROMINENT GLOWING INTEL MARKET CARD (Attracts Vendor Attention) */}
+      <div className="bg-gradient-to-r from-cyan-950/80 via-slate-900 to-indigo-950/80 border-2 border-cyan-500/50 rounded-3xl p-5 sm:p-6 shadow-2xl shadow-cyan-950/60 space-y-4 relative overflow-hidden ring-1 ring-cyan-400/30">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/10 rounded-full blur-2xl pointer-events-none -mr-10 -mt-10" />
+        
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-10 h-10 rounded-2xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-300 shadow-inner shrink-0">
+              <Eye className="w-5 h-5 animate-pulse" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-mono uppercase font-bold text-cyan-300 tracking-wider">
+                  🕵️ Competitor Intel Office
+                </span>
+                <span className="px-2 py-0.5 rounded-full bg-cyan-900/80 text-cyan-200 border border-cyan-700 text-[10px] font-mono font-bold animate-pulse">
+                  {player.intelPoints} Points Available
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 mt-0.5">
+                Infiltrate competitor cost structures (FLC) & decrypt exact buyer scoring weights before quoting!
+              </p>
+            </div>
+          </div>
 
+          <button
+            onClick={onOpenIntelMarket}
+            className="px-6 py-3 rounded-2xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-xs font-mono shadow-lg shadow-cyan-600/30 transition flex items-center justify-center gap-2 cursor-pointer active:scale-95 shrink-0 border border-cyan-400/40"
+          >
+            <Search className="w-4 h-4" />
+            <span>Open Intel Office ({player.intelPoints} Pts)</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Primary Action Button to Proceed to Quoting */}
+      <div className="pt-2 pb-safe">
         <button
           onClick={onProceedToQuote}
-          className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-xl shadow-indigo-600/30 transition flex items-center justify-center gap-2 cursor-pointer active:scale-95 min-h-12"
+          className="w-full py-4 rounded-3xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm shadow-xl shadow-indigo-600/30 transition flex items-center justify-center gap-2 cursor-pointer active:scale-95 min-h-[52px]"
         >
-          <span>Open Strategy & Quoting Screen</span>
+          <span>Proceed to Strategy & Quoting (90s Timer)</span>
           <ArrowRight className="w-4 h-4" />
         </button>
       </div>

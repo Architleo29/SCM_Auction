@@ -7,7 +7,10 @@ import {
   Layers, 
   TrendingUp, 
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Award,
+  Sparkles,
+  Zap
 } from 'lucide-react';
 import { RFQ, PlayerState, Quote } from '../types/game';
 import { calculateCostBreakdown } from '../engine/costCalculator';
@@ -109,8 +112,8 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
     }
   };
 
-  // Local countdown timer
-  const [localTimeRemaining, setLocalTimeRemaining] = useState<number>(timeRemainingSeconds || 45);
+  // Local countdown timer (90s)
+  const [localTimeRemaining, setLocalTimeRemaining] = useState<number>(timeRemainingSeconds || 90);
 
   useEffect(() => {
     if (timeRemainingSeconds !== undefined) {
@@ -209,6 +212,42 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
         {/* Left Column: 1-5 Scale USP Selectors (6 Cols) */}
         <div className="lg:col-span-6 space-y-4">
           
+          {/* Buyer QCBS Evaluation Target Guide */}
+          <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950/60 border border-indigo-500/40 rounded-3xl p-4 sm:p-5 shadow-lg space-y-2.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-mono font-bold uppercase text-indigo-300 flex items-center gap-1.5">
+                <Award className="w-4 h-4 text-indigo-400" />
+                Buyer Evaluation Weights
+              </span>
+              <div className="flex items-center gap-2 text-xs font-mono">
+                <span className="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 font-bold">
+                  Price: {(rfq.weights.price * 100).toFixed(0)}%
+                </span>
+                <span className="px-2 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-800 font-bold">
+                  Quality: {(rfq.weights.quality * 100).toFixed(0)}%
+                </span>
+              </div>
+            </div>
+
+            <div className="bg-slate-950/80 p-3 rounded-2xl border border-slate-800 text-xs font-mono space-y-1">
+              <div className="flex items-center justify-between text-slate-300">
+                <span>Your Quality Points ({qualityTier}★ / 5★):</span>
+                <strong className="text-amber-400">
+                  {qualityTier * 20} pts ({((qualityTier / 5) * (rfq.weights.quality || 0.40) * 100).toFixed(1)} weighted pts)
+                </strong>
+              </div>
+              <p className="text-[11px] text-slate-400 pt-0.5">
+                {qualityTier === 5 
+                  ? '🌟 5★ Flagship awards maximum 100 technical points! You have a massive head start and do not need the lowest price to win.' 
+                  : qualityTier === 4 
+                  ? '✨ 4★ Premium gives 80 technical points. Strong technical foundation with moderate variable cost.' 
+                  : qualityTier === 3 
+                  ? '⚖️ 3★ Standard is baseline. Balance your price against quality to stay competitive.' 
+                  : '⚡ Lower quality reduces direct costs but yields low technical points. You must bid near the price floor to win!'}
+              </p>
+            </div>
+          </div>
+
           {/* USP 1: Quality Tier (1 to 5 Scale) */}
           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl space-y-3">
             <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
